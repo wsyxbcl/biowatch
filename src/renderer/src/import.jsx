@@ -824,7 +824,7 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="mb-1 font-medium">Serval CSV</h4>
-                  <p className="text-sm text-gray-500">Serval predictions</p>
+                  <p className="text-sm text-gray-500">Serval results</p>
                 </div>
                 <Button variant="outline" className="shrink-0 w-40" onClick={handleServalCSV}>
                   Select

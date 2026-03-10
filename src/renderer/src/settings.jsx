@@ -51,6 +51,20 @@ function SettingsInfo({ version, platform }) {
           </span>
         </li>
         <li className="flex items-center">
+          <span>a fork by wsyxbcl</span>
+        </li>
+        <li className="flex items-center">
+          <Github size={14} className="mr-2" />
+          <a
+            href="https://github.com/wsyxbcl/biowatch"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            https://github.com/wsyxbcl/biowatch
+          </a>
+        </li>
+        <li className="flex items-center">
           <Github size={14} className="mr-2" />
           <a
             href="https://github.com/earthtoolsmaker/biowatch"
