@@ -268,6 +268,14 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
     navigate(`/study/${id}`)
   }
 
+  const handleServalCSV = async () => {
+    const { data, id, path } = await window.api.selectServalDataset()
+    console.log('Serval CSV select', path)
+    if (!id) return
+    onNewStudy({ id, name: data.name, data, path })
+    navigate(`/study/${id}`)
+  }
+
   const handleDemoDataset = async () => {
     try {
       setIsDemoImporting(true)
@@ -801,6 +809,24 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
                   <p className="text-sm text-gray-500">Deepfaune predictions</p>
                 </div>
                 <Button variant="outline" className="shrink-0 w-40" onClick={handleDeepfauneCSV}>
+                  Select
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Serval CSV Card */}
+          <Card className="group hover:border-blue-500/20 transition-all hover:shadow-md">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-4">
+                <div className="size-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
+                  <FileSpreadsheet className="size-5 text-gray-500 group-hover:text-blue-600 transition-colors" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="mb-1 font-medium">Serval CSV</h4>
+                  <p className="text-sm text-gray-500">Serval predictions</p>
+                </div>
+                <Button variant="outline" className="shrink-0 w-40" onClick={handleServalCSV}>
                   Select
                 </Button>
               </div>

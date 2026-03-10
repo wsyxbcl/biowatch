@@ -19,6 +19,7 @@ import {
   importCamTrapDataset,
   importWildlifeDataset,
   importDeepfauneDataset,
+  importServalDataset,
   importLilaDataset,
   LILA_DATASETS
 } from '../services/import/index.js'
@@ -250,6 +251,39 @@ export function registerImportIPCHandlers() {
       }
     } catch (error) {
       log.error('Error processing Deepfaune CSV dataset:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('import:select-serval', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [
+        { name: 'Serval CSV', extensions: ['csv'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    })
+
+    if (!result || result.canceled || result.filePaths.length === 0) return null
+
+    const selectedPath = result.filePaths[0]
+    const id = crypto.randomUUID()
+
+    try {
+      log.info(`Processing Serval CSV file: ${selectedPath}`)
+
+      const { data } = await importServalDataset(selectedPath, id)
+      if (!data) {
+        return null
+      }
+
+      return {
+        path: selectedPath,
+        data,
+        id
+      }
+    } catch (error) {
+      log.error('Error processing Serval CSV dataset:', error)
       throw error
     }
   })

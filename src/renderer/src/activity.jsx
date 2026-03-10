@@ -349,8 +349,23 @@ export default function Activity({ studyData, studyId }) {
   const { importStatus } = useImportStatus(actualStudyId, 5000)
   const { sequenceGap } = useSequenceGap(actualStudyId)
 
+  const { data: studiesList = [] } = useQuery({
+    queryKey: ['studies'],
+    queryFn: async () => {
+      const response = await window.api.getStudies()
+      return response || []
+    },
+    enabled: !!actualStudyId,
+    staleTime: 60000
+  })
+
   // Get taxonomic data from studyData
   const taxonomicData = studyData?.taxonomic || null
+  const resolvedImporterName =
+    studyData?.importerName ||
+    studyData?.data?.importerName ||
+    studiesList.find((s) => s.id === actualStudyId)?.importerName
+  const disableGbifCommonNames = resolvedImporterName === 'serval/csv'
 
   // Fetch sequence-aware species distribution data
   // sequenceGap in queryKey ensures refetch when slider changes (backend fetches from metadata)
@@ -555,6 +570,7 @@ export default function Activity({ studyData, studyId }) {
                   onSpeciesChange={handleSpeciesChange}
                   palette={palette}
                   studyId={actualStudyId}
+                  disableGbifCommonNames={disableGbifCommonNames}
                 />
               )}
             </div>

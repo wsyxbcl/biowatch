@@ -11,4 +11,5 @@
 export { importCamTrapDataset, importCamTrapDatasetWithPath } from './camtrapDP.js'
 export { importWildlifeDataset, importWildlifeDatasetWithPath } from './wildlifeInsights.js'
 export { importDeepfauneDataset, importDeepfauneDatasetWithPath } from './deepfaune.js'
+export { importServalDataset, importServalDatasetWithPath } from './serval.js'
 export { importLilaDataset, importLilaDatasetWithPath, LILA_DATASETS } from './lila.js'

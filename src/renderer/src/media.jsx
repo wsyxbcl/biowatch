@@ -3503,7 +3503,22 @@ export default function Activity({ studyData, studyId }) {
   // Sequence gap - uses React Query for sync across components
   const { sequenceGap } = useSequenceGap(actualStudyId)
 
+  const { data: studiesList = [] } = useQuery({
+    queryKey: ['studies'],
+    queryFn: async () => {
+      const response = await window.api.getStudies()
+      return response || []
+    },
+    enabled: !!actualStudyId,
+    staleTime: 60000
+  })
+
   const taxonomicData = studyData?.taxonomic || null
+  const resolvedImporterName =
+    studyData?.importerName ||
+    studyData?.data?.importerName ||
+    studiesList.find((s) => s.id === actualStudyId)?.importerName
+  const disableGbifCommonNames = resolvedImporterName === 'serval/csv'
 
   // Fetch sequence-aware species distribution data
   // sequenceGap in queryKey ensures refetch when slider changes (backend fetches from metadata)
@@ -3685,6 +3700,7 @@ export default function Activity({ studyData, studyId }) {
                   palette={palette}
                   blankCount={blankCount}
                   studyId={actualStudyId}
+                  disableGbifCommonNames={disableGbifCommonNames}
                 />
               )}
             </div>

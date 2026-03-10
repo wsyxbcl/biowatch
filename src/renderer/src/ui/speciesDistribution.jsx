@@ -14,8 +14,11 @@ function SpeciesDistribution({
   onSpeciesChange,
   palette,
   blankCount = 0,
-  studyId = null
+  studyId = null,
+  disableGbifCommonNames = false
 }) {
+  const shouldFetchGbifCommonNames = !disableGbifCommonNames
+
   // Add a simple state to force re-renders when cache is updated
   const [, forceUpdate] = useState({})
 
@@ -129,6 +132,7 @@ function SpeciesDistribution({
           species.scientificName &&
           !isBlank(species.scientificName) && // Skip blank entries
           !scientificToCommonMap[species.scientificName] &&
+          shouldFetchGbifCommonNames &&
           commonNamesCache[species.scientificName] === undefined // Only fetch if not cached
       )
 
@@ -147,7 +151,7 @@ function SpeciesDistribution({
 
     fetchMissingCommonNames()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, taxonomicData])
+  }, [data, taxonomicData, shouldFetchGbifCommonNames])
 
   // Handle toggling species selection when clicking on the dot
   const handleSpeciesToggle = (species) => {
@@ -196,7 +200,7 @@ function SpeciesDistribution({
             const displayName = isBlankEntry
               ? 'Blank'
               : scientificToCommonMap[species.scientificName] ||
-                commonNamesCache[species.scientificName] ||
+                (shouldFetchGbifCommonNames ? commonNamesCache[species.scientificName] : null) ||
                 species.scientificName
 
             const isSelected = selectedSpecies.some(
@@ -230,7 +234,9 @@ function SpeciesDistribution({
                     {!isBlankEntry &&
                       species.scientificName &&
                       (scientificToCommonMap[species.scientificName] ||
-                        commonNamesCache[species.scientificName]) && (
+                        (shouldFetchGbifCommonNames
+                          ? commonNamesCache[species.scientificName]
+                          : null)) && (
                         <span className="text-gray-500 text-sm italic ml-2">
                           {species.scientificName}
                         </span>

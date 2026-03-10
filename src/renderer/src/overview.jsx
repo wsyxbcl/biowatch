@@ -221,7 +221,7 @@ async function fetchGbifCommonName(scientificName) {
 }
 
 // Export SpeciesDistribution so it can be imported in activity.jsx
-function SpeciesDistribution({ data, taxonomicData, studyId }) {
+function SpeciesDistribution({ data, taxonomicData, studyId, disableGbifCommonNames = false }) {
   const totalCount = data.reduce((sum, item) => sum + item.count, 0)
   const navigate = useNavigate()
 
@@ -263,11 +263,12 @@ function SpeciesDistribution({ data, taxonomicData, studyId }) {
 
   // Find species that need GBIF lookup (not in taxonomic data)
   const speciesNeedingLookup = useMemo(() => {
+    if (disableGbifCommonNames) return []
     if (!data) return []
     return data
       .filter((species) => species.scientificName && !scientificToCommonMap[species.scientificName])
       .map((species) => species.scientificName)
-  }, [data, scientificToCommonMap])
+  }, [data, scientificToCommonMap, disableGbifCommonNames])
 
   // Use useQueries to fetch common names for all species that need lookup
   const gbifQueries = useQueries({
@@ -306,7 +307,13 @@ function SpeciesDistribution({ data, taxonomicData, studyId }) {
         {sortSpeciesHumansLast(data).map((species) => {
           // Try to get the common name from the taxonomic data first, then from GBIF query results
           const commonName =
-            scientificToCommonMap[species.scientificName] || gbifCommonNames[species.scientificName]
+            scientificToCommonMap[species.scientificName] ||
+            (disableGbifCommonNames ? null : gbifCommonNames[species.scientificName])
+          const shouldShowScientificInParens =
+            !disableGbifCommonNames &&
+            species.scientificName &&
+            commonName !== undefined &&
+            normalizeSpeciesLabel(commonName) !== normalizeSpeciesLabel(species.scientificName)
           const hasImage = !!speciesImageMap[species.scientificName]
 
           return (
@@ -321,7 +328,7 @@ function SpeciesDistribution({ data, taxonomicData, studyId }) {
                       <span className="capitalize text-sm">
                         {commonName || species.scientificName}
                       </span>
-                      {species.scientificName && commonName !== undefined && (
+                      {shouldShowScientificInParens && (
                         <span className="text-gray-500 text-sm italic ml-2">
                           ({species.scientificName})
                         </span>
@@ -370,6 +377,15 @@ export default function Overview({ data, studyId, studyName }) {
   const [canScrollRight, setCanScrollRight] = useState(false)
   const { importStatus } = useImportStatus(studyId)
   const { sequenceGap } = useSequenceGap(studyId)
+  const { data: studiesList = [] } = useQuery({
+    queryKey: ['studies'],
+    queryFn: async () => {
+      const response = await window.api.getStudies()
+      return response || []
+    },
+    enabled: !!studyId,
+    staleTime: 60000
+  })
 
   // Use useQuery for deployments data - use same query as Deployments tab
   const { data: deploymentsActivityData, error: deploymentsError } = useQuery({
@@ -443,6 +459,11 @@ export default function Overview({ data, studyId, studyName }) {
   const descriptionEditRef = useRef(null)
   const [isDescriptionTruncated, setIsDescriptionTruncated] = useState(false)
   const queryClient = useQueryClient()
+  const resolvedImporterName =
+    data?.importerName ||
+    data?.data?.importerName ||
+    studiesList.find((s) => s.id === studyId)?.importerName
+  const disableGbifCommonNames = resolvedImporterName === 'serval/csv'
 
   // Compute min/max dates from deployments for pre-populating date pickers
   // Excludes timestamps within last 24 hours (likely media without EXIF data defaulting to "now")
@@ -1209,6 +1230,7 @@ export default function Overview({ data, studyId, studyName }) {
                 data={speciesData}
                 taxonomicData={taxonomicData}
                 studyId={studyId}
+                disableGbifCommonNames={disableGbifCommonNames}
               />
             )}
             <DeploymentMap key={studyId} deployments={deploymentsData} studyId={studyId} />
@@ -1256,3 +1278,8 @@ export default function Overview({ data, studyId, studyName }) {
     </div>
   )
 }
+const normalizeSpeciesLabel = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
