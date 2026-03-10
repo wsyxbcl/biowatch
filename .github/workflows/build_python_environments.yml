@@ -10,6 +10,7 @@
 name: Build and Upload Python Environments
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'python-environments/**/pyproject.toml'
@@ -17,6 +18,7 @@ on:
   push:
     branches:
       - main
+      - maze
     paths:
       - 'python-environments/**/pyproject.toml'
       - 'python-environments/**/uv.lock'
