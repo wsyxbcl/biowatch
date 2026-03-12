@@ -7,7 +7,7 @@
 # while ensuring that uv remains the source of truth for managing Python
 # dependencies.
 
-name: Build and Upload Python Environments
+name: Build and Publish Python Environments
 
 on:
   workflow_dispatch:
@@ -50,6 +50,13 @@ jobs:
         with:
           lfs: true
 
+      - name: Read environment version
+        shell: bash -l {0}
+        run: |
+          ENVIRONMENT_VERSION=$(grep '^version' ./python-environments/common/pyproject.toml | awk -F '=' '{print $2}' | tr -d ' "')
+          echo "ENVIRONMENT_VERSION=${ENVIRONMENT_VERSION}" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=python-env-common-v${ENVIRONMENT_VERSION}" >> "$GITHUB_ENV"
+
       - name: Free Disk Space (Ubuntu)
         if: runner.os == 'Linux'
         uses: jlumbroso/free-disk-space@main
@@ -89,19 +96,25 @@ jobs:
         run: |
           mkdir -p dist
           CONDA_BASE=$(conda info --base)
-          CONDA_ENV_PATH=$CONDA_BASE/envs/common
-          ENVIRONMENT_VERSION=$(grep '^version' ./python-environments/common/pyproject.toml | awk -F '=' '{print $2}' | tr -d ' "')
-          echo "${ENVIRONMENT_VERSION}"
 
           tar -czf dist/common-"${ENVIRONMENT_VERSION}"-${{ runner.os }}.tar.gz -C "${CONDA_BASE}"/envs common
 
-      - name: Upload to Cloudflare R2
-        if: github.event_name == 'push'
-        uses: shallwefootball/s3-upload-action@master
+      - name: Upload build artifacts
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
         with:
-          aws_key_id: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
-          aws_bucket: ${{ secrets.CLOUDFLARE_R2_BUCKET_NAME }}
-          endpoint: ${{ secrets.CLOUDFLARE_R2_ENDPOINT }}
-          source_dir: dist
-          destination_dir: conda-environments
+          name: python-env-common-${{ env.ENVIRONMENT_VERSION }}-${{ runner.os }}
+          path: dist/*.tar.gz
+
+      - name: Publish GitHub release assets
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: Common Python Environment ${{ env.ENVIRONMENT_VERSION }}
+          generate_release_notes: false
+          draft: false
+          prerelease: true
+          fail_on_unmatched_files: true
+          files: dist/*.tar.gz
