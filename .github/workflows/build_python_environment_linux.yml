@@ -2,17 +2,6 @@ name: Build and Publish Python Environment (Linux)
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - 'python-environments/**/pyproject.toml'
-      - 'python-environments/**/uv.lock'
-  push:
-    branches:
-      - main
-      - maze
-    paths:
-      - 'python-environments/**/pyproject.toml'
-      - 'python-environments/**/uv.lock'
 
 jobs:
   build_and_publish_common_python_environment_linux:
