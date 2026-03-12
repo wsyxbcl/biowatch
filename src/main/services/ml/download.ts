@@ -5,7 +5,7 @@
  */
 
 import { existsSync, promises as fsPromises } from 'fs'
-import { dirname, basename } from 'path'
+import { dirname, basename, join } from 'path'
 import log from 'electron-log'
 
 import {
@@ -353,6 +353,39 @@ interface OperationResult {
   message: string
 }
 
+function getArchiveFilename(downloadURL: string): string {
+  try {
+    return basename(new URL(downloadURL).pathname)
+  } catch {
+    return basename(downloadURL)
+  }
+}
+
+function findLocalArchive(downloadURL: string): string | null {
+  const platformArchiveAliases =
+    process.platform === 'win32'
+      ? ['common-Windows.tar.gz']
+      : process.platform === 'darwin' && process.arch === 'arm64'
+        ? ['common-macOS-arm64.tar.gz']
+        : []
+  const filename = getArchiveFilename(downloadURL)
+  const executableDir = dirname(process.execPath)
+  const candidateFilenames = [...platformArchiveAliases, filename]
+  const candidatePaths = candidateFilenames.flatMap((candidateFilename) => [
+    join(executableDir, 'offline-assets', candidateFilename),
+    join(executableDir, candidateFilename)
+  ])
+
+  for (const candidatePath of candidatePaths) {
+    if (existsSync(candidatePath)) {
+      log.info(`[DOWNLOAD] Found local archive: ${candidatePath}`)
+      return candidatePath
+    }
+  }
+
+  return null
+}
+
 /**
  * Clears all locally stored machine learning models and their associated Python environments.
  *
@@ -487,9 +520,11 @@ export async function downloadPythonEnvironment({
   log.info('downloadPythonEnvironment: download URL is ', downloadURL)
   const extractPath = getMLModelEnvironmentLocalInstallPath({ id, version })
   const localTarPath = getMLModelEnvironmentLocalTarPath({ id, version })
+  const localArchivePath = findLocalArchive(downloadURL)
+  const archivePath = localArchivePath ?? localTarPath
   const manifestFilepath = getMLEnvironmentDownloadManifest()
   const manifestOpts = {
-    archivePath: localTarPath,
+    archivePath,
     installPath: extractPath,
     activeDownloadModelId: requestingModelId
   }
@@ -562,9 +597,6 @@ export async function downloadPythonEnvironment({
         message: 'Python Environment downloaded and extracted successfully'
       }
     } else {
-      log.info(`[DOWNLOAD] Starting Python environment download from ${downloadURL}`)
-      log.info(`[DOWNLOAD] Download will use retry logic with up to ${5} attempts`)
-
       writeToManifest({
         manifestFilepath,
         id,
@@ -574,8 +606,15 @@ export async function downloadPythonEnvironment({
         opts: manifestOpts
       })
 
-      // Use the robust download function with retry logic
-      await downloadFile(downloadURL, localTarPath, onProgressDownload)
+      if (localArchivePath) {
+        log.info(`[DOWNLOAD] Using local Python environment archive ${localArchivePath}`)
+      } else {
+        log.info(`[DOWNLOAD] Starting Python environment download from ${downloadURL}`)
+        log.info(`[DOWNLOAD] Download will use retry logic with up to ${5} attempts`)
+
+        await downloadFile(downloadURL, localTarPath, onProgressDownload)
+      }
+
       writeToManifest({
         manifestFilepath,
         id,
@@ -584,8 +623,8 @@ export async function downloadPythonEnvironment({
         progress: installationStateProgress[InstallationState.Download],
         opts: manifestOpts
       })
-      log.info(`Extracting the archive ${localTarPath} to ${extractPath}`)
-      await extractTarGz(localTarPath, extractPath, onProgressExtract)
+      log.info(`Extracting the archive ${archivePath} to ${extractPath}`)
+      await extractTarGz(archivePath, extractPath, onProgressExtract)
 
       writeToManifest({
         manifestFilepath,
@@ -595,8 +634,10 @@ export async function downloadPythonEnvironment({
         progress: installationStateProgress[InstallationState.Extract],
         opts: manifestOpts
       })
-      log.info('Cleaning the local archive: ', localTarPath)
-      await fsPromises.unlink(localTarPath)
+      if (!localArchivePath) {
+        log.info('Cleaning the local archive: ', localTarPath)
+        await fsPromises.unlink(localTarPath)
+      }
       // Clear activeDownloadModelId on success
       writeToManifest({
         manifestFilepath,
