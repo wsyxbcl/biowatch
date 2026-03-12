@@ -80,6 +80,24 @@ function createWebFileStream(filePath, options = undefined) {
 }
 
 /**
+ * Register privileged custom schemes for local-file://
+ * to make it a standard, secure, stream-capable media source.
+ */
+export function registerPrivilegedSchemes() {
+  protocol.registerSchemesAsPrivileged([
+    {
+      scheme: 'local-file',
+      privileges: {
+        standard: true,
+        secure: true,
+        supportFetchAPI: true,
+        stream: true
+      }
+    }
+  ])
+}
+
+/**
  * Register local-file:// protocol for serving local media files.
  * Supports range requests for video streaming.
  */
