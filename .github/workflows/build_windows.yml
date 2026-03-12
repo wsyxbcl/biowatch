@@ -1,0 +1,36 @@
+name: Build Binary (Windows)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_windows:
+    runs-on: windows-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+
+      - name: Install Node.js dependencies
+        run: |
+          npm install
+
+      - name: Build on Windows
+        run: npm run build:win:no-publish
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Biowatch-windows
+          path: |
+            dist/Biowatch-setup.exe
+            dist/latest*.yml

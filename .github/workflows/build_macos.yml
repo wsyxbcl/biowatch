@@ -1,23 +1,13 @@
-name: Build/Release
+name: Build Binary (macOS)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - maze
-    tags:
-      - 'v*.*.*'
 
 jobs:
-  release:
-    runs-on: ${{ matrix.os }}
+  build_macos:
+    runs-on: macos-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-22.04]
 
     steps:
       - name: Check out Git repository
@@ -41,13 +31,12 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        if: matrix.os == 'macos-latest'
-        run: npm run build:mac
+        run: npm run build:mac:no-publish
 
-      - name: Build on Linux
-        if: matrix.os == 'ubuntu-22.04'
-        run: npm run build:linux
-
-      - name: Build on Windows
-        if: matrix.os == 'windows-latest'
-        run: npm run build:win
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Biowatch-macos
+          path: |
+            dist/Biowatch.dmg
+            dist/latest*.yml

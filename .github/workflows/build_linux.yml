@@ -1,0 +1,37 @@
+name: Build Binary (Linux)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_linux:
+    runs-on: ubuntu-22.04
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+
+      - name: Install Node.js dependencies
+        run: |
+          npm install
+
+      - name: Build on Linux
+        run: npm run build:linux:no-publish
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Biowatch-linux
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/latest*.yml
