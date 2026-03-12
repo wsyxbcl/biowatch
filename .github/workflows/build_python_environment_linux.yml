@@ -1,0 +1,94 @@
+name: Build and Publish Python Environment (Linux)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'python-environments/**/pyproject.toml'
+      - 'python-environments/**/uv.lock'
+  push:
+    branches:
+      - main
+      - maze
+    paths:
+      - 'python-environments/**/pyproject.toml'
+      - 'python-environments/**/uv.lock'
+
+jobs:
+  build_and_publish_common_python_environment_linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Install Miniforge
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: common
+          python-version: '3.12'
+          auto-update-conda: true
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Read environment version
+        shell: bash -l {0}
+        run: |
+          ENVIRONMENT_VERSION=$(grep '^version' ./python-environments/common/pyproject.toml | awk -F '=' '{print $2}' | tr -d ' "')
+          echo "ENVIRONMENT_VERSION=${ENVIRONMENT_VERSION}" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=python-env-common-linux-v${ENVIRONMENT_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Generate requirements.txt file with uv
+        shell: bash -l {0}
+        run: |
+          cd python-environments/common
+          uv sync
+          uv pip compile pyproject.toml --managed-python -o requirements.txt
+          cat requirements.txt
+
+      - name: Install Python dependencies with conda
+        shell: bash -l {0}
+        run: |
+          cd python-environments/common
+          conda run pip install -r requirements.txt --use-pep517
+          conda list
+
+      - name: Compress conda environment
+        shell: bash -l {0}
+        run: |
+          mkdir -p dist
+          CONDA_BASE=$(conda info --base)
+          tar -czf dist/common-"${ENVIRONMENT_VERSION}"-Linux.tar.gz -C "${CONDA_BASE}"/envs common
+
+      - name: Upload build artifacts
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-env-common-${{ env.ENVIRONMENT_VERSION }}-linux
+          path: dist/*.tar.gz
+
+      - name: Publish GitHub release assets
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: Common Python Environment ${{ env.ENVIRONMENT_VERSION }} (Linux)
+          generate_release_notes: false
+          draft: false
+          prerelease: true
+          fail_on_unmatched_files: true
+          files: dist/*.tar.gz

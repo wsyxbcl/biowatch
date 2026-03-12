@@ -1,13 +1,4 @@
-# Generate the python environments required to run the ML models as local
-# webservers
-#
-# Only conda can be used to generate full environments, including the Python
-# interpreter, C files, and Python files.
-# Therefore, we need to integrate uv and conda to create the conda environments
-# while ensuring that uv remains the source of truth for managing Python
-# dependencies.
-
-name: Build and Publish Python Environments
+name: Build and Publish Python Environment (macOS)
 
 on:
   workflow_dispatch:
@@ -24,21 +15,13 @@ on:
       - 'python-environments/**/uv.lock'
 
 jobs:
-  build_and_upload_common_python_environment:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-22.04]
+  build_and_publish_common_python_environment_macos:
+    runs-on: macos-latest
     steps:
-      - name: Run step when directory changes
-        run: echo "This workflow runs only when files in 'my-directory' are modified."
-
       - name: Install Miniforge
         uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: common
-          # Make sure the python-version matches the `.python-version` in the
-          # python-environments/common folder
           python-version: '3.12'
           auto-update-conda: true
 
@@ -55,19 +38,7 @@ jobs:
         run: |
           ENVIRONMENT_VERSION=$(grep '^version' ./python-environments/common/pyproject.toml | awk -F '=' '{print $2}' | tr -d ' "')
           echo "ENVIRONMENT_VERSION=${ENVIRONMENT_VERSION}" >> "$GITHUB_ENV"
-          echo "RELEASE_TAG=python-env-common-v${ENVIRONMENT_VERSION}" >> "$GITHUB_ENV"
-
-      - name: Free Disk Space (Ubuntu)
-        if: runner.os == 'Linux'
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
+          echo "RELEASE_TAG=python-env-common-macos-v${ENVIRONMENT_VERSION}" >> "$GITHUB_ENV"
 
       - name: Generate requirements.txt file with uv
         shell: bash -l {0}
@@ -84,26 +55,18 @@ jobs:
           conda run pip install -r requirements.txt --use-pep517
           conda list
 
-      - name: Install the GPU version of PyTorch on windows
-        if: matrix.os == 'windows-latest'
-        shell: bash -l {0}
-        run: |
-          cd python-environments/common
-          conda run pip install torch torchvision --upgrade --force-reinstall --index-url https://download.pytorch.org/whl/cu118
-
       - name: Compress conda environment
         shell: bash -l {0}
         run: |
           mkdir -p dist
           CONDA_BASE=$(conda info --base)
-
-          tar -czf dist/common-"${ENVIRONMENT_VERSION}"-${{ runner.os }}.tar.gz -C "${CONDA_BASE}"/envs common
+          tar -czf dist/common-"${ENVIRONMENT_VERSION}"-macOS.tar.gz -C "${CONDA_BASE}"/envs common
 
       - name: Upload build artifacts
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: python-env-common-${{ env.ENVIRONMENT_VERSION }}-${{ runner.os }}
+          name: python-env-common-${{ env.ENVIRONMENT_VERSION }}-macos
           path: dist/*.tar.gz
 
       - name: Publish GitHub release assets
@@ -112,9 +75,10 @@ jobs:
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           target_commitish: ${{ github.sha }}
-          name: Common Python Environment ${{ env.ENVIRONMENT_VERSION }}
+          name: Common Python Environment ${{ env.ENVIRONMENT_VERSION }} (macOS)
           generate_release_notes: false
           draft: false
           prerelease: true
           fail_on_unmatched_files: true
           files: dist/*.tar.gz
+
