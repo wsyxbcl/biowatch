@@ -119,7 +119,7 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
   }, [description, descExpanded, editingDescription])
 
   return (
-    <header className="grid grid-cols-[55%_1fr] gap-6 mb-6">
+    <header className="grid grid-cols-[minmax(20rem,_42%)_1fr] gap-6 mb-6">
       <div className="group flex flex-col">
         {/* Title */}
         <div className="flex items-baseline gap-2">
