@@ -49,7 +49,7 @@ function FitBoundsOnResize({ bounds }) {
     const observer = new ResizeObserver(() => {
       map.invalidateSize()
       if (!userInteracted.current && boundsRef.current) {
-        map.fitBounds(boundsRef.current, { padding: [150, 150] })
+        map.fitBounds(boundsRef.current, { padding: [30, 30] })
       }
     })
     observer.observe(container)
@@ -158,7 +158,7 @@ function DeploymentMap({ deployments, studyId }) {
       <MapContainer
         key={studyId}
         bounds={bounds}
-        boundsOptions={{ padding: [150, 150] }}
+        boundsOptions={{ padding: [30, 30] }}
         style={{ height: '100%', width: '100%' }}
       >
         <LayersControl position="topright">
