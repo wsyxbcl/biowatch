@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Clock } from 'lucide-react'
  * @param {string} props.value - ISO 8601 timestamp
  * @param {(newValue: string) => void} props.onChange - Called with new ISO timestamp on save
  * @param {() => void} props.onCancel - Called when picker is dismissed
+ * @param {() => void} [props.onResetToAuto] - When provided, the picker shows a "Reset to auto" link that calls this handler. The handler should clear any persisted override so the value falls back to derivation.
  * @param {string} [props.className] - Additional CSS classes
  * @param {boolean} [props.dateOnly] - If true, hide time inputs and only show calendar
  */
@@ -15,6 +16,7 @@ export default function DateTimePicker({
   value,
   onChange,
   onCancel,
+  onResetToAuto,
   className = '',
   dateOnly = false
 }) {
@@ -249,21 +251,33 @@ export default function DateTimePicker({
       )}
 
       {/* Action Buttons */}
-      <div className="flex gap-2">
-        <button
-          onClick={onCancel}
-          type="button"
-          className="flex-1 px-3 py-2 text-sm font-medium border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          type="button"
-          className="flex-1 px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          Save
-        </button>
+      <div className="flex flex-col gap-2">
+        {onResetToAuto && (
+          <button
+            type="button"
+            onClick={onResetToAuto}
+            className="text-xs text-blue-600 hover:underline self-start"
+            title="Clear override and fall back to auto-derived range"
+          >
+            Reset to auto
+          </button>
+        )}
+        <div className="flex gap-2">
+          <button
+            onClick={onCancel}
+            type="button"
+            className="flex-1 px-3 py-2 text-sm font-medium border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            type="button"
+            className="flex-1 px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Save
+          </button>
+        </div>
       </div>
     </div>
   )
