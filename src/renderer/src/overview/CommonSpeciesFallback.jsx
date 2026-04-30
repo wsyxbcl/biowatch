@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
-import { CameraOff } from 'lucide-react'
+import { CameraOff, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useSequenceGap } from '../hooks/useSequenceGap'
 import { useCommonName } from '../utils/commonNames'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
@@ -56,12 +56,88 @@ export default function CommonSpeciesFallback({ studyId }) {
       <h3 className="text-[0.7rem] uppercase tracking-wider text-gray-500 font-semibold mb-3">
         Featured species
       </h3>
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
+      <ScrollableStrip>
         {candidates.map((c) => (
           <SpeciesReferenceCard key={c.scientificName} species={c} onClick={handleClick} />
         ))}
-      </div>
+      </ScrollableStrip>
     </section>
+  )
+}
+
+/**
+ * Horizontal strip with chevron scroll buttons + fades.
+ * Matches the BestMediaCarousel pattern.
+ */
+function ScrollableStrip({ children }) {
+  const containerRef = useRef(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const checkScroll = () => {
+      setCanScrollLeft(container.scrollLeft > 0)
+      setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 5)
+    }
+
+    container.addEventListener('scroll', checkScroll)
+    checkScroll()
+    window.addEventListener('resize', checkScroll)
+
+    return () => {
+      container.removeEventListener('scroll', checkScroll)
+      window.removeEventListener('resize', checkScroll)
+    }
+  }, [children])
+
+  const scroll = (direction) => {
+    const container = containerRef.current
+    if (!container) return
+    container.scrollBy({
+      left: direction === 'left' ? -container.clientWidth * 0.75 : container.clientWidth * 0.75,
+      behavior: 'smooth'
+    })
+  }
+
+  return (
+    <div className="relative">
+      {canScrollLeft && (
+        <button
+          type="button"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 rounded-full p-1 shadow-md border border-gray-200"
+          onClick={() => scroll('left')}
+          aria-label="Scroll left"
+        >
+          <ChevronLeft size={20} />
+        </button>
+      )}
+      {canScrollRight && (
+        <button
+          type="button"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 rounded-full p-1 shadow-md border border-gray-200"
+          onClick={() => scroll('right')}
+          aria-label="Scroll right"
+        >
+          <ChevronRight size={20} />
+        </button>
+      )}
+      {canScrollLeft && (
+        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent z-[1] pointer-events-none" />
+      )}
+      {canScrollRight && (
+        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent z-[1] pointer-events-none" />
+      )}
+      <div
+        ref={containerRef}
+        className="flex gap-3 overflow-x-auto scrollbar-hide"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {children}
+      </div>
+    </div>
   )
 }
 
