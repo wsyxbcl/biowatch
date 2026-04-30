@@ -32,6 +32,25 @@ function compact(value) {
 }
 
 /**
+ * Aggressive compact format used for sub-detail lines that need to fit on one
+ * line at small widths (e.g. "from 1.1k camera-days"). Lowercase k.
+ *  - null/undefined/NaN → "—"
+ *  - 0..999 → locale integer
+ *  - 1k..999k → "1.1k" / "950k"
+ *  - 1M+    → "1.2M"
+ */
+export function formatCompactCount(n) {
+  if (n === null || n === undefined || Number.isNaN(n)) return EM_DASH
+  if (n < 1000) return n.toLocaleString('en-US')
+  if (n < 1_000_000) {
+    const k = compact(n / 1000)
+    if (k === '1000') return '1M'
+    return k + 'k'
+  }
+  return compact(n / 1_000_000) + 'M'
+}
+
+/**
  * Format a date span as "<N> yr" if ≥ 12 months, else "<N> mo".
  * Both inputs are ISO date strings (YYYY-MM-DD or full ISO 8601).
  * Returns "—" if either is null/empty.

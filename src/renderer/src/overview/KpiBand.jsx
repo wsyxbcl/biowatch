@@ -8,7 +8,12 @@ import SpanPicker from './SpanPicker'
 import IucnBadge from '../ui/IucnBadge'
 import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
 import { useCommonName } from '../utils/commonNames'
-import { formatStatNumber, formatSpan, formatRangeShort } from './utils/formatStats'
+import {
+  formatStatNumber,
+  formatCompactCount,
+  formatSpan,
+  formatRangeShort
+} from './utils/formatStats'
 
 const ICON_SIZE = 14
 
@@ -130,7 +135,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
         icon={<Eye size={ICON_SIZE} />}
         label="Observations"
         value={formatStatNumber(observationCount)}
-        sub={cameraDays > 0 ? `from ${formatStatNumber(cameraDays)} camera-days` : null}
+        sub={cameraDays > 0 ? `from ${formatCompactCount(cameraDays)} camera-days` : null}
       />
       <KpiTile
         icon={<ImageIcon size={ICON_SIZE} />}

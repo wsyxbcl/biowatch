@@ -2,6 +2,7 @@ import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   formatStatNumber,
+  formatCompactCount,
   formatSpan,
   formatRangeShort
 } from '../../../src/renderer/src/overview/utils/formatStats.js'
@@ -30,6 +31,32 @@ describe('formatStatNumber', () => {
   test('compacts to M above 999,999', () => {
     assert.equal(formatStatNumber(1234567), '1.2M')
     assert.equal(formatStatNumber(12_345_678), '12.3M')
+  })
+})
+
+describe('formatCompactCount', () => {
+  test('returns em-dash for null / undefined / NaN', () => {
+    assert.equal(formatCompactCount(null), '—')
+    assert.equal(formatCompactCount(undefined), '—')
+    assert.equal(formatCompactCount(NaN), '—')
+  })
+
+  test('preserves small numbers as locale integers', () => {
+    assert.equal(formatCompactCount(0), '0')
+    assert.equal(formatCompactCount(47), '47')
+    assert.equal(formatCompactCount(999), '999')
+  })
+
+  test('compacts to k from 1000 with lowercase k', () => {
+    assert.equal(formatCompactCount(1000), '1k')
+    assert.equal(formatCompactCount(1095), '1.1k')
+    assert.equal(formatCompactCount(4200), '4.2k')
+    assert.equal(formatCompactCount(82916), '82.9k')
+    assert.equal(formatCompactCount(999999), '1M')
+  })
+
+  test('compacts to M above 999,999', () => {
+    assert.equal(formatCompactCount(1234567), '1.2M')
   })
 })
 
