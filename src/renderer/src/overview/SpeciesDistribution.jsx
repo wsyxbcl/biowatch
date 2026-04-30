@@ -144,7 +144,9 @@ export default function SpeciesDistribution({ studyId, speciesData, taxonomicDat
         Species distribution
       </h3>
 
-      {!speciesData || speciesData.length === 0 ? (
+      {speciesData === undefined ? (
+        <SpeciesListSkeleton />
+      ) : speciesData.length === 0 ? (
         <div className="bg-gray-50 border border-dashed border-gray-200 rounded-lg px-4 py-8 text-center">
           <p className="text-sm font-medium text-gray-600">No species detected yet</p>
           <p className="text-xs text-gray-500 mt-1">
@@ -197,5 +199,38 @@ function LegendItem({ code, label }) {
       <IucnBadge category={code} />
       {label}
     </span>
+  )
+}
+
+/**
+ * Pulsing placeholder rows shown while the species query is loading. Same
+ * row layout as the real list so the section doesn't reflow on data arrival.
+ */
+function SpeciesListSkeleton() {
+  // Stable widths per row (no Math.random per render — would visibly twitch).
+  const widths = [85, 70, 55, 35, 22]
+  return (
+    <div className="flex flex-col">
+      {widths.map((w, i) => (
+        <div key={i} className="flex items-center gap-3 py-2.5 px-3">
+          <div className="w-80 flex-shrink-0 flex items-center gap-3">
+            <div className="h-3 w-32 bg-gray-200 rounded animate-pulse" />
+            <div className="h-3 w-20 bg-gray-100 rounded animate-pulse" />
+          </div>
+          <div className="w-8 flex-shrink-0">
+            <div className="h-4 w-7 bg-gray-100 rounded animate-pulse" />
+          </div>
+          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gray-200 rounded-full animate-pulse"
+              style={{ width: `${w}%` }}
+            />
+          </div>
+          <div className="w-14 flex-shrink-0 flex justify-end">
+            <div className="h-3 w-10 bg-gray-100 rounded animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
