@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { PawPrint, Camera, CalendarDays, Eye, Image as ImageIcon } from 'lucide-react'
 import KpiTile from './KpiTile'
@@ -19,6 +19,7 @@ const ICON_SIZE = 14
 export default function KpiBand({ studyId, studyData, isImporting }) {
   const queryClient = useQueryClient()
   const [showPicker, setShowPicker] = useState(false)
+  const spanTriggerRef = useRef(null)
 
   const { data: stats } = useQuery({
     queryKey: ['overviewStats', studyId],
@@ -80,13 +81,13 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
         sub={locationCount > 0 ? `across ${formatStatNumber(locationCount)} locations` : null}
       />
 
-      <div className="relative flex">
+      <div className="relative flex" ref={spanTriggerRef}>
         <KpiTile
           icon={<CalendarDays size={ICON_SIZE} />}
           label="Span"
           value={formatSpan(rangeStart, rangeEnd)}
           sub={formatRangeShort(rangeStart, rangeEnd)}
-          onEdit={() => setShowPicker(true)}
+          onEdit={() => setShowPicker((v) => !v)}
         />
         {showPicker && (
           <div className="absolute left-0 top-full mt-2 z-50">
@@ -96,6 +97,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
               onSave={saveRange}
               onCancel={() => setShowPicker(false)}
               onResetToAuto={resetDatesToAuto}
+              ignoreOutsideClickRef={spanTriggerRef}
             />
           </div>
         )}

@@ -28,8 +28,16 @@ const DAYS_OF_WEEK = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
  * @param {(range: { start: string, end: string }) => void} props.onSave - Called with both dates on Save.
  * @param {() => void} props.onCancel - Called on Cancel / Escape / outside click.
  * @param {() => void} [props.onResetToAuto] - When provided, renders a "Reset to auto" link.
+ * @param {React.RefObject<HTMLElement>} [props.ignoreOutsideClickRef] - Element whose clicks should not count as "outside" (e.g., the trigger button — letting it toggle without races).
  */
-export default function SpanPicker({ startValue, endValue, onSave, onCancel, onResetToAuto }) {
+export default function SpanPicker({
+  startValue,
+  endValue,
+  onSave,
+  onCancel,
+  onResetToAuto,
+  ignoreOutsideClickRef
+}) {
   const containerRef = useRef(null)
 
   const [start, setStart] = useState(() => parseIsoDate(startValue))
@@ -39,7 +47,9 @@ export default function SpanPicker({ startValue, endValue, onSave, onCancel, onR
   // Click-outside / Escape close (single handler at the wrapper level).
   useEffect(() => {
     const onMouseDown = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) onCancel()
+      if (containerRef.current && containerRef.current.contains(e.target)) return
+      if (ignoreOutsideClickRef?.current && ignoreOutsideClickRef.current.contains(e.target)) return
+      onCancel()
     }
     const onKey = (e) => {
       if (e.key === 'Escape') {
@@ -53,7 +63,7 @@ export default function SpanPicker({ startValue, endValue, onSave, onCancel, onR
       document.removeEventListener('mousedown', onMouseDown)
       document.removeEventListener('keydown', onKey)
     }
-  }, [onCancel])
+  }, [onCancel, ignoreOutsideClickRef])
 
   const handleSave = () => {
     if (!start || !end) {
