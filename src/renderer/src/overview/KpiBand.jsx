@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { PawPrint, Camera, CalendarDays, Eye, Image as ImageIcon } from 'lucide-react'
 import KpiTile from './KpiTile'
-import DateTimePicker from '../ui/DateTimePicker'
+import SpanPicker from './SpanPicker'
 import { formatStatNumber, formatSpan, formatRangeShort } from './utils/formatStats'
 
 const ICON_SIZE = 14
@@ -18,7 +18,7 @@ const ICON_SIZE = 14
  */
 export default function KpiBand({ studyId, studyData, isImporting }) {
   const queryClient = useQueryClient()
-  const [showStartPicker, setShowStartPicker] = useState(false)
+  const [showPicker, setShowPicker] = useState(false)
 
   const { data: stats } = useQuery({
     queryKey: ['overviewStats', studyId],
@@ -42,16 +42,14 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
   const rangeStart = stats?.derivedRange?.start ?? null
   const rangeEnd = stats?.derivedRange?.end ?? null
 
-  const saveDate = async (which, isoTimestamp) => {
-    const dateOnly = isoTimestamp.split('T')[0]
-    const newTemporal = { ...(studyData?.temporal || {}) }
-    newTemporal[which] = dateOnly
+  const saveRange = async ({ start, end }) => {
+    const newTemporal = { ...(studyData?.temporal || {}), start, end }
     await window.api.updateStudy(studyId, {
       data: { ...studyData, temporal: newTemporal }
     })
     queryClient.invalidateQueries({ queryKey: ['study'] })
     queryClient.invalidateQueries({ queryKey: ['overviewStats', studyId] })
-    setShowStartPicker(false)
+    setShowPicker(false)
   }
 
   const resetDatesToAuto = async () => {
@@ -63,7 +61,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
     })
     queryClient.invalidateQueries({ queryKey: ['study'] })
     queryClient.invalidateQueries({ queryKey: ['overviewStats', studyId] })
-    setShowStartPicker(false)
+    setShowPicker(false)
   }
 
   return (
@@ -88,16 +86,16 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
           label="Span"
           value={formatSpan(rangeStart, rangeEnd)}
           sub={formatRangeShort(rangeStart, rangeEnd)}
-          onEdit={() => setShowStartPicker(true)}
+          onEdit={() => setShowPicker(true)}
         />
-        {showStartPicker && (
+        {showPicker && (
           <div className="absolute left-0 top-full mt-2 z-50">
-            <DateTimePicker
-              value={rangeStart ? `${rangeStart}T00:00:00` : new Date().toISOString()}
-              onChange={(iso) => saveDate('start', iso)}
-              onCancel={() => setShowStartPicker(false)}
+            <SpanPicker
+              startValue={rangeStart}
+              endValue={rangeEnd}
+              onSave={saveRange}
+              onCancel={() => setShowPicker(false)}
               onResetToAuto={resetDatesToAuto}
-              dateOnly
             />
           </div>
         )}
