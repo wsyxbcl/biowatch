@@ -22,6 +22,7 @@ const ROOT = path.resolve(__dirname, '..')
 const SOURCES_DIR = path.join(ROOT, 'src/shared/commonNames/sources')
 const EXTRAS_PATH = path.join(ROOT, 'src/shared/commonNames/extras.json')
 const OUTPUT_PATH = path.join(ROOT, 'src/shared/commonNames/dictionary.json')
+const ALIASES_PATH = path.join(ROOT, 'src/shared/commonNames/labelAliases.json')
 
 function loadJson(p) {
   return JSON.parse(fs.readFileSync(p, 'utf8'))
@@ -41,6 +42,24 @@ function keysFor(entry) {
     if (k) keys.add(k)
   }
   return [...keys]
+}
+
+/**
+ * Collect (label → canonical scientific name) pairs from every source. Used
+ * by importers to upgrade snake_case model labels (e.g. "yellow_baboon") into
+ * the canonical binomial ("papio cynocephalus") at insert time, so downstream
+ * UI rendering and badge resolution see real scientific names.
+ *
+ * Later sources win on conflict — same priority as the dictionary merge.
+ */
+function collectLabelAliases(target, entries) {
+  for (const entry of entries) {
+    if (!entry.scientificName || !entry.label) continue
+    const sci = normalizeScientificName(entry.scientificName)
+    const label = normalizeScientificName(entry.label)
+    if (!sci || !label || sci === label) continue
+    target[label] = sci
+  }
 }
 
 function mergeEntries(target, entries) {
@@ -73,15 +92,18 @@ function mergeEntries(target, entries) {
 
 function main() {
   const dictionary = {}
+  const labelAliases = {}
 
   const order = ['speciesnet.json', 'deepfaune.json', 'manas.json']
   for (const filename of order) {
     const snapshot = loadJson(path.join(SOURCES_DIR, filename))
     mergeEntries(dictionary, snapshot.entries)
+    collectLabelAliases(labelAliases, snapshot.entries)
   }
 
   const extras = loadJson(EXTRAS_PATH)
   mergeEntries(dictionary, extras.entries)
+  collectLabelAliases(labelAliases, extras.entries)
 
   const sortedKeys = Object.keys(dictionary).sort()
   const sorted = {}
@@ -89,6 +111,12 @@ function main() {
 
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(sorted, null, 2) + '\n')
   console.log(`Wrote ${sortedKeys.length} entries to ${OUTPUT_PATH}`)
+
+  const aliasKeys = Object.keys(labelAliases).sort()
+  const sortedAliases = {}
+  for (const k of aliasKeys) sortedAliases[k] = labelAliases[k]
+  fs.writeFileSync(ALIASES_PATH, JSON.stringify(sortedAliases, null, 2) + '\n')
+  console.log(`Wrote ${aliasKeys.length} label aliases to ${ALIASES_PATH}`)
 }
 
 main()

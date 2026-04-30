@@ -18,6 +18,22 @@ import { chain } from 'stream-chain'
 import log from '../../logger.js'
 import { getBiowatchDataPath } from '../../paths.js'
 import { DEFAULT_SEQUENCE_GAP } from '../../../../shared/constants.js'
+import { normalizeScientificName } from '../../../../shared/commonNames/normalize.js'
+import labelAliases from '../../../../shared/commonNames/labelAliases.json' with { type: 'json' }
+
+/**
+ * COCO category names from LILA datasets are snake_case display labels
+ * ("yellow_baboon", "common_warthog"), not real binomials. Resolve them to
+ * the canonical scientific name when our alias map knows one — that way the
+ * observations table holds a real "papio cynocephalus" and the LILA label
+ * "yellow_baboon" (preserved separately as commonName) instead of duplicating
+ * the snake_case in both fields.
+ */
+function resolveScientificFromLilaCategory(categoryName) {
+  const normalized = normalizeScientificName(categoryName)
+  if (!normalized) return null
+  return labelAliases[normalized] ?? normalized
+}
 
 /**
  * Whitelisted LILA datasets with their metadata and access URLs
@@ -1106,7 +1122,7 @@ function transformCOCOToObservations(annotations, categoryMap, imageMap, sequenc
         eventID,
         eventStart,
         eventEnd,
-        scientificName: categoryName,
+        scientificName: resolveScientificFromLilaCategory(categoryName),
         commonName: categoryName,
         observationType: 'animal',
         classificationProbability: null,
@@ -1930,7 +1946,7 @@ async function streamAnnotationsPass(
           eventID,
           eventStart,
           eventEnd,
-          scientificName: categoryName,
+          scientificName: resolveScientificFromLilaCategory(categoryName),
           commonName: categoryName,
           observationType: 'animal',
           classificationProbability: null,

@@ -35,6 +35,4423 @@
       "scientificName": "cephalophus natalensis",
       "commonName": "red duiker",
       "reason": "Shortening dictionary's 'natal red duiker' per demo dataset preference"
+    },
+    {
+      "scientificName": "acrocephalus schoenobaenus",
+      "commonName": "Sedge Warbler",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "acrocephalus scirpaceus",
+      "commonName": "Reed Warbler",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "aix galericulata",
+      "commonName": "Mandarin",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "alcedo atthis",
+      "commonName": "Kingfisher",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "chionomesa fimbriata",
+      "commonName": "Glittering-throated Emerald",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "chionomesa fimbriata",
+      "label": "amazilia fimbriata",
+      "commonName": "Glittering-throated Emerald",
+      "reason": "Model label observed in biowatch studies; resolves to chionomesa fimbriata"
+    },
+    {
+      "scientificName": "chrysuronia versicolor",
+      "commonName": "Versicolored Emerald",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "chrysuronia versicolor",
+      "label": "amazilia versicolor",
+      "commonName": "Versicolored Emerald",
+      "reason": "Model label observed in biowatch studies; resolves to chrysuronia versicolor"
+    },
+    {
+      "scientificName": "ameiva ameiva",
+      "commonName": "Zandolie",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "ammospermophilus",
+      "commonName": "antelope squirrel",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "ammospermophilus",
+      "label": "ammospermophilus species",
+      "commonName": "antelope squirrel",
+      "reason": "Model label observed in biowatch studies; resolves to ammospermophilus"
+    },
+    {
+      "scientificName": "spatula clypeata",
+      "commonName": "shoveler",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "spatula clypeata",
+      "label": "anas clypeata",
+      "commonName": "shoveler",
+      "reason": "Model label observed in biowatch studies; resolves to spatula clypeata"
+    },
+    {
+      "scientificName": "anas crecca",
+      "commonName": "Teal",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "mareca penelope",
+      "commonName": "wigeon",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "mareca penelope",
+      "label": "anas penelope",
+      "commonName": "wigeon",
+      "reason": "Model label observed in biowatch studies; resolves to mareca penelope"
+    },
+    {
+      "scientificName": "mareca strepera",
+      "label": "anas strepera",
+      "commonName": "gadwall",
+      "reason": "Model label observed in biowatch studies; resolves to mareca strepera"
+    },
+    {
+      "scientificName": "anaxyrus",
+      "commonName": "North American Toads",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "anaxyrus",
+      "label": "anaxyrus species",
+      "commonName": "North American Toads",
+      "reason": "Model label observed in biowatch studies; resolves to anaxyrus"
+    },
+    {
+      "scientificName": "anser anser",
+      "commonName": "Graylag Goose",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "arremon assimilis",
+      "commonName": "Gray-browed Brushfinch",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "arvicola amphibius",
+      "commonName": "Water Vole",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "atlapetes schistaceus",
+      "commonName": "Slaty Brushfinch",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "atlapetes semirufus",
+      "commonName": "Ochre-breasted Brushfinch",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "automolus rufipileatus",
+      "commonName": "Chestnut-crowned Foliage-gleaner",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "aythya fuligula",
+      "commonName": "Tufted Duck",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "botaurus stellaris",
+      "commonName": "Bittern",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "branta leucopsis",
+      "commonName": "Barnacle Goose",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "bufo bufo",
+      "commonName": "Giant Toad",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "buthraupis montana",
+      "commonName": "Hooded Mountain Tanager",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "cacicus uropygialis",
+      "commonName": "Subtropical Cacique",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "campylopterus largipennis",
+      "commonName": "Gray-breasted Sabrewing",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "campylorhynchus griseus",
+      "commonName": "Bicolored Wren",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "canis lupus familiaris",
+      "commonName": "Domestic dog",
+      "reason": "Auto-added from biowatch studies (rank=SUBSPECIES)"
+    },
+    {
+      "scientificName": "canis lupus familiaris",
+      "label": "domestic dog",
+      "commonName": "Domestic dog",
+      "reason": "Model label observed in biowatch studies; resolves to canis lupus familiaris"
+    },
+    {
+      "scientificName": "canis lupus familiaris",
+      "label": "domestic_dog",
+      "commonName": "Domestic dog",
+      "reason": "Model label observed in biowatch studies; resolves to canis lupus familiaris"
+    },
+    {
+      "scientificName": "capra hircus",
+      "commonName": "domestic goat",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "capra hircus",
+      "label": "domestic_goat",
+      "commonName": "domestic goat",
+      "reason": "Model label observed in biowatch studies; resolves to capra hircus"
+    },
+    {
+      "scientificName": "cardellina canadensis",
+      "commonName": "Canada Warbler",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "catharus aurantiirostris",
+      "commonName": "Orange-billed Nightingale-Thrush",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "pipra erythrocephala",
+      "commonName": "Golden-headed Manakin",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "pipra erythrocephala",
+      "label": "ceratopipra erythrocephala",
+      "commonName": "Golden-headed Manakin",
+      "reason": "Model label observed in biowatch studies; resolves to pipra erythrocephala"
+    },
+    {
+      "scientificName": "chaetodipus",
+      "commonName": "Pocket Mouse",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "chaetodipus",
+      "label": "chaetodipus species",
+      "commonName": "Pocket Mouse",
+      "reason": "Model label observed in biowatch studies; resolves to chaetodipus"
+    },
+    {
+      "scientificName": "chalybura buffonii",
+      "commonName": "White-vented Plumeleteer",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "chamaeza turdina",
+      "commonName": "Scalloped Antthrush",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "chlorospingus flavopectus",
+      "commonName": "Common Bush Tanager",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "chroicocephalus ridibundus",
+      "commonName": "Black-headed Gull",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "cistothorus",
+      "commonName": "Wren",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "cistothorus",
+      "label": "cistothorus species",
+      "commonName": "Wren",
+      "reason": "Model label observed in biowatch studies; resolves to cistothorus"
+    },
+    {
+      "scientificName": "coccothraustes coccothraustes",
+      "commonName": "Hawfinch",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "coccyzus americanus",
+      "commonName": "Yellow-billed Cuckoo",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "colinus cristatus",
+      "commonName": "Crested Quail",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "coloeus monedula",
+      "commonName": "jackdaw",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "coluber",
+      "commonName": "Racer",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "coluber",
+      "label": "coluber species",
+      "commonName": "Racer",
+      "reason": "Model label observed in biowatch studies; resolves to coluber"
+    },
+    {
+      "scientificName": "conirostrum albifrons",
+      "commonName": "Capped Conebill",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "crotalus",
+      "commonName": "Rattlesnake",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "crotalus",
+      "label": "crotalus species",
+      "commonName": "Rattlesnake",
+      "reason": "Model label observed in biowatch studies; resolves to crotalus"
+    },
+    {
+      "scientificName": "cyanistes caeruleus",
+      "commonName": "Blue Tit",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "cyprinus carpio",
+      "commonName": "Koi",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "dasypus sabanicola",
+      "commonName": "Llanos Long-nosed Armadillo",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "dendrocincla tyrannina",
+      "commonName": "Tyrannine Woodcreeper",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "diadophis",
+      "commonName": "Ringneck Snake",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "diadophis",
+      "label": "diadophis species",
+      "commonName": "Ringneck Snake",
+      "reason": "Model label observed in biowatch studies; resolves to diadophis"
+    },
+    {
+      "scientificName": "pecari tajacu",
+      "label": "dicotyles tajacu",
+      "commonName": "collared peccary",
+      "reason": "Model label observed in biowatch studies; resolves to pecari tajacu"
+    },
+    {
+      "scientificName": "pecari tajacu",
+      "label": "collared_peccary",
+      "commonName": "collared peccary",
+      "reason": "Model label observed in biowatch studies; resolves to pecari tajacu"
+    },
+    {
+      "scientificName": "diglossa cyanea",
+      "commonName": "Masked Flowerpiercer",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "elgaria",
+      "commonName": "alligator lizard",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "elgaria",
+      "label": "elgaria species",
+      "commonName": "alligator lizard",
+      "reason": "Model label observed in biowatch studies; resolves to elgaria"
+    },
+    {
+      "scientificName": "emberiza citrinella",
+      "commonName": "Yellowhammer",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "formicivora grisea",
+      "commonName": "White-fringed Antwren",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "fringilla montifringilla",
+      "commonName": "Brambling",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "fulica atra",
+      "commonName": "Coot",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "galbula ruficauda",
+      "commonName": "Rufous-tailed Jacamar",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "galbula tombacea",
+      "commonName": "White-chinned Jacamar",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "gallinago gallinago",
+      "commonName": "Chaga",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "gekkonidae",
+      "commonName": "gecko",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "gekkonidae",
+      "label": "gekkonidae family",
+      "commonName": "gecko",
+      "reason": "Model label observed in biowatch studies; resolves to gekkonidae"
+    },
+    {
+      "scientificName": "geomyidae",
+      "commonName": "pocket gopher",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "geomyidae",
+      "label": "geomyidae family",
+      "commonName": "pocket gopher",
+      "reason": "Model label observed in biowatch studies; resolves to geomyidae"
+    },
+    {
+      "scientificName": "geothlypis philadelphia",
+      "commonName": "Mourning Warbler",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "hafferia immaculata",
+      "commonName": "Blue-lored Antbird",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "hylidae",
+      "commonName": "Hylids",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "hylidae",
+      "label": "hylidae species",
+      "commonName": "Hylids",
+      "reason": "Model label observed in biowatch studies; resolves to hylidae"
+    },
+    {
+      "scientificName": "hymenoptera",
+      "commonName": "Ants",
+      "reason": "Auto-added from biowatch studies (rank=ORDER)"
+    },
+    {
+      "scientificName": "hymenoptera",
+      "label": "hymenoptera order",
+      "commonName": "Ants",
+      "reason": "Model label observed in biowatch studies; resolves to hymenoptera"
+    },
+    {
+      "scientificName": "icterus chrysater",
+      "commonName": "Yellow-backed Oriole",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "iguana",
+      "commonName": "iguana",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "iguana",
+      "label": "iguana species",
+      "commonName": "iguana",
+      "reason": "Model label observed in biowatch studies; resolves to iguana"
+    },
+    {
+      "scientificName": "lampropeltis",
+      "commonName": "Kingsnakes",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "lampropeltis",
+      "label": "lampropeltis species",
+      "commonName": "Kingsnakes",
+      "reason": "Model label observed in biowatch studies; resolves to lampropeltis"
+    },
+    {
+      "scientificName": "lepidocolaptes souleyetii",
+      "commonName": "Streak-headed Woodcreeper",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "luscinia svecica",
+      "commonName": "Bluethroat",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "machetornis rixosa",
+      "commonName": "Cattle Tyrant",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "malacoptila mystacalis",
+      "commonName": "Moustached Puffbird",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "manacus manacus",
+      "commonName": "White-bearded Manakin",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "microtus",
+      "commonName": "Vole",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "microtus",
+      "label": "microtus species",
+      "commonName": "Vole",
+      "reason": "Model label observed in biowatch studies; resolves to microtus"
+    },
+    {
+      "scientificName": "milvago chimachima",
+      "commonName": "Carrion Falcon",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "mimus gilvus",
+      "commonName": "Southern Mockingbird",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "myiarchus cephalotes",
+      "commonName": "Pale-edge Flycatcher",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "myioborus miniatus",
+      "commonName": "Slate-throated Redstart",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "myiothlypis cinereicollis",
+      "commonName": "Gray-throated Warbler",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "myiothlypis fulvicauda",
+      "commonName": "Buff-rumped Warbler",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "myiozetetes similis",
+      "commonName": "Social Flycatcher",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "myodes glareolus",
+      "commonName": "Bank Vole",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "myrmeciza longipes",
+      "commonName": "White-Bellied Antbird",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "myrmoborus leucophrys",
+      "commonName": "White-Browed Antbird",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "odontophorus hyperythrus",
+      "commonName": "Chestnut Wood Quail",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "odontophorus strophium",
+      "commonName": "Gorgeted Wood Quail",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "oporornis agilis",
+      "commonName": "Connecticut Warbler",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "ortalis columbiana",
+      "commonName": "Colombian Chachalaca",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "ortalis ruficauda",
+      "commonName": "Rufous-vented Chachalaca",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "otospermophilus",
+      "commonName": "rock squirrels",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "otospermophilus",
+      "label": "otospermophilus species",
+      "commonName": "rock squirrels",
+      "reason": "Model label observed in biowatch studies; resolves to otospermophilus"
+    },
+    {
+      "scientificName": "ovis aries musimon",
+      "commonName": "European mouflon",
+      "reason": "Auto-added from biowatch studies (rank=SUBSPECIES)"
+    },
+    {
+      "scientificName": "ovis aries musimon",
+      "label": "ovis musimon",
+      "commonName": "European mouflon",
+      "reason": "Model label observed in biowatch studies; resolves to ovis aries musimon"
+    },
+    {
+      "scientificName": "pachyramphus rufus",
+      "commonName": "Cinereous Becard",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "parkesia noveboracensis",
+      "commonName": "Chincherry",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "parus major",
+      "commonName": "Great Tit",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "penelope argyrotis",
+      "commonName": "Band-tailed Guan",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "penelope perspicax",
+      "commonName": "Cauca Guan",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "pernis apivorus",
+      "commonName": "Honey Buzzard",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "phacellodomus rufifrons",
+      "commonName": "Rufous-fronted Thornbird",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "phalacrocorax carbo",
+      "commonName": "Cormorant",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "pheugopedius mystacalis",
+      "commonName": "Whiskered Wren",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "pheugopedius rutilus",
+      "commonName": "Rufous-breasted Wren",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "philydor erythropterum",
+      "commonName": "Chestnut-winged Foliage-gleaner",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "phrynosomatidae",
+      "commonName": "North American Spiny Lizards",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "phrynosomatidae",
+      "label": "phrynosomatidae family",
+      "commonName": "North American Spiny Lizards",
+      "reason": "Model label observed in biowatch studies; resolves to phrynosomatidae"
+    },
+    {
+      "scientificName": "phylloscopus trochilus",
+      "commonName": "Willow Warbler",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "pipra filicauda",
+      "commonName": "Wire-tailed Manakin",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "piranga rubra",
+      "commonName": "Summer Tanager",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "pituophis",
+      "commonName": "Bullsnakes",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "pituophis",
+      "label": "pituophis species",
+      "commonName": "Bullsnakes",
+      "reason": "Model label observed in biowatch studies; resolves to pituophis"
+    },
+    {
+      "scientificName": "podiceps cristatus",
+      "commonName": "Great Crested Grebe",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "poecile palustris",
+      "commonName": "Marsh Tit",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "poecilotriccus sylvia",
+      "commonName": "Slate-headed Tody-Flycatcher",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "myrmeciza exsul",
+      "commonName": "Chestnut-backed Antbird",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "myrmeciza exsul",
+      "label": "poliocrania exsul",
+      "commonName": "Chestnut-backed Antbird",
+      "reason": "Model label observed in biowatch studies; resolves to myrmeciza exsul"
+    },
+    {
+      "scientificName": "proechimys oconnelli",
+      "commonName": "O Connell s Spiny-rat",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "prunella modularis",
+      "commonName": "Dunnock",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "pteroglossus castanotis",
+      "commonName": "Chestnut-eared Aracari",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "quiscalus lugubris",
+      "commonName": "Blackbird",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "rallus aquaticus",
+      "commonName": "Water Rail",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "reithrodontomys",
+      "commonName": "Harvest Mice",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "reithrodontomys",
+      "label": "reithrodontomys species",
+      "commonName": "Harvest Mice",
+      "reason": "Model label observed in biowatch studies; resolves to reithrodontomys"
+    },
+    {
+      "scientificName": "saimiri cassiquiarensis",
+      "commonName": "albigena",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "saltator maximus",
+      "commonName": "Buff-throated Saltator",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "scapanus",
+      "commonName": "western moles",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "scapanus",
+      "label": "scapanus species",
+      "commonName": "western moles",
+      "reason": "Model label observed in biowatch studies; resolves to scapanus"
+    },
+    {
+      "scientificName": "sciurus pucheranii",
+      "commonName": "Andean Squirrel",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "sicalis flaveola",
+      "commonName": "Saffron Finch",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "sigmodon",
+      "commonName": "cotton rat",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "sigmodon",
+      "label": "sigmodon species",
+      "commonName": "cotton rat",
+      "reason": "Model label observed in biowatch studies; resolves to sigmodon"
+    },
+    {
+      "scientificName": "sorex",
+      "commonName": "Long-tailed Shrew",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "sorex",
+      "label": "sorex species",
+      "commonName": "Long-tailed Shrew",
+      "reason": "Model label observed in biowatch studies; resolves to sorex"
+    },
+    {
+      "scientificName": "sporophila funerea",
+      "commonName": "Thick-billed Seedfinch",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "sylvia atricapilla",
+      "commonName": "Blackcap",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "synallaxis cinnamomea",
+      "commonName": "Stripe-breasted Spinetail",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "synallaxis subpudica",
+      "commonName": "Silvery-throated Spinetail",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "systellura longirostris",
+      "commonName": "Band-winged Nightjar",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "tachybaptus ruficollis",
+      "commonName": "dabchick",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "tachyphonus rufus",
+      "commonName": "White-Lined Tanager",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "tadorna ferruginea",
+      "commonName": "Ruddy Shelduck",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "tadorna tadorna",
+      "commonName": "Shelduck",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "thraupis palmarum",
+      "commonName": "Palm Tanager",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "thraupis palmarum",
+      "label": "tangara palmarum",
+      "commonName": "Palm Tanager",
+      "reason": "Model label observed in biowatch studies; resolves to thraupis palmarum"
+    },
+    {
+      "scientificName": "tantilla",
+      "commonName": "Crowned Snakes",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "tantilla",
+      "label": "tantilla species",
+      "commonName": "Crowned Snakes",
+      "reason": "Model label observed in biowatch studies; resolves to tantilla"
+    },
+    {
+      "scientificName": "taricha",
+      "commonName": "Pacific Newts",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "taricha",
+      "label": "taricha species",
+      "commonName": "Pacific Newts",
+      "reason": "Model label observed in biowatch studies; resolves to taricha"
+    },
+    {
+      "scientificName": "thamnophis",
+      "commonName": "Garter Snake",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "thamnophis",
+      "label": "thamnophis species",
+      "commonName": "Garter Snake",
+      "reason": "Model label observed in biowatch studies; resolves to thamnophis"
+    },
+    {
+      "scientificName": "thomomys",
+      "commonName": "Western Pocket Gophers",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "thomomys",
+      "label": "thomomys species",
+      "commonName": "Western Pocket Gophers",
+      "reason": "Model label observed in biowatch studies; resolves to thomomys"
+    },
+    {
+      "scientificName": "thryomanes",
+      "commonName": "Bewick's Wrens",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "thryomanes",
+      "label": "thryomanes species",
+      "commonName": "Bewick's Wrens",
+      "reason": "Model label observed in biowatch studies; resolves to thryomanes"
+    },
+    {
+      "scientificName": "thryophilus rufalbus",
+      "commonName": "Rufous-and-white Wren",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "toxostoma",
+      "commonName": "Typical Thrashers",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "toxostoma",
+      "label": "toxostoma species",
+      "commonName": "Typical Thrashers",
+      "reason": "Model label observed in biowatch studies; resolves to toxostoma"
+    },
+    {
+      "scientificName": "tringa ochropus",
+      "commonName": "Xivita",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "uta",
+      "commonName": "side-blotched lizard",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "uta",
+      "label": "uta species",
+      "commonName": "side-blotched lizard",
+      "reason": "Model label observed in biowatch studies; resolves to uta"
+    },
+    {
+      "scientificName": "viperidae",
+      "commonName": "Viper",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "viperidae",
+      "label": "viperidae family",
+      "commonName": "Viper",
+      "reason": "Model label observed in biowatch studies; resolves to viperidae"
+    },
+    {
+      "scientificName": "zenaida auriculata",
+      "commonName": "Eared Dove",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "zentrygon linearis",
+      "commonName": "Lined Quail-Dove",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "orycteropus",
+      "commonName": "aardvark",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "orycteropus",
+      "label": "aardvark",
+      "commonName": "aardvark",
+      "reason": "Model label observed in biowatch studies; resolves to orycteropus"
+    },
+    {
+      "scientificName": "proteles cristata",
+      "label": "aardwolf",
+      "commonName": "aardwolf",
+      "reason": "Model label observed in biowatch studies; resolves to proteles cristata"
+    },
+    {
+      "scientificName": "civettictis civetta",
+      "label": "african_civet",
+      "commonName": "african civet",
+      "reason": "Model label observed in biowatch studies; resolves to civettictis civetta"
+    },
+    {
+      "scientificName": "civettictis civetta",
+      "label": "civet",
+      "commonName": "african civet",
+      "reason": "Model label observed in biowatch studies; resolves to civettictis civetta"
+    },
+    {
+      "scientificName": "loxodonta africana",
+      "label": "african_savanna_elephant",
+      "commonName": "african elephant",
+      "reason": "Model label observed in biowatch studies; resolves to loxodonta africana"
+    },
+    {
+      "scientificName": "coluber lateralis euryxanthus",
+      "commonName": "Alameda Striped Racer",
+      "reason": "Auto-added from biowatch studies (rank=SUBSPECIES)"
+    },
+    {
+      "scientificName": "coluber lateralis euryxanthus",
+      "label": "alameda striped racer",
+      "commonName": "Alameda Striped Racer",
+      "reason": "Model label observed in biowatch studies; resolves to coluber lateralis euryxanthus"
+    },
+    {
+      "scientificName": "momotus momota",
+      "label": "amazonian_motmot",
+      "commonName": "amazonian motmot",
+      "reason": "Model label observed in biowatch studies; resolves to momotus momota"
+    },
+    {
+      "scientificName": "ursus americanus",
+      "label": "american black bear",
+      "commonName": "american black bear",
+      "reason": "Model label observed in biowatch studies; resolves to ursus americanus"
+    },
+    {
+      "scientificName": "rana catesbeiana",
+      "commonName": "American bullfrog",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "rana catesbeiana",
+      "label": "american bullfrog",
+      "commonName": "American bullfrog",
+      "reason": "Model label observed in biowatch studies; resolves to rana catesbeiana"
+    },
+    {
+      "scientificName": "rana catesbeiana",
+      "label": "american_bullfrog",
+      "commonName": "American bullfrog",
+      "reason": "Model label observed in biowatch studies; resolves to rana catesbeiana"
+    },
+    {
+      "scientificName": "neogale vison",
+      "commonName": "American Mink",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "neogale vison",
+      "label": "american mink",
+      "commonName": "American Mink",
+      "reason": "Model label observed in biowatch studies; resolves to neogale vison"
+    },
+    {
+      "scientificName": "neogale vison",
+      "label": "american_mink",
+      "commonName": "American Mink",
+      "reason": "Model label observed in biowatch studies; resolves to neogale vison"
+    },
+    {
+      "scientificName": "falco sparverius",
+      "label": "american_kestrel",
+      "commonName": "american kestrel",
+      "reason": "Model label observed in biowatch studies; resolves to falco sparverius"
+    },
+    {
+      "scientificName": "anaxyrus americanus",
+      "commonName": "American Toad",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "anaxyrus americanus",
+      "label": "american_toad",
+      "commonName": "American Toad",
+      "reason": "Model label observed in biowatch studies; resolves to anaxyrus americanus"
+    },
+    {
+      "scientificName": "nesolagus timminsi",
+      "label": "annamite_striped_rabbit",
+      "commonName": "annamite striped rabbit",
+      "reason": "Model label observed in biowatch studies; resolves to nesolagus timminsi"
+    },
+    {
+      "scientificName": "aneides lugubris",
+      "commonName": "Arboreal Salamander",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "aneides lugubris",
+      "label": "arboreal salamander",
+      "commonName": "Arboreal Salamander",
+      "reason": "Model label observed in biowatch studies; resolves to aneides lugubris"
+    },
+    {
+      "scientificName": "myiarchus cinerascens",
+      "label": "ash-throated flycatcher",
+      "commonName": "ash-throated flycatcher",
+      "reason": "Model label observed in biowatch studies; resolves to myiarchus cinerascens"
+    },
+    {
+      "scientificName": "ursus thibetanus",
+      "label": "asiatic_black_bear",
+      "commonName": "asiatic black bear",
+      "reason": "Model label observed in biowatch studies; resolves to ursus thibetanus"
+    },
+    {
+      "scientificName": "semnornis",
+      "commonName": "barbet",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "semnornis",
+      "label": "barbet",
+      "commonName": "barbet",
+      "reason": "Model label observed in biowatch studies; resolves to semnornis"
+    },
+    {
+      "scientificName": "strix varia",
+      "label": "barred_owl",
+      "commonName": "barred owl",
+      "reason": "Model label observed in biowatch studies; resolves to strix varia"
+    },
+    {
+      "scientificName": "otocyon megalotis",
+      "label": "bateared_fox",
+      "commonName": "bat-eared fox",
+      "reason": "Model label observed in biowatch studies; resolves to otocyon megalotis"
+    },
+    {
+      "scientificName": "urocitellus beldingi",
+      "label": "belding's ground squirrel",
+      "commonName": "belding's ground squirrel",
+      "reason": "Model label observed in biowatch studies; resolves to urocitellus beldingi"
+    },
+    {
+      "scientificName": "aspidoscelis hyperythrus beldingi",
+      "commonName": "Belding's Orange-throated Whiptail",
+      "reason": "Auto-added from biowatch studies (rank=SUBSPECIES)"
+    },
+    {
+      "scientificName": "aspidoscelis hyperythrus beldingi",
+      "label": "belding's orange-throated whiptail",
+      "commonName": "Belding's Orange-throated Whiptail",
+      "reason": "Model label observed in biowatch studies; resolves to aspidoscelis hyperythrus beldingi"
+    },
+    {
+      "scientificName": "tupinambis bengalensis",
+      "commonName": "Bengal monitor",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "tupinambis bengalensis",
+      "label": "bengal_monitor",
+      "commonName": "Bengal monitor",
+      "reason": "Model label observed in biowatch studies; resolves to tupinambis bengalensis"
+    },
+    {
+      "scientificName": "thryomanes bewickii",
+      "label": "bewick's wren",
+      "commonName": "bewick's wren",
+      "reason": "Model label observed in biowatch studies; resolves to thryomanes bewickii"
+    },
+    {
+      "scientificName": "ovis canadensis",
+      "label": "bighorn sheep",
+      "commonName": "bighorn sheep",
+      "reason": "Model label observed in biowatch studies; resolves to ovis canadensis"
+    },
+    {
+      "scientificName": "lepus californicus",
+      "label": "black-tailed jackrabbit",
+      "commonName": "black-tailed jackrabbit",
+      "reason": "Model label observed in biowatch studies; resolves to lepus californicus"
+    },
+    {
+      "scientificName": "dasyprocta fuliginosa",
+      "label": "black_agouti",
+      "commonName": "black agouti",
+      "reason": "Model label observed in biowatch studies; resolves to dasyprocta fuliginosa"
+    },
+    {
+      "scientificName": "ratufa bicolor",
+      "label": "black_giant_squirrel",
+      "commonName": "black giant squirrel",
+      "reason": "Model label observed in biowatch studies; resolves to ratufa bicolor"
+    },
+    {
+      "scientificName": "damaliscus pygargus phillipsi",
+      "commonName": "Blesbok",
+      "reason": "Auto-added from biowatch studies (rank=SUBSPECIES)"
+    },
+    {
+      "scientificName": "damaliscus pygargus phillipsi",
+      "label": "blesbok",
+      "commonName": "Blesbok",
+      "reason": "Model label observed in biowatch studies; resolves to damaliscus pygargus phillipsi"
+    },
+    {
+      "scientificName": "cercopithecus mitis",
+      "label": "blue_monkey",
+      "commonName": "blue monkey",
+      "reason": "Model label observed in biowatch studies; resolves to cercopithecus mitis"
+    },
+    {
+      "scientificName": "hydrornis cyaneus",
+      "label": "blue_pitta",
+      "commonName": "blue pitta",
+      "reason": "Model label observed in biowatch studies; resolves to hydrornis cyaneus"
+    },
+    {
+      "scientificName": "myophonus caeruleus",
+      "label": "blue_whistling_thrush",
+      "commonName": "blue whistling-thrush",
+      "reason": "Model label observed in biowatch studies; resolves to myophonus caeruleus"
+    },
+    {
+      "scientificName": "sialia",
+      "commonName": "Bluebird",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "sialia",
+      "label": "bluebird",
+      "commonName": "Bluebird",
+      "reason": "Model label observed in biowatch studies; resolves to sialia"
+    },
+    {
+      "scientificName": "lynx rufus",
+      "label": "bobcat",
+      "commonName": "bobcat",
+      "reason": "Model label observed in biowatch studies; resolves to lynx rufus"
+    },
+    {
+      "scientificName": "thomomys bottae",
+      "commonName": "Botta's pocket gopher",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "thomomys bottae",
+      "label": "botta's pocket gopher",
+      "commonName": "Botta's pocket gopher",
+      "reason": "Model label observed in biowatch studies; resolves to thomomys bottae"
+    },
+    {
+      "scientificName": "euphagus cyanocephalus",
+      "label": "brewer's blackbird",
+      "commonName": "brewer's blackbird",
+      "reason": "Model label observed in biowatch studies; resolves to euphagus cyanocephalus"
+    },
+    {
+      "scientificName": "scapanus latimanus",
+      "commonName": "Broad-footed Mole",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "scapanus latimanus",
+      "label": "broad-footed mole",
+      "commonName": "Broad-footed Mole",
+      "reason": "Model label observed in biowatch studies; resolves to scapanus latimanus"
+    },
+    {
+      "scientificName": "rattus norvegicus",
+      "label": "brown rat",
+      "commonName": "brown rat",
+      "reason": "Model label observed in biowatch studies; resolves to rattus norvegicus (the accepted name; mus norvegicus is a synonym GBIF still indexes)"
+    },
+    {
+      "scientificName": "rattus norvegicus",
+      "label": "brown_rat",
+      "commonName": "brown rat",
+      "reason": "Model label observed in biowatch studies; resolves to rattus norvegicus"
+    },
+    {
+      "scientificName": "anous stolidus",
+      "label": "brown_noddy",
+      "commonName": "brown noddy",
+      "reason": "Model label observed in biowatch studies; resolves to anous stolidus (the accepted name; sterna stolida is a synonym GBIF still indexes)"
+    },
+    {
+      "scientificName": "strix leptogrammica",
+      "label": "brown_wood_owl",
+      "commonName": "brown wood-owl",
+      "reason": "Model label observed in biowatch studies; resolves to strix leptogrammica"
+    },
+    {
+      "scientificName": "sylvilagus bachmani",
+      "label": "brush rabbit",
+      "commonName": "brush rabbit",
+      "reason": "Model label observed in biowatch studies; resolves to sylvilagus bachmani"
+    },
+    {
+      "scientificName": "icterus bullockiorum",
+      "label": "bullock's oriole",
+      "commonName": "bullock's oriole",
+      "reason": "Model label observed in biowatch studies; resolves to icterus bullockiorum"
+    },
+    {
+      "scientificName": "bombus",
+      "commonName": "Bumblebees",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "bombus",
+      "label": "bumblebees",
+      "commonName": "Bumblebees",
+      "reason": "Model label observed in biowatch studies; resolves to bombus"
+    },
+    {
+      "scientificName": "athene cunicularia",
+      "label": "burrowing_owl",
+      "commonName": "burrowing owl",
+      "reason": "Model label observed in biowatch studies; resolves to athene cunicularia"
+    },
+    {
+      "scientificName": "speothos venaticus",
+      "label": "bush_dog",
+      "commonName": "bush dog",
+      "reason": "Model label observed in biowatch studies; resolves to speothos venaticus"
+    },
+    {
+      "scientificName": "tragelaphus scriptus",
+      "label": "bushbuck",
+      "commonName": "bushbuck",
+      "reason": "Model label observed in biowatch studies; resolves to tragelaphus scriptus"
+    },
+    {
+      "scientificName": "potamochoerus larvatus",
+      "label": "bushpig",
+      "commonName": "bushpig",
+      "reason": "Model label observed in biowatch studies; resolves to potamochoerus larvatus"
+    },
+    {
+      "scientificName": "neotoma cinerea",
+      "label": "bushy-tailed woodrat",
+      "commonName": "bushy-tailed woodrat",
+      "reason": "Model label observed in biowatch studies; resolves to neotoma cinerea"
+    },
+    {
+      "scientificName": "peromyscus eremicus",
+      "commonName": "Cactus mouse",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "peromyscus eremicus",
+      "label": "cactus mouse",
+      "commonName": "Cactus mouse",
+      "reason": "Model label observed in biowatch studies; resolves to peromyscus eremicus"
+    },
+    {
+      "scientificName": "otospermophilus beecheyi",
+      "label": "california ground squirrel",
+      "commonName": "california ground squirrel",
+      "reason": "Model label observed in biowatch studies; resolves to otospermophilus beecheyi"
+    },
+    {
+      "scientificName": "dipodomys californicus",
+      "label": "california kangaroo rat",
+      "commonName": "california kangaroo rat",
+      "reason": "Model label observed in biowatch studies; resolves to dipodomys californicus"
+    },
+    {
+      "scientificName": "lampropeltis californiae",
+      "commonName": "California kingsnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "lampropeltis californiae",
+      "label": "california kingsnake",
+      "commonName": "California kingsnake",
+      "reason": "Model label observed in biowatch studies; resolves to lampropeltis californiae"
+    },
+    {
+      "scientificName": "lophortyx californica",
+      "commonName": "California quail",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "lophortyx californica",
+      "label": "california quail",
+      "commonName": "California quail",
+      "reason": "Model label observed in biowatch studies; resolves to lophortyx californica"
+    },
+    {
+      "scientificName": "rana draytonii",
+      "commonName": "California Red-legged Frog",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "rana draytonii",
+      "label": "california red-legged frog",
+      "commonName": "California Red-legged Frog",
+      "reason": "Model label observed in biowatch studies; resolves to rana draytonii"
+    },
+    {
+      "scientificName": "thamnophis sirtalis infernalis",
+      "commonName": "California Red-sided Gartersnake",
+      "reason": "Auto-added from biowatch studies (rank=SUBSPECIES)"
+    },
+    {
+      "scientificName": "thamnophis sirtalis infernalis",
+      "label": "california red-sided gartersnake",
+      "commonName": "California Red-sided Gartersnake",
+      "reason": "Model label observed in biowatch studies; resolves to thamnophis sirtalis infernalis"
+    },
+    {
+      "scientificName": "aphelocoma californica",
+      "label": "california scrub-jay",
+      "commonName": "california scrub-jay",
+      "reason": "Model label observed in biowatch studies; resolves to aphelocoma californica"
+    },
+    {
+      "scientificName": "toxostoma redivivum",
+      "label": "california thrasher",
+      "commonName": "california thrasher",
+      "reason": "Model label observed in biowatch studies; resolves to toxostoma redivivum"
+    },
+    {
+      "scientificName": "melozone crissalis",
+      "label": "california towhee",
+      "commonName": "california towhee",
+      "reason": "Model label observed in biowatch studies; resolves to melozone crissalis"
+    },
+    {
+      "scientificName": "microtus californicus",
+      "commonName": "California Vole",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "microtus californicus",
+      "label": "california vole",
+      "commonName": "California Vole",
+      "reason": "Model label observed in biowatch studies; resolves to microtus californicus"
+    },
+    {
+      "scientificName": "catherpes mexicanus",
+      "commonName": "Canyon Wren",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "catherpes mexicanus",
+      "label": "canyon wren",
+      "commonName": "Canyon Wren",
+      "reason": "Model label observed in biowatch studies; resolves to catherpes mexicanus"
+    },
+    {
+      "scientificName": "syncerus caffer",
+      "label": "cape_buffalo",
+      "commonName": "african buffalo",
+      "reason": "Model label observed in biowatch studies; resolves to syncerus caffer"
+    },
+    {
+      "scientificName": "tragelaphus sylvaticus",
+      "commonName": "Cape Bushbuck",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "tragelaphus sylvaticus",
+      "label": "cape_bushbuck",
+      "commonName": "Cape Bushbuck",
+      "reason": "Model label observed in biowatch studies; resolves to tragelaphus sylvaticus"
+    },
+    {
+      "scientificName": "hystrix africaeaustralis",
+      "label": "cape_porcupine",
+      "commonName": "cape porcupine",
+      "reason": "Model label observed in biowatch studies; resolves to hystrix africaeaustralis"
+    },
+    {
+      "scientificName": "acinonyx",
+      "commonName": "cheetah",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "acinonyx",
+      "label": "cheetah",
+      "commonName": "cheetah",
+      "reason": "Model label observed in biowatch studies; resolves to acinonyx"
+    },
+    {
+      "scientificName": "tragulidae",
+      "commonName": "chevrotain",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "tragulidae",
+      "label": "chevrotain",
+      "commonName": "chevrotain",
+      "reason": "Model label observed in biowatch studies; resolves to tragulidae"
+    },
+    {
+      "scientificName": "capricornis milneedwardsii",
+      "label": "chinese serow",
+      "commonName": "chinese serow",
+      "reason": "Model label observed in biowatch studies; resolves to capricornis milneedwardsii"
+    },
+    {
+      "scientificName": "capricornis milneedwardsii",
+      "label": "chinese_serow",
+      "commonName": "chinese serow",
+      "reason": "Model label observed in biowatch studies; resolves to capricornis milneedwardsii"
+    },
+    {
+      "scientificName": "spizella passerina",
+      "label": "chipping sparrow",
+      "commonName": "chipping sparrow",
+      "reason": "Model label observed in biowatch studies; resolves to spizella passerina"
+    },
+    {
+      "scientificName": "masticophis flagellum",
+      "commonName": "Coachwhip",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "masticophis flagellum",
+      "label": "coachwhip",
+      "commonName": "Coachwhip",
+      "reason": "Model label observed in biowatch studies; resolves to masticophis flagellum"
+    },
+    {
+      "scientificName": "masticophis flagellum",
+      "label": "san joaquin coachwhip",
+      "commonName": "Coachwhip",
+      "reason": "Model label observed in biowatch studies; resolves to masticophis flagellum"
+    },
+    {
+      "scientificName": "thamnophis elegans terrestris",
+      "commonName": "Coast Gartersnake",
+      "reason": "Auto-added from biowatch studies (rank=SUBSPECIES)"
+    },
+    {
+      "scientificName": "thamnophis elegans terrestris",
+      "label": "coast gartersnake",
+      "commonName": "Coast Gartersnake",
+      "reason": "Model label observed in biowatch studies; resolves to thamnophis elegans terrestris"
+    },
+    {
+      "scientificName": "hypsiglena ochorhyncha",
+      "commonName": "Coast Nightsnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "hypsiglena ochorhyncha",
+      "label": "coast nightsnake",
+      "commonName": "Coast Nightsnake",
+      "reason": "Model label observed in biowatch studies; resolves to hypsiglena ochorhyncha"
+    },
+    {
+      "scientificName": "nasua",
+      "commonName": "coati",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "nasua",
+      "label": "coati",
+      "commonName": "coati",
+      "reason": "Model label observed in biowatch studies; resolves to nasua"
+    },
+    {
+      "scientificName": "dasyprocta coibae",
+      "label": "coiban_agouti",
+      "commonName": "coiban agouti",
+      "reason": "Model label observed in biowatch studies; resolves to dasyprocta coibae"
+    },
+    {
+      "scientificName": "streptopelia decaocto",
+      "label": "collared_dove",
+      "commonName": "collared dove",
+      "reason": "Model label observed in biowatch studies; resolves to streptopelia decaocto"
+    },
+    {
+      "scientificName": "sauromalus ater",
+      "label": "common chuckwalla",
+      "commonName": "common chuckwalla",
+      "reason": "Model label observed in biowatch studies; resolves to sauromalus ater"
+    },
+    {
+      "scientificName": "dipsosaurus dorsalis",
+      "commonName": "Common Desert Iguana",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "dipsosaurus dorsalis",
+      "label": "common desert iguana",
+      "commonName": "Common Desert Iguana",
+      "reason": "Model label observed in biowatch studies; resolves to dipsosaurus dorsalis"
+    },
+    {
+      "scientificName": "thamnophis sirtalis",
+      "commonName": "Common Gartersnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "thamnophis sirtalis",
+      "label": "common gartersnake",
+      "commonName": "Common Gartersnake",
+      "reason": "Model label observed in biowatch studies; resolves to thamnophis sirtalis"
+    },
+    {
+      "scientificName": "thamnophis sirtalis",
+      "label": "eastern_gartersnake",
+      "commonName": "Common Gartersnake",
+      "reason": "Model label observed in biowatch studies; resolves to thamnophis sirtalis"
+    },
+    {
+      "scientificName": "sceloporus graciosus",
+      "commonName": "Common Sagebrush Lizard",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "sceloporus graciosus",
+      "label": "common sagebrush lizard",
+      "commonName": "Common Sagebrush Lizard",
+      "reason": "Model label observed in biowatch studies; resolves to sceloporus graciosus"
+    },
+    {
+      "scientificName": "uta stansburiana",
+      "commonName": "Common side-blotched lizard",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "uta stansburiana",
+      "label": "common side-blotched lizard",
+      "commonName": "Common side-blotched lizard",
+      "reason": "Model label observed in biowatch studies; resolves to uta stansburiana"
+    },
+    {
+      "scientificName": "sturnus vulgaris",
+      "label": "common starling",
+      "commonName": "common starling",
+      "reason": "Model label observed in biowatch studies; resolves to sturnus vulgaris"
+    },
+    {
+      "scientificName": "geothlypis trichas",
+      "label": "common yellowthroat",
+      "commonName": "common yellowthroat",
+      "reason": "Model label observed in biowatch studies; resolves to geothlypis trichas"
+    },
+    {
+      "scientificName": "geothlypis trichas",
+      "label": "common_yellowthroat",
+      "commonName": "common yellowthroat",
+      "reason": "Model label observed in biowatch studies; resolves to geothlypis trichas"
+    },
+    {
+      "scientificName": "sylvicapra grimmia",
+      "label": "common_duiker",
+      "commonName": "common duiker",
+      "reason": "Model label observed in biowatch studies; resolves to sylvicapra grimmia"
+    },
+    {
+      "scientificName": "taurotragus oryx",
+      "commonName": "Common Eland",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "taurotragus oryx",
+      "label": "common_eland",
+      "commonName": "Common Eland",
+      "reason": "Model label observed in biowatch studies; resolves to taurotragus oryx"
+    },
+    {
+      "scientificName": "plestiodon fasciatus",
+      "commonName": "Common Five-lined Skink",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "plestiodon fasciatus",
+      "label": "common_five-lined_skink",
+      "commonName": "Common Five-lined Skink",
+      "reason": "Model label observed in biowatch studies; resolves to plestiodon fasciatus"
+    },
+    {
+      "scientificName": "iguana iguana",
+      "label": "common_green_iguana",
+      "commonName": "common green iguana",
+      "reason": "Model label observed in biowatch studies; resolves to iguana iguana"
+    },
+    {
+      "scientificName": "cissa chinensis",
+      "label": "common_green_magpie",
+      "commonName": "common green magpie",
+      "reason": "Model label observed in biowatch studies; resolves to cissa chinensis"
+    },
+    {
+      "scientificName": "didelphis marsupialis",
+      "label": "common_opossum",
+      "commonName": "common opossum",
+      "reason": "Model label observed in biowatch studies; resolves to didelphis marsupialis"
+    },
+    {
+      "scientificName": "paradoxurus hermaphroditus",
+      "label": "common_palm_civet",
+      "commonName": "common palm civet",
+      "reason": "Model label observed in biowatch studies; resolves to paradoxurus hermaphroditus"
+    },
+    {
+      "scientificName": "sus africanus",
+      "commonName": "common warthog",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "sus africanus",
+      "label": "common_warthog",
+      "commonName": "common warthog",
+      "reason": "Model label observed in biowatch studies; resolves to sus africanus"
+    },
+    {
+      "scientificName": "kobus ellipsiprymnus",
+      "label": "common_waterbuck",
+      "commonName": "waterbuck",
+      "reason": "Model label observed in biowatch studies; resolves to kobus ellipsiprymnus"
+    },
+    {
+      "scientificName": "kobus ellipsiprymnus",
+      "label": "waterbuck",
+      "commonName": "waterbuck",
+      "reason": "Model label observed in biowatch studies; resolves to kobus ellipsiprymnus"
+    },
+    {
+      "scientificName": "cerdocyon thous",
+      "label": "crab-eating_fox",
+      "commonName": "crab-eating fox",
+      "reason": "Model label observed in biowatch studies; resolves to cerdocyon thous"
+    },
+    {
+      "scientificName": "rheinardia ocellata",
+      "label": "crested_argus",
+      "commonName": "crested argus",
+      "reason": "Model label observed in biowatch studies; resolves to rheinardia ocellata"
+    },
+    {
+      "scientificName": "spilornis cheela",
+      "label": "crested_serpent_eagle",
+      "commonName": "crested serpent-eagle",
+      "reason": "Model label observed in biowatch studies; resolves to spilornis cheela"
+    },
+    {
+      "scientificName": "mitu tomentosum",
+      "label": "crestless_curassow",
+      "commonName": "crestless curassow",
+      "reason": "Model label observed in biowatch studies; resolves to mitu tomentosum"
+    },
+    {
+      "scientificName": "junco hyemalis",
+      "label": "dark-eyed junco",
+      "commonName": "dark-eyed junco",
+      "reason": "Model label observed in biowatch studies; resolves to junco hyemalis"
+    },
+    {
+      "scientificName": "storeria dekayi",
+      "commonName": "Dekay's Brownsnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "storeria dekayi",
+      "label": "dekay's_brownsnake",
+      "commonName": "Dekay's Brownsnake",
+      "reason": "Model label observed in biowatch studies; resolves to storeria dekayi"
+    },
+    {
+      "scientificName": "sylvilagus audubonii",
+      "label": "desert cottontail",
+      "commonName": "desert cottontail",
+      "reason": "Model label observed in biowatch studies; resolves to sylvilagus audubonii"
+    },
+    {
+      "scientificName": "phrynosoma platyrhinos",
+      "commonName": "Desert Horned Lizard",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "phrynosoma platyrhinos",
+      "label": "desert horned lizard",
+      "commonName": "Desert Horned Lizard",
+      "reason": "Model label observed in biowatch studies; resolves to phrynosoma platyrhinos"
+    },
+    {
+      "scientificName": "sceloporus magister",
+      "commonName": "Desert spiny lizard",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "sceloporus magister",
+      "label": "desert spiny lizard",
+      "commonName": "Desert spiny lizard",
+      "reason": "Model label observed in biowatch studies; resolves to sceloporus magister"
+    },
+    {
+      "scientificName": "neotoma lepida",
+      "label": "desert woodrat",
+      "commonName": "desert woodrat",
+      "reason": "Model label observed in biowatch studies; resolves to neotoma lepida"
+    },
+    {
+      "scientificName": "madoqua",
+      "label": "dikdik",
+      "commonName": "dik-dik",
+      "reason": "Model label observed in biowatch studies; resolves to madoqua"
+    },
+    {
+      "scientificName": "canis dingo",
+      "commonName": "dingo",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "canis dingo",
+      "label": "dingo",
+      "commonName": "dingo",
+      "reason": "Model label observed in biowatch studies; resolves to canis dingo"
+    },
+    {
+      "scientificName": "felis catus",
+      "label": "domestic cat",
+      "commonName": "domestic cat",
+      "reason": "Model label observed in biowatch studies; resolves to felis catus"
+    },
+    {
+      "scientificName": "bos taurus",
+      "label": "domestic cattle",
+      "commonName": "domestic cattle",
+      "reason": "Model label observed in biowatch studies; resolves to bos taurus"
+    },
+    {
+      "scientificName": "bos taurus",
+      "label": "domestic_cattle",
+      "commonName": "domestic cattle",
+      "reason": "Model label observed in biowatch studies; resolves to bos taurus"
+    },
+    {
+      "scientificName": "equus caballus",
+      "label": "domestic_horse",
+      "commonName": "domestic horse",
+      "reason": "Model label observed in biowatch studies; resolves to equus caballus"
+    },
+    {
+      "scientificName": "tamiasciurus douglasii",
+      "label": "douglas's squirrel",
+      "commonName": "douglas's squirrel",
+      "reason": "Model label observed in biowatch studies; resolves to tamiasciurus douglasii"
+    },
+    {
+      "scientificName": "dicrurus",
+      "commonName": "Drongo",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "dicrurus",
+      "label": "drongo",
+      "commonName": "Drongo",
+      "reason": "Model label observed in biowatch studies; resolves to dicrurus"
+    },
+    {
+      "scientificName": "cephalophus",
+      "commonName": "duiker",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "cephalophus",
+      "label": "duiker",
+      "commonName": "duiker",
+      "reason": "Model label observed in biowatch studies; resolves to cephalophus"
+    },
+    {
+      "scientificName": "neotoma fuscipes",
+      "label": "dusky-footed woodrat",
+      "commonName": "dusky-footed woodrat",
+      "reason": "Model label observed in biowatch studies; resolves to neotoma fuscipes"
+    },
+    {
+      "scientificName": "sialia sialis",
+      "label": "eastern_bluebird",
+      "commonName": "eastern bluebird",
+      "reason": "Model label observed in biowatch studies; resolves to sialia sialis"
+    },
+    {
+      "scientificName": "tamias striatus",
+      "label": "eastern_chipmunk",
+      "commonName": "eastern chipmunk",
+      "reason": "Model label observed in biowatch studies; resolves to tamias striatus"
+    },
+    {
+      "scientificName": "sylvilagus floridanus",
+      "label": "eastern_cottontail",
+      "commonName": "eastern cottontail",
+      "reason": "Model label observed in biowatch studies; resolves to sylvilagus floridanus"
+    },
+    {
+      "scientificName": "heterodon platirhinos",
+      "commonName": "Eastern Hog-nosed Snake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "heterodon platirhinos",
+      "label": "eastern_hog-nosed_snake",
+      "commonName": "Eastern Hog-nosed Snake",
+      "reason": "Model label observed in biowatch studies; resolves to heterodon platirhinos"
+    },
+    {
+      "scientificName": "sistrurus catenatus",
+      "commonName": "Eastern Massasauga",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "sistrurus catenatus",
+      "label": "eastern_massasauga",
+      "commonName": "Eastern Massasauga",
+      "reason": "Model label observed in biowatch studies; resolves to sistrurus catenatus"
+    },
+    {
+      "scientificName": "lampropeltis triangulum",
+      "commonName": "Eastern Milksnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "lampropeltis triangulum",
+      "label": "eastern_milksnake",
+      "commonName": "Eastern Milksnake",
+      "reason": "Model label observed in biowatch studies; resolves to lampropeltis triangulum"
+    },
+    {
+      "scientificName": "thamnophis saurita",
+      "commonName": "Eastern Ribbonsnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "thamnophis saurita",
+      "label": "eastern_ribbonsnake",
+      "commonName": "Eastern Ribbonsnake",
+      "reason": "Model label observed in biowatch studies; resolves to thamnophis saurita"
+    },
+    {
+      "scientificName": "taurotragus",
+      "commonName": "eland",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "taurotragus",
+      "label": "eland",
+      "commonName": "eland",
+      "reason": "Model label observed in biowatch studies; resolves to taurotragus"
+    },
+    {
+      "scientificName": "elephantidae",
+      "commonName": "elephant",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "elephantidae",
+      "label": "elephant",
+      "commonName": "elephant",
+      "reason": "Model label observed in biowatch studies; resolves to elephantidae"
+    },
+    {
+      "scientificName": "chalcophaps indica",
+      "label": "emerald_dove",
+      "commonName": "common emerald dove",
+      "reason": "Model label observed in biowatch studies; resolves to chalcophaps indica"
+    },
+    {
+      "scientificName": "mustela erminea",
+      "label": "ermine",
+      "commonName": "stoat",
+      "reason": "Model label observed in biowatch studies; resolves to mustela erminea"
+    },
+    {
+      "scientificName": "mustela erminea",
+      "label": "stoat",
+      "commonName": "stoat",
+      "reason": "Model label observed in biowatch studies; resolves to mustela erminea"
+    },
+    {
+      "scientificName": "sus scrofa",
+      "label": "eurasian_wild_pig",
+      "commonName": "wild boar",
+      "reason": "Model label observed in biowatch studies; resolves to sus scrofa"
+    },
+    {
+      "scientificName": "scolopax rusticola",
+      "label": "eurasian_woodcock",
+      "commonName": "eurasian woodcock",
+      "reason": "Model label observed in biowatch studies; resolves to scolopax rusticola"
+    },
+    {
+      "scientificName": "lepus europaeus",
+      "label": "european_hare",
+      "commonName": "european hare",
+      "reason": "Model label observed in biowatch studies; resolves to lepus europaeus"
+    },
+    {
+      "scientificName": "turdus obscurus",
+      "label": "eyebrowed_thrush",
+      "commonName": "eyebrowed thrush",
+      "reason": "Model label observed in biowatch studies; resolves to turdus obscurus"
+    },
+    {
+      "scientificName": "tigrisoma fasciatum",
+      "label": "fasciated_tiger-heron",
+      "commonName": "fasciated tiger-heron",
+      "reason": "Model label observed in biowatch studies; resolves to tigrisoma fasciatum"
+    },
+    {
+      "scientificName": "empidonax",
+      "commonName": "Flycatcher",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "empidonax",
+      "label": "flycatcher",
+      "commonName": "Flycatcher",
+      "reason": "Model label observed in biowatch studies; resolves to empidonax"
+    },
+    {
+      "scientificName": "semnopithecus francoisi",
+      "commonName": "Francois' langur",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "semnopithecus francoisi",
+      "label": "francois_langur",
+      "commonName": "Francois' langur",
+      "reason": "Model label observed in biowatch studies; resolves to semnopithecus francoisi"
+    },
+    {
+      "scientificName": "thamnophis gigas",
+      "commonName": "Giant Gartersnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "thamnophis gigas",
+      "label": "giant gartersnake",
+      "commonName": "Giant Gartersnake",
+      "reason": "Model label observed in biowatch studies; resolves to thamnophis gigas"
+    },
+    {
+      "scientificName": "myrmecophaga tridactyla",
+      "label": "giant_anteater",
+      "commonName": "giant anteater",
+      "reason": "Model label observed in biowatch studies; resolves to myrmecophaga tridactyla"
+    },
+    {
+      "scientificName": "priodontes maximus",
+      "label": "giant_armadillo",
+      "commonName": "giant armadillo",
+      "reason": "Model label observed in biowatch studies; resolves to priodontes maximus"
+    },
+    {
+      "scientificName": "lutra brasiliensis",
+      "commonName": "giant otter",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "lutra brasiliensis",
+      "label": "giant_otter",
+      "commonName": "giant otter",
+      "reason": "Model label observed in biowatch studies; resolves to lutra brasiliensis"
+    },
+    {
+      "scientificName": "plestiodon gilberti",
+      "commonName": "Gilbert's Skink",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "plestiodon gilberti",
+      "label": "gilbert's skink",
+      "commonName": "Gilbert's Skink",
+      "reason": "Model label observed in biowatch studies; resolves to plestiodon gilberti"
+    },
+    {
+      "scientificName": "arizona elegans",
+      "commonName": "Glossy Snake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "arizona elegans",
+      "label": "glossy snake",
+      "commonName": "Glossy Snake",
+      "reason": "Model label observed in biowatch studies; resolves to arizona elegans"
+    },
+    {
+      "scientificName": "callospermophilus lateralis",
+      "label": "golden mantled ground squirrel",
+      "commonName": "golden mantled ground squirrel",
+      "reason": "Model label observed in biowatch studies; resolves to callospermophilus lateralis"
+    },
+    {
+      "scientificName": "cyanoderma chrysaea",
+      "commonName": "Golden Babbler",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "cyanoderma chrysaea",
+      "label": "golden_babbler",
+      "commonName": "Golden Babbler",
+      "reason": "Model label observed in biowatch studies; resolves to cyanoderma chrysaea"
+    },
+    {
+      "scientificName": "catopuma temminckii",
+      "label": "golden_cat",
+      "commonName": "asiatic golden cat",
+      "reason": "Model label observed in biowatch studies; resolves to catopuma temminckii"
+    },
+    {
+      "scientificName": "pituophis catenifer",
+      "commonName": "Gophersnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "pituophis catenifer",
+      "label": "gophersnake",
+      "commonName": "Gophersnake",
+      "reason": "Model label observed in biowatch studies; resolves to pituophis catenifer"
+    },
+    {
+      "scientificName": "pituophis catenifer",
+      "label": "pacific gophersnake",
+      "commonName": "Gophersnake",
+      "reason": "Model label observed in biowatch studies; resolves to pituophis catenifer"
+    },
+    {
+      "scientificName": "dumetella carolinensis",
+      "label": "gray_catbird",
+      "commonName": "grey catbird",
+      "reason": "Model label observed in biowatch studies; resolves to dumetella carolinensis"
+    },
+    {
+      "scientificName": "leucodioptron maesi",
+      "commonName": "Gray Laughingthrush",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "leucodioptron maesi",
+      "label": "gray_laughingthrush",
+      "commonName": "Gray Laughingthrush",
+      "reason": "Model label observed in biowatch studies; resolves to leucodioptron maesi"
+    },
+    {
+      "scientificName": "pantherophis spiloides",
+      "commonName": "Gray ratsnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "pantherophis spiloides",
+      "label": "gray_ratsnake",
+      "commonName": "Gray ratsnake",
+      "reason": "Model label observed in biowatch studies; resolves to pantherophis spiloides"
+    },
+    {
+      "scientificName": "crotaphytus bicinctores",
+      "commonName": "Great Basin Collared Lizard",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "crotaphytus bicinctores",
+      "label": "great basin collared lizard",
+      "commonName": "Great Basin Collared Lizard",
+      "reason": "Model label observed in biowatch studies; resolves to crotaphytus bicinctores"
+    },
+    {
+      "scientificName": "ardea herodias",
+      "label": "great_blue_heron",
+      "commonName": "great blue heron",
+      "reason": "Model label observed in biowatch studies; resolves to ardea herodias"
+    },
+    {
+      "scientificName": "tinamus major",
+      "label": "great_tinamou",
+      "commonName": "great tinamou",
+      "reason": "Model label observed in biowatch studies; resolves to tinamus major"
+    },
+    {
+      "scientificName": "geococcyx californianus",
+      "label": "greater roadrunner",
+      "commonName": "greater roadrunner",
+      "reason": "Model label observed in biowatch studies; resolves to geococcyx californianus"
+    },
+    {
+      "scientificName": "tragelaphus strepsiceros",
+      "label": "greater_kudu",
+      "commonName": "greater kudu",
+      "reason": "Model label observed in biowatch studies; resolves to tragelaphus strepsiceros"
+    },
+    {
+      "scientificName": "pipilo chlorurus",
+      "commonName": "Green-tailed Towhee",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "pipilo chlorurus",
+      "label": "green-tailed towhee",
+      "commonName": "Green-tailed Towhee",
+      "reason": "Model label observed in biowatch studies; resolves to pipilo chlorurus"
+    },
+    {
+      "scientificName": "lithobates clamitans",
+      "commonName": "Green Frog",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "lithobates clamitans",
+      "label": "green_frog",
+      "commonName": "Green Frog",
+      "reason": "Model label observed in biowatch studies; resolves to lithobates clamitans"
+    },
+    {
+      "scientificName": "butorides virescens",
+      "label": "green_heron",
+      "commonName": "green heron",
+      "reason": "Model label observed in biowatch studies; resolves to butorides virescens"
+    },
+    {
+      "scientificName": "urocyon cinereoargenteus",
+      "label": "grey fox",
+      "commonName": "grey fox",
+      "reason": "Model label observed in biowatch studies; resolves to urocyon cinereoargenteus"
+    },
+    {
+      "scientificName": "polyplectron bicalcaratum",
+      "label": "grey_peacock_pheasant",
+      "commonName": "grey peacock-pheasant",
+      "reason": "Model label observed in biowatch studies; resolves to polyplectron bicalcaratum"
+    },
+    {
+      "scientificName": "dendragapus",
+      "commonName": "Grouse",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "dendragapus",
+      "label": "grouse",
+      "commonName": "Grouse",
+      "reason": "Model label observed in biowatch studies; resolves to dendragapus"
+    },
+    {
+      "scientificName": "numida",
+      "commonName": "Guineafowl",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "numida",
+      "label": "guineafowl",
+      "commonName": "Guineafowl",
+      "reason": "Model label observed in biowatch studies; resolves to numida"
+    },
+    {
+      "scientificName": "scopidae",
+      "commonName": "Hamerkop",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "scopidae",
+      "label": "hamerkop",
+      "commonName": "Hamerkop",
+      "reason": "Model label observed in biowatch studies; resolves to scopidae"
+    },
+    {
+      "scientificName": "alcelaphus",
+      "commonName": "hartebeest",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "alcelaphus",
+      "label": "hartebeest",
+      "commonName": "hartebeest",
+      "reason": "Model label observed in biowatch studies; resolves to alcelaphus"
+    },
+    {
+      "scientificName": "trachypithecus hatinhensis",
+      "label": "hatinh_langur",
+      "commonName": "hatinh langur",
+      "reason": "Model label observed in biowatch studies; resolves to trachypithecus hatinhensis"
+    },
+    {
+      "scientificName": "buteo",
+      "commonName": "Hawk",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "buteo",
+      "label": "hawk",
+      "commonName": "Hawk",
+      "reason": "Model label observed in biowatch studies; resolves to buteo"
+    },
+    {
+      "scientificName": "numida meleagris",
+      "label": "helmeted_guineafowl",
+      "commonName": "helmeted guineafowl",
+      "reason": "Model label observed in biowatch studies; resolves to numida meleagris"
+    },
+    {
+      "scientificName": "arctonyx collaris",
+      "label": "hog_badger",
+      "commonName": "greater hog badger",
+      "reason": "Model label observed in biowatch studies; resolves to arctonyx collaris"
+    },
+    {
+      "scientificName": "mellivora capensis",
+      "label": "honey_badger",
+      "commonName": "honey badger",
+      "reason": "Model label observed in biowatch studies; resolves to mellivora capensis"
+    },
+    {
+      "scientificName": "upupa epops",
+      "label": "hoopoe",
+      "commonName": "eurasian hoopoe",
+      "reason": "Model label observed in biowatch studies; resolves to upupa epops"
+    },
+    {
+      "scientificName": "mus musculus",
+      "label": "house mouse",
+      "commonName": "house mouse",
+      "reason": "Model label observed in biowatch studies; resolves to mus musculus"
+    },
+    {
+      "scientificName": "rattus rattus",
+      "label": "house rat",
+      "commonName": "house rat",
+      "reason": "Model label observed in biowatch studies; resolves to rattus rattus"
+    },
+    {
+      "scientificName": "rattus rattus",
+      "label": "ship rat",
+      "commonName": "house rat",
+      "reason": "Model label observed in biowatch studies; resolves to rattus rattus"
+    },
+    {
+      "scientificName": "passer domesticus",
+      "label": "house sparrow",
+      "commonName": "house sparrow",
+      "reason": "Model label observed in biowatch studies; resolves to passer domesticus"
+    },
+    {
+      "scientificName": "troglodytes aedon",
+      "label": "house wren",
+      "commonName": "house wren",
+      "reason": "Model label observed in biowatch studies; resolves to troglodytes aedon"
+    },
+    {
+      "scientificName": "troglodytes aedon",
+      "label": "northern_house_wren",
+      "commonName": "house wren",
+      "reason": "Model label observed in biowatch studies; resolves to troglodytes aedon"
+    },
+    {
+      "scientificName": "amazilia",
+      "commonName": "hummingbird",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "amazilia",
+      "label": "hummingbird",
+      "commonName": "hummingbird",
+      "reason": "Model label observed in biowatch studies; resolves to amazilia"
+    },
+    {
+      "scientificName": "cissa hypoleuca",
+      "label": "indochinese_green_magpie",
+      "commonName": "indochinese green magpie",
+      "reason": "Model label observed in biowatch studies; resolves to cissa hypoleuca"
+    },
+    {
+      "scientificName": "puma yagouaroundi",
+      "commonName": "Jaguarundi",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "puma yagouaroundi",
+      "label": "jaguarundi",
+      "commonName": "Jaguarundi",
+      "reason": "Model label observed in biowatch studies; resolves to puma yagouaroundi"
+    },
+    {
+      "scientificName": "turdus cardis",
+      "label": "japanese_thrush",
+      "commonName": "japanese thrush",
+      "reason": "Model label observed in biowatch studies; resolves to turdus cardis"
+    },
+    {
+      "scientificName": "alcedinidae",
+      "commonName": "Kingfisher",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "alcedinidae",
+      "label": "kingfisher",
+      "commonName": "Kingfisher",
+      "reason": "Model label observed in biowatch studies; resolves to alcedinidae"
+    },
+    {
+      "scientificName": "clonophis kirtlandii",
+      "commonName": "Kirtland's Snake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "clonophis kirtlandii",
+      "label": "kirtland's_snake",
+      "commonName": "Kirtland's Snake",
+      "reason": "Model label observed in biowatch studies; resolves to clonophis kirtlandii"
+    },
+    {
+      "scientificName": "vulpes macrotis",
+      "label": "kit fox",
+      "commonName": "kit fox",
+      "reason": "Model label observed in biowatch studies; resolves to vulpes macrotis"
+    },
+    {
+      "scientificName": "oreotragus",
+      "commonName": "klipspringer",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "oreotragus",
+      "label": "klipspringer",
+      "commonName": "klipspringer",
+      "reason": "Model label observed in biowatch studies; resolves to oreotragus"
+    },
+    {
+      "scientificName": "viverra zibetha",
+      "label": "large_indian_civet",
+      "commonName": "large indian civet",
+      "reason": "Model label observed in biowatch studies; resolves to viverra zibetha"
+    },
+    {
+      "scientificName": "erythrogenys hypoleucos",
+      "label": "large_scimitar_babbler",
+      "commonName": "large scimitar-babbler",
+      "reason": "Model label observed in biowatch studies; resolves to erythrogenys hypoleucos"
+    },
+    {
+      "scientificName": "alaudidae",
+      "commonName": "lark",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "alaudidae",
+      "label": "lark",
+      "commonName": "lark",
+      "reason": "Model label observed in biowatch studies; resolves to alaudidae"
+    },
+    {
+      "scientificName": "chondestes grammacus",
+      "label": "lark sparrow",
+      "commonName": "lark sparrow",
+      "reason": "Model label observed in biowatch studies; resolves to chondestes grammacus"
+    },
+    {
+      "scientificName": "prionailurus bengalensis",
+      "label": "leopard_cat",
+      "commonName": "leopard cat",
+      "reason": "Model label observed in biowatch studies; resolves to prionailurus bengalensis"
+    },
+    {
+      "scientificName": "picus chlorolophus",
+      "label": "lesser_yellownape",
+      "commonName": "lesser yellownape",
+      "reason": "Model label observed in biowatch studies; resolves to picus chlorolophus"
+    },
+    {
+      "scientificName": "lanius ludovicianus",
+      "label": "loggerhead shrike",
+      "commonName": "loggerhead shrike",
+      "reason": "Model label observed in biowatch studies; resolves to lanius ludovicianus"
+    },
+    {
+      "scientificName": "tamias quadrimaculatus",
+      "commonName": "Long-eared Chipmunk",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "tamias quadrimaculatus",
+      "label": "long-eared chipmunk",
+      "commonName": "Long-eared Chipmunk",
+      "reason": "Model label observed in biowatch studies; resolves to tamias quadrimaculatus"
+    },
+    {
+      "scientificName": "gambelia copeii",
+      "commonName": "Long-nosed Leopard Lizard",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "gambelia copeii",
+      "label": "long-nosed leopard lizard",
+      "commonName": "Long-nosed Leopard Lizard",
+      "reason": "Model label observed in biowatch studies; resolves to gambelia copeii"
+    },
+    {
+      "scientificName": "rhinocheilus lecontei",
+      "commonName": "Long-nosed snake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "rhinocheilus lecontei",
+      "label": "long-nosed snake",
+      "commonName": "Long-nosed snake",
+      "reason": "Model label observed in biowatch studies; resolves to rhinocheilus lecontei"
+    },
+    {
+      "scientificName": "neogale frenata",
+      "commonName": "Long-tailed Weasel",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "neogale frenata",
+      "label": "long-tailed weasel",
+      "commonName": "Long-tailed Weasel",
+      "reason": "Model label observed in biowatch studies; resolves to neogale frenata"
+    },
+    {
+      "scientificName": "neogale frenata",
+      "label": "long-tailed_weasel",
+      "commonName": "Long-tailed Weasel",
+      "reason": "Model label observed in biowatch studies; resolves to neogale frenata"
+    },
+    {
+      "scientificName": "tapirus terrestris",
+      "label": "lowland_tapir",
+      "commonName": "lowland tapir",
+      "reason": "Model label observed in biowatch studies; resolves to tapirus terrestris"
+    },
+    {
+      "scientificName": "geothlypis tolmiei",
+      "commonName": "MacGillivray's Warbler",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "geothlypis tolmiei",
+      "label": "macgillivray's warbler",
+      "commonName": "MacGillivray's Warbler",
+      "reason": "Model label observed in biowatch studies; resolves to geothlypis tolmiei"
+    },
+    {
+      "scientificName": "pica pica",
+      "label": "magpie",
+      "commonName": "common magpie",
+      "reason": "Model label observed in biowatch studies; resolves to pica pica"
+    },
+    {
+      "scientificName": "hystrix brachyura",
+      "label": "malayan_porcupine",
+      "commonName": "malayan porcupine",
+      "reason": "Model label observed in biowatch studies; resolves to hystrix brachyura"
+    },
+    {
+      "scientificName": "felis marmorata",
+      "commonName": "marbled cat",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "felis marmorata",
+      "label": "marbled_cat",
+      "commonName": "marbled cat",
+      "reason": "Model label observed in biowatch studies; resolves to felis marmorata"
+    },
+    {
+      "scientificName": "sapajus apella margaritae",
+      "commonName": "Margarita Island Capuchin",
+      "reason": "Auto-added from biowatch studies (rank=SUBSPECIES)"
+    },
+    {
+      "scientificName": "sapajus apella margaritae",
+      "label": "margarita_island_capuchin",
+      "commonName": "Margarita Island Capuchin",
+      "reason": "Model label observed in biowatch studies; resolves to sapajus apella margaritae"
+    },
+    {
+      "scientificName": "leopardus wiedii",
+      "label": "margay",
+      "commonName": "margay",
+      "reason": "Model label observed in biowatch studies; resolves to leopardus wiedii"
+    },
+    {
+      "scientificName": "cistothorus palustris",
+      "label": "marsh wren",
+      "commonName": "marsh wren",
+      "reason": "Model label observed in biowatch studies; resolves to cistothorus palustris"
+    },
+    {
+      "scientificName": "paguma larvata",
+      "label": "masked_palm_civet",
+      "commonName": "masked palm civet",
+      "reason": "Model label observed in biowatch studies; resolves to paguma larvata"
+    },
+    {
+      "scientificName": "sorex cinereus",
+      "commonName": "Masked Shrew",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "sorex cinereus",
+      "label": "masked_shrew",
+      "commonName": "Masked Shrew",
+      "reason": "Model label observed in biowatch studies; resolves to sorex cinereus"
+    },
+    {
+      "scientificName": "dipus hudsonius",
+      "commonName": "meadow jumping mouse",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "dipus hudsonius",
+      "label": "meadow_jumping_mouse",
+      "commonName": "meadow jumping mouse",
+      "reason": "Model label observed in biowatch studies; resolves to dipus hudsonius"
+    },
+    {
+      "scientificName": "microtus pennsylvanicus",
+      "commonName": "Meadow Vole",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "microtus pennsylvanicus",
+      "label": "meadow_vole",
+      "commonName": "Meadow Vole",
+      "reason": "Model label observed in biowatch studies; resolves to microtus pennsylvanicus"
+    },
+    {
+      "scientificName": "hemidactylus turcicus",
+      "commonName": "Mediterranean gecko",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "hemidactylus turcicus",
+      "label": "mediterranean gecko",
+      "commonName": "Mediterranean gecko",
+      "reason": "Model label observed in biowatch studies; resolves to hemidactylus turcicus"
+    },
+    {
+      "scientificName": "megapodiidae",
+      "commonName": "megapode",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "megapodiidae",
+      "label": "megapode",
+      "commonName": "megapode",
+      "reason": "Model label observed in biowatch studies; resolves to megapodiidae"
+    },
+    {
+      "scientificName": "mimidae",
+      "commonName": "Mockingbird",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "mimidae",
+      "label": "mockingbird",
+      "commonName": "Mockingbird",
+      "reason": "Model label observed in biowatch studies; resolves to mimidae"
+    },
+    {
+      "scientificName": "xerospermophilus mohavensis",
+      "commonName": "Mohave ground squirrel",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "xerospermophilus mohavensis",
+      "label": "mohave ground squirrel",
+      "commonName": "Mohave ground squirrel",
+      "reason": "Model label observed in biowatch studies; resolves to xerospermophilus mohavensis"
+    },
+    {
+      "scientificName": "uma scoparia",
+      "commonName": "Mojave Fringe-toed Lizard",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "uma scoparia",
+      "label": "mojave fringe-toed lizard",
+      "commonName": "Mojave Fringe-toed Lizard",
+      "reason": "Model label observed in biowatch studies; resolves to uma scoparia"
+    },
+    {
+      "scientificName": "crotalus scutulatus",
+      "commonName": "Mojave Rattlesnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "crotalus scutulatus",
+      "label": "mojave rattlesnake",
+      "commonName": "Mojave Rattlesnake",
+      "reason": "Model label observed in biowatch studies; resolves to crotalus scutulatus"
+    },
+    {
+      "scientificName": "diadophis punctatus vandenburgii",
+      "commonName": "Monterey Ring-Necked Snake",
+      "reason": "Auto-added from biowatch studies (rank=SUBSPECIES)"
+    },
+    {
+      "scientificName": "diadophis punctatus vandenburgii",
+      "label": "monterey ring-necked snake",
+      "commonName": "Monterey Ring-Necked Snake",
+      "reason": "Model label observed in biowatch studies; resolves to diadophis punctatus vandenburgii"
+    },
+    {
+      "scientificName": "thamnophis elegans",
+      "commonName": "Mountain Gartersnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "thamnophis elegans",
+      "label": "mountain gartersnake",
+      "commonName": "Mountain Gartersnake",
+      "reason": "Model label observed in biowatch studies; resolves to thamnophis elegans"
+    },
+    {
+      "scientificName": "thamnophis elegans",
+      "label": "terrestrial gartersnake",
+      "commonName": "Mountain Gartersnake",
+      "reason": "Model label observed in biowatch studies; resolves to thamnophis elegans"
+    },
+    {
+      "scientificName": "puma concolor",
+      "label": "mountain lion",
+      "commonName": "puma",
+      "reason": "Model label observed in biowatch studies; resolves to puma concolor"
+    },
+    {
+      "scientificName": "puma concolor",
+      "label": "mountain_lion",
+      "commonName": "puma",
+      "reason": "Model label observed in biowatch studies; resolves to puma concolor"
+    },
+    {
+      "scientificName": "ortyx picta",
+      "commonName": "mountain quail",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "ortyx picta",
+      "label": "mountain quail",
+      "commonName": "mountain quail",
+      "reason": "Model label observed in biowatch studies; resolves to ortyx picta"
+    },
+    {
+      "scientificName": "ducula badia",
+      "label": "mountain_imperial_pigeon",
+      "commonName": "mountain imperial-pigeon",
+      "reason": "Model label observed in biowatch studies; resolves to ducula badia"
+    },
+    {
+      "scientificName": "ondatra",
+      "commonName": "Muskrat",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "ondatra",
+      "label": "muskrat",
+      "commonName": "Muskrat",
+      "reason": "Model label observed in biowatch studies; resolves to ondatra"
+    },
+    {
+      "scientificName": "lontra longicaudis",
+      "label": "neotropical_otter",
+      "commonName": "neotropical otter",
+      "reason": "Model label observed in biowatch studies; resolves to lontra longicaudis"
+    },
+    {
+      "scientificName": "caloenas nicobarica",
+      "label": "nicobar_pigeon",
+      "commonName": "nicobar pigeon",
+      "reason": "Model label observed in biowatch studies; resolves to caloenas nicobarica"
+    },
+    {
+      "scientificName": "caprimulgus",
+      "commonName": "nightjar",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "caprimulgus",
+      "label": "nightjar",
+      "commonName": "nightjar",
+      "reason": "Model label observed in biowatch studies; resolves to caprimulgus"
+    },
+    {
+      "scientificName": "peromyscus maniculatus",
+      "label": "north american deermouse",
+      "commonName": "north american deermouse",
+      "reason": "Model label observed in biowatch studies; resolves to peromyscus maniculatus"
+    },
+    {
+      "scientificName": "erethizon dorsatus",
+      "commonName": "North American porcupine",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "erethizon dorsatus",
+      "label": "north american porcupine",
+      "commonName": "North American porcupine",
+      "reason": "Model label observed in biowatch studies; resolves to erethizon dorsatus"
+    },
+    {
+      "scientificName": "elgaria coerulea",
+      "commonName": "Northern Alligator Lizard",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "elgaria coerulea",
+      "label": "northern alligator lizard",
+      "commonName": "Northern Alligator Lizard",
+      "reason": "Model label observed in biowatch studies; resolves to elgaria coerulea"
+    },
+    {
+      "scientificName": "colaptes auratus",
+      "label": "northern flicker",
+      "commonName": "northern flicker",
+      "reason": "Model label observed in biowatch studies; resolves to colaptes auratus"
+    },
+    {
+      "scientificName": "colaptes auratus",
+      "label": "northern_flicker",
+      "commonName": "northern flicker",
+      "reason": "Model label observed in biowatch studies; resolves to colaptes auratus"
+    },
+    {
+      "scientificName": "hypudaeus leucogaster",
+      "commonName": "northern grasshopper mouse",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "hypudaeus leucogaster",
+      "label": "northern grasshopper mouse",
+      "commonName": "northern grasshopper mouse",
+      "reason": "Model label observed in biowatch studies; resolves to hypudaeus leucogaster"
+    },
+    {
+      "scientificName": "crotalus oreganus",
+      "commonName": "Northern Pacific Rattlesnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "crotalus oreganus",
+      "label": "northern pacific rattlesnake",
+      "commonName": "Northern Pacific Rattlesnake",
+      "reason": "Model label observed in biowatch studies; resolves to crotalus oreganus"
+    },
+    {
+      "scientificName": "crotalus oreganus",
+      "label": "western rattlesnake",
+      "commonName": "Northern Pacific Rattlesnake",
+      "reason": "Model label observed in biowatch studies; resolves to crotalus oreganus"
+    },
+    {
+      "scientificName": "procyon lotor",
+      "label": "northern raccoon",
+      "commonName": "northern raccoon",
+      "reason": "Model label observed in biowatch studies; resolves to procyon lotor"
+    },
+    {
+      "scientificName": "sciurus igniventris",
+      "label": "northern_amazon_red_squirrel",
+      "commonName": "northern amazon red squirrel",
+      "reason": "Model label observed in biowatch studies; resolves to sciurus igniventris"
+    },
+    {
+      "scientificName": "lithobates pipiens",
+      "commonName": "Northern Leopard Frog",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "lithobates pipiens",
+      "label": "northern_leopard_frog",
+      "commonName": "Northern Leopard Frog",
+      "reason": "Model label observed in biowatch studies; resolves to lithobates pipiens"
+    },
+    {
+      "scientificName": "tupaia belangeri",
+      "label": "northern_treeshrew",
+      "commonName": "northern treeshrew",
+      "reason": "Model label observed in biowatch studies; resolves to tupaia belangeri"
+    },
+    {
+      "scientificName": "nerodia sipedon",
+      "commonName": "Northern Watersnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "nerodia sipedon",
+      "label": "northern_watersnake",
+      "commonName": "Northern Watersnake",
+      "reason": "Model label observed in biowatch studies; resolves to nerodia sipedon"
+    },
+    {
+      "scientificName": "rattus norvegicus",
+      "label": "norway rat",
+      "commonName": "brown rat",
+      "reason": "Model label observed in biowatch studies; resolves to rattus norvegicus"
+    },
+    {
+      "scientificName": "leopardus pardalis",
+      "label": "ocelot",
+      "commonName": "ocelot",
+      "reason": "Model label observed in biowatch studies; resolves to leopardus pardalis"
+    },
+    {
+      "scientificName": "dipodomys ordii",
+      "label": "ord's kangaroo rat",
+      "commonName": "ord's kangaroo rat",
+      "reason": "Model label observed in biowatch studies; resolves to dipodomys ordii"
+    },
+    {
+      "scientificName": "dasyprocta guamara",
+      "label": "orinoco_agouti",
+      "commonName": "orinoco agouti",
+      "reason": "Model label observed in biowatch studies; resolves to dasyprocta guamara"
+    },
+    {
+      "scientificName": "callicebus ornatus",
+      "commonName": "Ornate Titi Monkey",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "callicebus ornatus",
+      "label": "ornate_titi_monkey",
+      "commonName": "Ornate Titi Monkey",
+      "reason": "Model label observed in biowatch studies; resolves to callicebus ornatus"
+    },
+    {
+      "scientificName": "agouti paca",
+      "commonName": "paca",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "agouti paca",
+      "label": "paca",
+      "commonName": "paca",
+      "reason": "Model label observed in biowatch studies; resolves to agouti paca"
+    },
+    {
+      "scientificName": "troglodytes pacificus",
+      "commonName": "Pacific wren",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "troglodytes pacificus",
+      "label": "pacific wren",
+      "commonName": "Pacific wren",
+      "reason": "Model label observed in biowatch studies; resolves to troglodytes pacificus"
+    },
+    {
+      "scientificName": "chrysemys picta",
+      "commonName": "Painted Turtle",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "chrysemys picta",
+      "label": "painted_turtle",
+      "commonName": "Painted Turtle",
+      "reason": "Model label observed in biowatch studies; resolves to chrysemys picta"
+    },
+    {
+      "scientificName": "thamnophis radix",
+      "commonName": "Plains Gartersnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "thamnophis radix",
+      "label": "plains_gartersnake",
+      "commonName": "Plains Gartersnake",
+      "reason": "Model label observed in biowatch studies; resolves to thamnophis radix"
+    },
+    {
+      "scientificName": "equus quagga",
+      "label": "plains_zebra",
+      "commonName": "plains zebra",
+      "reason": "Model label observed in biowatch studies; resolves to equus quagga"
+    },
+    {
+      "scientificName": "trachemys scripta",
+      "commonName": "Pond Slider",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "trachemys scripta",
+      "label": "pond slider",
+      "commonName": "Pond Slider",
+      "reason": "Model label observed in biowatch studies; resolves to trachemys scripta"
+    },
+    {
+      "scientificName": "antilocapra",
+      "commonName": "pronghorn",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "antilocapra",
+      "label": "pronghorn",
+      "commonName": "pronghorn",
+      "reason": "Model label observed in biowatch studies; resolves to antilocapra"
+    },
+    {
+      "scientificName": "dasyurus",
+      "commonName": "quoll",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "dasyurus",
+      "label": "quoll",
+      "commonName": "quoll",
+      "reason": "Model label observed in biowatch studies; resolves to dasyurus"
+    },
+    {
+      "scientificName": "storeria occipitomaculata",
+      "commonName": "Red-bellied Snake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "storeria occipitomaculata",
+      "label": "red-bellied_snake",
+      "commonName": "Red-bellied Snake",
+      "reason": "Model label observed in biowatch studies; resolves to storeria occipitomaculata"
+    },
+    {
+      "scientificName": "sitta canadensis",
+      "label": "red-breasted nuthatch",
+      "commonName": "red-breasted nuthatch",
+      "reason": "Model label observed in biowatch studies; resolves to sitta canadensis"
+    },
+    {
+      "scientificName": "mazama americana",
+      "label": "red_brocket_deer",
+      "commonName": "red brocket",
+      "reason": "Model label observed in biowatch studies; resolves to mazama americana"
+    },
+    {
+      "scientificName": "cervus elaphus",
+      "label": "red_deer",
+      "commonName": "red deer",
+      "reason": "Model label observed in biowatch studies; resolves to cervus elaphus"
+    },
+    {
+      "scientificName": "cephalophus natalensis",
+      "label": "red_duiker",
+      "commonName": "red duiker",
+      "reason": "Model label observed in biowatch studies; resolves to cephalophus natalensis"
+    },
+    {
+      "scientificName": "vulpes vulpes",
+      "label": "red_fox",
+      "commonName": "red fox",
+      "reason": "Model label observed in biowatch studies; resolves to vulpes vulpes"
+    },
+    {
+      "scientificName": "gallus gallus",
+      "label": "red_junglefowl",
+      "commonName": "red junglefowl",
+      "reason": "Model label observed in biowatch studies; resolves to gallus gallus"
+    },
+    {
+      "scientificName": "muntiacus muntjak",
+      "label": "red_muntjac",
+      "commonName": "southern red muntjac",
+      "reason": "Model label observed in biowatch studies; resolves to muntiacus muntjak"
+    },
+    {
+      "scientificName": "sciurus vulgaris",
+      "label": "red_squirrel",
+      "commonName": "eurasian red squirrel",
+      "reason": "Model label observed in biowatch studies; resolves to sciurus vulgaris"
+    },
+    {
+      "scientificName": "redunca",
+      "commonName": "reedbuck",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "redunca",
+      "label": "reedbuck",
+      "commonName": "reedbuck",
+      "reason": "Model label observed in biowatch studies; resolves to redunca"
+    },
+    {
+      "scientificName": "diadophis punctatus",
+      "commonName": "Ring-necked Snake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "diadophis punctatus",
+      "label": "ring-necked snake",
+      "commonName": "Ring-necked Snake",
+      "reason": "Model label observed in biowatch studies; resolves to diadophis punctatus"
+    },
+    {
+      "scientificName": "bassariscus",
+      "commonName": "ringtail",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "bassariscus",
+      "label": "ringtail",
+      "commonName": "ringtail",
+      "reason": "Model label observed in biowatch studies; resolves to bassariscus"
+    },
+    {
+      "scientificName": "capreolus capreolus",
+      "label": "roe_deer",
+      "commonName": "european roe deer",
+      "reason": "Model label observed in biowatch studies; resolves to capreolus capreolus"
+    },
+    {
+      "scientificName": "coracias garrulus",
+      "commonName": "Roller",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "coracias garrulus",
+      "label": "roller",
+      "commonName": "Roller",
+      "reason": "Model label observed in biowatch studies; resolves to coracias garrulus"
+    },
+    {
+      "scientificName": "lichanura trivirgata",
+      "commonName": "Rosy Boa",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "lichanura trivirgata",
+      "label": "rosy boa",
+      "commonName": "Rosy Boa",
+      "reason": "Model label observed in biowatch studies; resolves to lichanura trivirgata"
+    },
+    {
+      "scientificName": "xerospermophilus tereticaudus",
+      "label": "round-tailed ground squirrel",
+      "commonName": "round-tailed ground squirrel",
+      "reason": "Model label observed in biowatch studies; resolves to xerospermophilus tereticaudus"
+    },
+    {
+      "scientificName": "lemmiscus curtatus",
+      "commonName": "Sagebrush Vole",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "lemmiscus curtatus",
+      "label": "sagebrush vole",
+      "commonName": "Sagebrush Vole",
+      "reason": "Model label observed in biowatch studies; resolves to lemmiscus curtatus"
+    },
+    {
+      "scientificName": "rusa unicolor",
+      "label": "sambar",
+      "commonName": "sambar",
+      "reason": "Model label observed in biowatch studies; resolves to rusa unicolor"
+    },
+    {
+      "scientificName": "zoothera dauma",
+      "label": "scaly_thrush",
+      "commonName": "scaly thrush",
+      "reason": "Model label observed in biowatch studies; resolves to zoothera dauma"
+    },
+    {
+      "scientificName": "lepus saxatilis",
+      "label": "scrub_hare",
+      "commonName": "scrub hare",
+      "reason": "Model label observed in biowatch studies; resolves to lepus saxatilis"
+    },
+    {
+      "scientificName": "sagittariidae",
+      "commonName": "Secretarybird",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "sagittariidae",
+      "label": "secretarybird",
+      "commonName": "Secretarybird",
+      "reason": "Model label observed in biowatch studies; resolves to sagittariidae"
+    },
+    {
+      "scientificName": "elgaria coerulea shastensis",
+      "commonName": "Shasta Alligator Lizard",
+      "reason": "Auto-added from biowatch studies (rank=SUBSPECIES)"
+    },
+    {
+      "scientificName": "elgaria coerulea shastensis",
+      "label": "shasta alligator lizard",
+      "commonName": "Shasta Alligator Lizard",
+      "reason": "Model label observed in biowatch studies; resolves to elgaria coerulea shastensis"
+    },
+    {
+      "scientificName": "calonectris",
+      "commonName": "Shearwater",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "calonectris",
+      "label": "shearwater",
+      "commonName": "Shearwater",
+      "reason": "Model label observed in biowatch studies; resolves to calonectris"
+    },
+    {
+      "scientificName": "asio flammeus",
+      "label": "short-eared_owl",
+      "commonName": "short-eared owl",
+      "reason": "Model label observed in biowatch studies; resolves to asio flammeus"
+    },
+    {
+      "scientificName": "neurotrichus gibbsii",
+      "commonName": "Shrew-mole",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "neurotrichus gibbsii",
+      "label": "shrew-mole",
+      "commonName": "Shrew-mole",
+      "reason": "Model label observed in biowatch studies; resolves to neurotrichus gibbsii"
+    },
+    {
+      "scientificName": "lanius",
+      "commonName": "Shrike",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "lanius",
+      "label": "shrike",
+      "commonName": "Shrike",
+      "reason": "Model label observed in biowatch studies; resolves to lanius"
+    },
+    {
+      "scientificName": "geokichla sibirica",
+      "label": "siberian_thrush",
+      "commonName": "siberian thrush",
+      "reason": "Model label observed in biowatch studies; resolves to geokichla sibirica"
+    },
+    {
+      "scientificName": "canis adustus",
+      "label": "side-striped_jackal",
+      "commonName": "side-striped jackal",
+      "reason": "Model label observed in biowatch studies; resolves to canis adustus"
+    },
+    {
+      "scientificName": "pseudacris sierra",
+      "commonName": "Sierran Treefrog",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "pseudacris sierra",
+      "label": "sierran treefrog",
+      "commonName": "Sierran Treefrog",
+      "reason": "Model label observed in biowatch studies; resolves to pseudacris sierra"
+    },
+    {
+      "scientificName": "lophura nycthemera",
+      "label": "silver_pheasant",
+      "commonName": "silver pheasant",
+      "reason": "Model label observed in biowatch studies; resolves to lophura nycthemera"
+    },
+    {
+      "scientificName": "plestiodon skiltonianus",
+      "commonName": "Skilton's Skink",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "plestiodon skiltonianus",
+      "label": "skilton's skink",
+      "commonName": "Skilton's Skink",
+      "reason": "Model label observed in biowatch studies; resolves to plestiodon skiltonianus"
+    },
+    {
+      "scientificName": "plestiodon skiltonianus",
+      "label": "western skink",
+      "commonName": "Skilton's Skink",
+      "reason": "Model label observed in biowatch studies; resolves to plestiodon skiltonianus"
+    },
+    {
+      "scientificName": "opheodrys vernalis",
+      "commonName": "Smooth Greensnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "opheodrys vernalis",
+      "label": "smooth_greensnake",
+      "commonName": "Smooth Greensnake",
+      "reason": "Model label observed in biowatch studies; resolves to opheodrys vernalis"
+    },
+    {
+      "scientificName": "chelydra serpentina",
+      "commonName": "Snapping Turtle",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "chelydra serpentina",
+      "label": "snapping_turtle",
+      "commonName": "Snapping Turtle",
+      "reason": "Model label observed in biowatch studies; resolves to chelydra serpentina"
+    },
+    {
+      "scientificName": "fringilla melodia",
+      "commonName": "song sparrow",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "fringilla melodia",
+      "label": "song sparrow",
+      "commonName": "song sparrow",
+      "reason": "Model label observed in biowatch studies; resolves to fringilla melodia"
+    },
+    {
+      "scientificName": "fringilla melodia",
+      "label": "song_sparrow",
+      "commonName": "song sparrow",
+      "reason": "Model label observed in biowatch studies; resolves to fringilla melodia"
+    },
+    {
+      "scientificName": "nasua nasua",
+      "label": "south_american_coati",
+      "commonName": "south american coati",
+      "reason": "Model label observed in biowatch studies; resolves to nasua nasua"
+    },
+    {
+      "scientificName": "elgaria multicarinata",
+      "commonName": "Southern alligator lizard",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "elgaria multicarinata",
+      "label": "southern alligator lizard",
+      "commonName": "Southern alligator lizard",
+      "reason": "Model label observed in biowatch studies; resolves to elgaria multicarinata"
+    },
+    {
+      "scientificName": "bucorvus leadbeateri",
+      "label": "southern_ground_hornbill",
+      "commonName": "southern ground-hornbill",
+      "reason": "Model label observed in biowatch studies; resolves to bucorvus leadbeateri"
+    },
+    {
+      "scientificName": "redunca arundinum",
+      "label": "southern_reedbuck",
+      "commonName": "southern reedbuck",
+      "reason": "Model label observed in biowatch studies; resolves to redunca arundinum"
+    },
+    {
+      "scientificName": "tamandua tetradactyla",
+      "label": "southern_tamandua",
+      "commonName": "southern tamandua",
+      "reason": "Model label observed in biowatch studies; resolves to tamandua tetradactyla"
+    },
+    {
+      "scientificName": "crotalus pyrrhus",
+      "commonName": "Southwestern Speckled Rattlesnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "crotalus pyrrhus",
+      "label": "southwestern speckled rattlesnake",
+      "commonName": "Southwestern Speckled Rattlesnake",
+      "reason": "Model label observed in biowatch studies; resolves to crotalus pyrrhus"
+    },
+    {
+      "scientificName": "rattus praetor",
+      "label": "spiny_rat",
+      "commonName": "large spiny rat",
+      "reason": "Model label observed in biowatch studies; resolves to rattus praetor"
+    },
+    {
+      "scientificName": "pipilo maculatus",
+      "label": "spotted towhee",
+      "commonName": "spotted towhee",
+      "reason": "Model label observed in biowatch studies; resolves to pipilo maculatus"
+    },
+    {
+      "scientificName": "pipilo maculatus",
+      "label": "spotted_towhee",
+      "commonName": "spotted towhee",
+      "reason": "Model label observed in biowatch studies; resolves to pipilo maculatus"
+    },
+    {
+      "scientificName": "crocuta crocuta",
+      "label": "spotted_hyena",
+      "commonName": "spotted hyaena",
+      "reason": "Model label observed in biowatch studies; resolves to crocuta crocuta"
+    },
+    {
+      "scientificName": "prionodon pardicolor",
+      "label": "spotted_linsang",
+      "commonName": "spotted linsang",
+      "reason": "Model label observed in biowatch studies; resolves to prionodon pardicolor"
+    },
+    {
+      "scientificName": "cuniculus paca",
+      "label": "spotted_paca",
+      "commonName": "spotted paca",
+      "reason": "Model label observed in biowatch studies; resolves to cuniculus paca"
+    },
+    {
+      "scientificName": "pedetes",
+      "commonName": "Springhare",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "pedetes",
+      "label": "springhare",
+      "commonName": "Springhare",
+      "reason": "Model label observed in biowatch studies; resolves to pedetes"
+    },
+    {
+      "scientificName": "condylura",
+      "commonName": "Star-nosed Mole",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "condylura",
+      "label": "star-nosed_mole",
+      "commonName": "Star-nosed Mole",
+      "reason": "Model label observed in biowatch studies; resolves to condylura"
+    },
+    {
+      "scientificName": "raphicerus campestris",
+      "label": "steenbok",
+      "commonName": "steenbok",
+      "reason": "Model label observed in biowatch studies; resolves to raphicerus campestris"
+    },
+    {
+      "scientificName": "hydrobates pelagicus",
+      "label": "storm_petrel",
+      "commonName": "european storm-petrel",
+      "reason": "Model label observed in biowatch studies; resolves to hydrobates pelagicus"
+    },
+    {
+      "scientificName": "butorides atricapilla",
+      "commonName": "Striated Heron",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "butorides atricapilla",
+      "label": "striated_heron",
+      "commonName": "Striated Heron",
+      "reason": "Model label observed in biowatch studies; resolves to butorides atricapilla"
+    },
+    {
+      "scientificName": "masticophis lateralis",
+      "commonName": "Striped Racer",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "masticophis lateralis",
+      "label": "striped racer",
+      "commonName": "Striped Racer",
+      "reason": "Model label observed in biowatch studies; resolves to masticophis lateralis"
+    },
+    {
+      "scientificName": "mephitis mephitis",
+      "label": "striped skunk",
+      "commonName": "striped skunk",
+      "reason": "Model label observed in biowatch studies; resolves to mephitis mephitis"
+    },
+    {
+      "scientificName": "mephitis mephitis",
+      "label": "striped_skunk",
+      "commonName": "striped skunk",
+      "reason": "Model label observed in biowatch studies; resolves to mephitis mephitis"
+    },
+    {
+      "scientificName": "coluber taeniatus",
+      "commonName": "Striped Whipsnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "coluber taeniatus",
+      "label": "striped whipsnake",
+      "commonName": "Striped Whipsnake",
+      "reason": "Model label observed in biowatch studies; resolves to coluber taeniatus"
+    },
+    {
+      "scientificName": "helarctos",
+      "commonName": "Sun bear",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "helarctos",
+      "label": "sun_bear",
+      "commonName": "Sun bear",
+      "reason": "Model label observed in biowatch studies; resolves to helarctos"
+    },
+    {
+      "scientificName": "eira",
+      "commonName": "Tayra",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "eira",
+      "label": "tayra",
+      "commonName": "Tayra",
+      "reason": "Model label observed in biowatch studies; resolves to eira"
+    },
+    {
+      "scientificName": "ranidae",
+      "commonName": "True frogs",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY)"
+    },
+    {
+      "scientificName": "ranidae",
+      "label": "true frogs",
+      "commonName": "True frogs",
+      "reason": "Model label observed in biowatch studies; resolves to ranidae"
+    },
+    {
+      "scientificName": "cathartes aura",
+      "label": "turkey_vulture",
+      "commonName": "turkey vulture",
+      "reason": "Model label observed in biowatch studies; resolves to cathartes aura"
+    },
+    {
+      "scientificName": "thamnophis hammondii",
+      "commonName": "Two-striped Gartersnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "thamnophis hammondii",
+      "label": "two-striped gartersnake",
+      "commonName": "Two-striped Gartersnake",
+      "reason": "Model label observed in biowatch studies; resolves to thamnophis hammondii"
+    },
+    {
+      "scientificName": "chiroptera",
+      "commonName": "Unidentified Bat",
+      "reason": "Auto-added from biowatch studies (rank=ORDER)"
+    },
+    {
+      "scientificName": "chiroptera",
+      "label": "unidentified_bat",
+      "commonName": "Unidentified Bat",
+      "reason": "Model label observed in biowatch studies; resolves to chiroptera"
+    },
+    {
+      "scientificName": "thamnophis sirtalis fitchi",
+      "commonName": "Valley Gartersnake",
+      "reason": "Auto-added from biowatch studies (rank=SUBSPECIES)"
+    },
+    {
+      "scientificName": "thamnophis sirtalis fitchi",
+      "label": "valley gartersnake",
+      "commonName": "Valley Gartersnake",
+      "reason": "Model label observed in biowatch studies; resolves to thamnophis sirtalis fitchi"
+    },
+    {
+      "scientificName": "ixoreus naevius",
+      "label": "varied thrush",
+      "commonName": "varied thrush",
+      "reason": "Model label observed in biowatch studies; resolves to ixoreus naevius"
+    },
+    {
+      "scientificName": "ixoreus naevius",
+      "label": "varied_thrush",
+      "commonName": "varied thrush",
+      "reason": "Model label observed in biowatch studies; resolves to ixoreus naevius"
+    },
+    {
+      "scientificName": "chlorocebus pygerythrus",
+      "label": "vervet_monkey",
+      "commonName": "vervet monkey",
+      "reason": "Model label observed in biowatch studies; resolves to chlorocebus pygerythrus"
+    },
+    {
+      "scientificName": "cathartes",
+      "commonName": "Vulture",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "cathartes",
+      "label": "vulture",
+      "commonName": "Vulture",
+      "reason": "Model label observed in biowatch studies; resolves to cathartes"
+    },
+    {
+      "scientificName": "phacochoerus",
+      "commonName": "warthog",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "phacochoerus",
+      "label": "warthog",
+      "commonName": "warthog",
+      "reason": "Model label observed in biowatch studies; resolves to phacochoerus"
+    },
+    {
+      "scientificName": "crotalus atrox",
+      "commonName": "Western Diamondback Rattlesnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "crotalus atrox",
+      "label": "western diamondback rattlesnake",
+      "commonName": "Western Diamondback Rattlesnake",
+      "reason": "Model label observed in biowatch studies; resolves to crotalus atrox"
+    },
+    {
+      "scientificName": "sceloporus occidentalis",
+      "label": "western fence lizard",
+      "commonName": "western fence lizard",
+      "reason": "Model label observed in biowatch studies; resolves to sceloporus occidentalis"
+    },
+    {
+      "scientificName": "sciurus griseus",
+      "label": "western gray squirrel",
+      "commonName": "western gray squirrel",
+      "reason": "Model label observed in biowatch studies; resolves to sciurus griseus"
+    },
+    {
+      "scientificName": "sturnella neglecta",
+      "label": "western meadowlark",
+      "commonName": "western meadowlark",
+      "reason": "Model label observed in biowatch studies; resolves to sturnella neglecta"
+    },
+    {
+      "scientificName": "salvadora spec.",
+      "commonName": "Western patch-nosed snake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "salvadora spec.",
+      "label": "western patch-nosed snake",
+      "commonName": "Western patch-nosed snake",
+      "reason": "Model label observed in biowatch studies; resolves to salvadora spec."
+    },
+    {
+      "scientificName": "emys marmorata",
+      "label": "western pond turtle",
+      "commonName": "western pond turtle",
+      "reason": "Model label observed in biowatch studies; resolves to emys marmorata"
+    },
+    {
+      "scientificName": "uta stansburiana elegans",
+      "commonName": "Western Side-blotched Lizard",
+      "reason": "Auto-added from biowatch studies (rank=SUBSPECIES)"
+    },
+    {
+      "scientificName": "uta stansburiana elegans",
+      "label": "western side-blotched lizard",
+      "commonName": "Western Side-blotched Lizard",
+      "reason": "Model label observed in biowatch studies; resolves to uta stansburiana elegans"
+    },
+    {
+      "scientificName": "spilogale gracilis",
+      "label": "western spotted skunk",
+      "commonName": "western spotted skunk",
+      "reason": "Model label observed in biowatch studies; resolves to spilogale gracilis"
+    },
+    {
+      "scientificName": "tanagra ludoviciana",
+      "commonName": "western tanager",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "tanagra ludoviciana",
+      "label": "western tanager",
+      "commonName": "western tanager",
+      "reason": "Model label observed in biowatch studies; resolves to tanagra ludoviciana"
+    },
+    {
+      "scientificName": "rena humilis",
+      "commonName": "Western Threadsnake",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "rena humilis",
+      "label": "western threadsnake",
+      "commonName": "Western Threadsnake",
+      "reason": "Model label observed in biowatch studies; resolves to rena humilis"
+    },
+    {
+      "scientificName": "anaxyrus boreas",
+      "commonName": "Western Toad",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "anaxyrus boreas",
+      "label": "western toad",
+      "commonName": "Western Toad",
+      "reason": "Model label observed in biowatch studies; resolves to anaxyrus boreas"
+    },
+    {
+      "scientificName": "aspidoscelis tigris",
+      "commonName": "Western Whiptail",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "aspidoscelis tigris",
+      "label": "western whiptail",
+      "commonName": "Western Whiptail",
+      "reason": "Model label observed in biowatch studies; resolves to aspidoscelis tigris"
+    },
+    {
+      "scientificName": "coluber constrictor mormon",
+      "commonName": "Western Yellow-bellied Racer",
+      "reason": "Auto-added from biowatch studies (rank=SUBSPECIES)"
+    },
+    {
+      "scientificName": "coluber constrictor mormon",
+      "label": "western yellow-bellied racer",
+      "commonName": "Western Yellow-bellied Racer",
+      "reason": "Model label observed in biowatch studies; resolves to coluber constrictor mormon"
+    },
+    {
+      "scientificName": "oenanthe",
+      "commonName": "Wheatear",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "oenanthe",
+      "label": "wheatear",
+      "commonName": "Wheatear",
+      "reason": "Model label observed in biowatch studies; resolves to oenanthe"
+    },
+    {
+      "scientificName": "penelope jacucaca",
+      "label": "white-browed_guan",
+      "commonName": "white-browed guan",
+      "reason": "Model label observed in biowatch studies; resolves to penelope jacucaca"
+    },
+    {
+      "scientificName": "peromyscus leucopus",
+      "label": "white-footed_mouse",
+      "commonName": "white-footed mouse",
+      "reason": "Model label observed in biowatch studies; resolves to peromyscus leucopus"
+    },
+    {
+      "scientificName": "tayassu pecari",
+      "label": "white-lipped_peccary",
+      "commonName": "white-lipped peccary",
+      "reason": "Model label observed in biowatch studies; resolves to tayassu pecari"
+    },
+    {
+      "scientificName": "nasua narica",
+      "label": "white-nosed_coati",
+      "commonName": "white-nosed coati",
+      "reason": "Model label observed in biowatch studies; resolves to nasua narica"
+    },
+    {
+      "scientificName": "ammospermophilus leucurus",
+      "label": "white-tailed antelope squirrel",
+      "commonName": "white-tailed antelope squirrel",
+      "reason": "Model label observed in biowatch studies; resolves to ammospermophilus leucurus"
+    },
+    {
+      "scientificName": "odocoileus virginianus",
+      "label": "white-tailed_deer",
+      "commonName": "white-tailed deer",
+      "reason": "Model label observed in biowatch studies; resolves to odocoileus virginianus"
+    },
+    {
+      "scientificName": "zenaida asiatica",
+      "label": "white-winged_dove",
+      "commonName": "white-winged dove",
+      "reason": "Model label observed in biowatch studies; resolves to zenaida asiatica"
+    },
+    {
+      "scientificName": "urocissa whiteheadi",
+      "label": "white-winged_magpie",
+      "commonName": "hainan magpie",
+      "reason": "Model label observed in biowatch studies; resolves to urocissa whiteheadi"
+    },
+    {
+      "scientificName": "meleagris gallopavo",
+      "label": "wild turkey",
+      "commonName": "wild turkey",
+      "reason": "Model label observed in biowatch studies; resolves to meleagris gallopavo"
+    },
+    {
+      "scientificName": "felis silvestris",
+      "label": "wildcat",
+      "commonName": "wild cat",
+      "reason": "Model label observed in biowatch studies; resolves to felis silvestris"
+    },
+    {
+      "scientificName": "connochaetes",
+      "commonName": "wildebeest",
+      "reason": "Auto-added from biowatch studies (rank=GENUS)"
+    },
+    {
+      "scientificName": "connochaetes",
+      "label": "wildebeest",
+      "commonName": "wildebeest",
+      "reason": "Model label observed in biowatch studies; resolves to connochaetes"
+    },
+    {
+      "scientificName": "napaeozapus insignis",
+      "label": "woodland_jumping_mouse",
+      "commonName": "woodland jumping mouse",
+      "reason": "Model label observed in biowatch studies; resolves to napaeozapus insignis"
+    },
+    {
+      "scientificName": "sceloporus uniformis",
+      "commonName": "Yellow-backed Spiny Lizard",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "sceloporus uniformis",
+      "label": "yellow-backed spiny lizard",
+      "commonName": "Yellow-backed Spiny Lizard",
+      "reason": "Model label observed in biowatch studies; resolves to sceloporus uniformis"
+    },
+    {
+      "scientificName": "neotamias ochrogenys",
+      "commonName": "Yellow-cheeked chipmunk",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "neotamias ochrogenys",
+      "label": "yellow-cheeked chipmunk",
+      "commonName": "Yellow-cheeked chipmunk",
+      "reason": "Model label observed in biowatch studies; resolves to neotamias ochrogenys"
+    },
+    {
+      "scientificName": "nyctanassa violacea",
+      "label": "yellow-crowned_night_heron",
+      "commonName": "yellow-crowned night-heron",
+      "reason": "Model label observed in biowatch studies; resolves to nyctanassa violacea"
+    },
+    {
+      "scientificName": "papio cynocephalus",
+      "label": "yellow_baboon",
+      "commonName": "yellow baboon",
+      "reason": "Model label observed in biowatch studies; resolves to papio cynocephalus"
+    },
+    {
+      "scientificName": "callisaurus draconoides",
+      "commonName": "Zebra-tailed Lizard",
+      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
+    },
+    {
+      "scientificName": "callisaurus draconoides",
+      "label": "zebra-tailed lizard",
+      "commonName": "Zebra-tailed Lizard",
+      "reason": "Model label observed in biowatch studies; resolves to callisaurus draconoides"
+    },
+    {
+      "scientificName": "accipitridae",
+      "commonName": "hawks, eagles, and kites",
+      "reason": "Family-level label; GBIF's 'Eagles' alone misses kites, hawks, vultures"
+    },
+    {
+      "scientificName": "anas",
+      "commonName": "Dabbling Ducks",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "anatidae",
+      "commonName": "Ducks",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "anser",
+      "commonName": "geese",
+      "reason": "Genus-level label; GBIF's 'Bean Geese' is one species not the genus"
+    },
+    {
+      "scientificName": "ardea",
+      "commonName": "herons",
+      "reason": "Genus-level label; GBIF's 'Great Herons' refers to subset"
+    },
+    {
+      "scientificName": "botaurus",
+      "commonName": "bitterns",
+      "reason": "Genus-level label; GBIF's 'Brown Bitterns' is a subset"
+    },
+    {
+      "scientificName": "caprimulgidae",
+      "commonName": "Nightjars",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "carnivora",
+      "commonName": "Carnivores",
+      "reason": "Auto-added from biowatch studies (rank=ORDER, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "catharus",
+      "commonName": "Brown Thrushes And Nightingale-thrushes",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "cervidae",
+      "commonName": "DEER",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "coendou",
+      "commonName": "prehensile-tailed porcupine",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "columbidae",
+      "commonName": "doves and pigeons",
+      "reason": "Family-level label; 'Dove' alone misses pigeons"
+    },
+    {
+      "scientificName": "corvus",
+      "commonName": "Crows",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "cracidae",
+      "commonName": "Chachalacas",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "dasyprocta",
+      "commonName": "agoutis",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "dasypus",
+      "commonName": "Long-Nosed Armadillos",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "didelphidae",
+      "commonName": "Opossoms",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "didelphis",
+      "commonName": "Large American Opossums",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "emberizidae",
+      "commonName": "Buntings",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "felis",
+      "commonName": "Small Cats",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "galago",
+      "commonName": "lesser galagos",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "geotrygon",
+      "commonName": "Quail-Doves",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "grallariidae",
+      "commonName": "Antpittas",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "hippopotamus",
+      "commonName": "Hippopotamuses",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "junco",
+      "commonName": "Juncos",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "leopardus",
+      "commonName": "American Spotted Cats",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "leptotila",
+      "commonName": "White-Tipped Doves",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "lepus",
+      "commonName": "Hares",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "mammalia",
+      "commonName": "Mammals",
+      "reason": "Auto-added from biowatch studies (rank=CLASS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "marmosa",
+      "commonName": "Mouse Opossums",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "marmosops",
+      "commonName": "slender opossum",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "martes",
+      "commonName": "Martens",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "myiarchus",
+      "commonName": "Crested Flycatchers",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "nyctibius",
+      "commonName": "Potoos",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "nyctidromus",
+      "commonName": "Pauraques",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "paridae",
+      "commonName": "Tits",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "passeriformes",
+      "commonName": "Perching Birds",
+      "reason": "Auto-added from biowatch studies (rank=ORDER, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "picidae",
+      "commonName": "Woodpeckers",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "proechimys",
+      "commonName": "spiny rat",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "proedromys",
+      "commonName": "Liangshan Vole",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "puma",
+      "commonName": "Pumas",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "rhinoceros",
+      "commonName": "one-horned rhinoceros",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "rodentia",
+      "commonName": "Rodents",
+      "reason": "Auto-added from biowatch studies (rank=ORDER, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "sapajus",
+      "commonName": "Robust Capuchins",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "sciuridae",
+      "commonName": "Squirrels",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "soricidae",
+      "commonName": "SHREWS",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "sporophila",
+      "commonName": "Seedeaters",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "sylvilagus",
+      "commonName": "Cottontails",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "tayassuidae",
+      "commonName": "PECCARIES",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "tinamidae",
+      "commonName": "Tinamous",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "trochilidae",
+      "commonName": "Hummingbirds",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "tupinambis",
+      "commonName": "tegu",
+      "reason": "Auto-added from biowatch studies (rank=GENUS, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "turdidae",
+      "commonName": "Thrushes",
+      "reason": "Auto-added from biowatch studies (rank=FAMILY, capitalized GBIF probe)"
+    },
+    {
+      "scientificName": "turdus",
+      "commonName": "thrushes",
+      "reason": "Genus-level label; 'Robins' is misleading (only T. migratorius is 'American Robin')"
+    },
+    {
+      "scientificName": "gallus",
+      "commonName": "junglefowl",
+      "reason": "Genus-level label; GBIF /species/match scores 'Gallus' against KINGDOM Animalia at 92% confidence so the auto-probe drops it"
+    },
+    {
+      "scientificName": "anura",
+      "commonName": "frogs and toads",
+      "reason": "Order-level label; GBIF /species/match returns NONE due to multiple equal matches (synonyms across kingdoms)"
+    },
+    {
+      "scientificName": "hippotragus niger",
+      "label": "sable",
+      "commonName": "sable antelope",
+      "reason": "LILA Nkhotakota uses 'sable' for the African sable antelope; unambiguous in that dataset's savanna context"
+    },
+    {
+      "scientificName": "felis catus",
+      "label": "cat",
+      "commonName": "domestic cat",
+      "reason": "LILA Island Conservation uses 'cat' for the invasive domestic cat"
+    },
+    {
+      "scientificName": "canis lupus familiaris",
+      "label": "dog",
+      "commonName": "domestic dog",
+      "reason": "LILA Island Conservation uses 'dog' for the invasive domestic dog"
+    },
+    {
+      "scientificName": "sus scrofa",
+      "label": "pig",
+      "commonName": "pig",
+      "reason": "LILA Island Conservation uses 'pig' for the invasive domestic / feral pig"
+    },
+    {
+      "scientificName": "capra hircus",
+      "label": "goat",
+      "commonName": "goat",
+      "reason": "LILA Island Conservation uses 'goat' for the invasive domestic goat"
+    },
+    {
+      "scientificName": "bos taurus",
+      "label": "cow",
+      "commonName": "cow",
+      "reason": "LILA Island Conservation uses 'cow' for domestic cattle"
+    },
+    {
+      "scientificName": "gallus gallus",
+      "label": "chicken",
+      "commonName": "chicken",
+      "reason": "LILA Island Conservation uses 'chicken' for the domestic fowl (Gallus gallus domesticus rolls up to G. gallus)"
+    },
+    {
+      "scientificName": "gallus gallus",
+      "label": "rooster",
+      "commonName": "rooster",
+      "reason": "Same species as 'chicken' — LILA Island Conservation distinguishes male birds"
+    },
+    {
+      "scientificName": "equus asinus",
+      "label": "donkey",
+      "commonName": "donkey",
+      "reason": "LILA Island Conservation uses 'donkey' for the invasive domestic donkey"
+    },
+    {
+      "scientificName": "homo sapiens",
+      "label": "human",
+      "commonName": "human",
+      "reason": "Multiple LILA datasets use 'human' for camera-trap-detected people"
+    },
+    {
+      "scientificName": "corvus corax",
+      "label": "raven",
+      "commonName": "common raven",
+      "reason": "LILA Island Conservation 'raven' resolves to Common Raven in the islands covered by the dataset"
+    },
+    {
+      "scientificName": "irena puella",
+      "label": "asian_fairy_bluebird",
+      "commonName": "asian fairy-bluebird",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "atherurus macrourus",
+      "label": "asiatic_brush_tailed_porcupine",
+      "commonName": "asiatic brush-tailed porcupine",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "mustela strigidorsa",
+      "label": "back_striped_weasel",
+      "commonName": "back-striped weasel",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "coluber fuliginosus",
+      "label": "baja california coachwhip",
+      "commonName": "baja california coachwhip",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "hydrornis elliotii",
+      "label": "bar_bellied_pitta",
+      "commonName": "bar-bellied pitta",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "macropygia unchall",
+      "label": "barred_cuckoo_dove",
+      "commonName": "barred cuckoo-dove",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "garrulax chinensis",
+      "label": "black_throated_laughingthrush",
+      "commonName": "black-throated laughingthrush",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "cinclidium frontale",
+      "label": "blue_fronted_robin",
+      "commonName": "blue-fronted robin",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "herpestes urva",
+      "label": "crab_eating_mongoose",
+      "commonName": "crab-eating mongoose",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "culicicapa ceylonensis",
+      "label": "grey_headed_canary_flycatcher",
+      "commonName": "grey-headed canary-flycatcher",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "passerina cyanea",
+      "label": "indigo_bunting",
+      "commonName": "indigo bunting",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "vanellus vanellus",
+      "label": "lapwing",
+      "commonName": "lapwing",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "muntiacus vuquangensis",
+      "label": "large_antlered_muntjac",
+      "commonName": "large-antlered muntjac",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "ovis gmelini",
+      "label": "mouflon",
+      "commonName": "mouflon",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "nisaetus nipalensis",
+      "label": "mountain_hawk_eagle",
+      "commonName": "mountain hawk-eagle",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "ammospermophilus nelsoni",
+      "label": "nelson's antelope squirrel",
+      "commonName": "nelson s antelope squirrel",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "harpactes oreskios",
+      "label": "orange_breasted_trogon",
+      "commonName": "orange-breasted trogon",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "geokichla citrina",
+      "label": "orange_headed_thrush",
+      "commonName": "orange-headed thrush",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "macaca nemestrina",
+      "label": "pig_tailed_macaque",
+      "commonName": "pig-tailed macaque",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "dremomys rufigenis",
+      "label": "red_cheeked_squirrel",
+      "commonName": "red-cheeked squirrel",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "picus rabieri",
+      "label": "red_collared_woodpecker",
+      "commonName": "red-collared woodpecker",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "pygathrix nemaeus",
+      "label": "red_shanked_douc",
+      "commonName": "red-shanked douc",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "trochalopteron milnei",
+      "label": "red_tailed_laughingthrush",
+      "commonName": "red-tailed laughingthrush",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "garrulax castanotis",
+      "label": "rufous_cheeked_laughingthrush",
+      "commonName": "rufous-cheeked laughingthrush",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "aceros nipalensis",
+      "label": "rufous_necked_hornbill",
+      "commonName": "rufous-necked hornbill",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "thamnophis couchii",
+      "label": "sierra gartersnake",
+      "commonName": "sierra gartersnake",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "leiothrix argentauris",
+      "label": "silver_eared_mesia",
+      "commonName": "silver-eared mesia",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "tamias sonomae",
+      "label": "sonoma chipmunk",
+      "commonName": "sonoma chipmunk",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "macaca arctoides",
+      "label": "stump_tailed_macaque",
+      "commonName": "stump-tailed macaque",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "didelphis virginiana",
+      "label": "virginia opossum",
+      "commonName": "virginia opossum",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "didelphis virginiana",
+      "label": "virginia_opossum",
+      "commonName": "virginia opossum",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "enicurus leschenaulti",
+      "label": "white_crowned_forktail",
+      "commonName": "white-crowned forktail",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "odocoileus virginianus",
+      "label": "white_tailed_deer",
+      "commonName": "white-tailed deer",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "myiomela leucura",
+      "label": "white_tailed_robin",
+      "commonName": "white-tailed robin",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "mustela kathiah",
+      "label": "yellow_bellied_weasel",
+      "commonName": "yellow-bellied weasel",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "martes flavigula",
+      "label": "yellow_throated_marten",
+      "commonName": "yellow-throated marten",
+      "reason": "LILA category label resolved to canonical binomial via GBIF vernacular search"
+    },
+    {
+      "scientificName": "arctictis binturong",
+      "label": "binturong",
+      "commonName": "binturong",
+      "reason": "LILA SWG 'binturong' — Arctictis binturong is the only species in its genus"
+    },
+    {
+      "scientificName": "sciurus",
+      "commonName": "tree squirrels",
+      "reason": "Genus-level label observed in studies; GBIF /species/match for 'Sciurus' resolves to PHYLUM Chordata"
     }
   ]
 }

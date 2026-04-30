@@ -196,7 +196,7 @@ describe('CamTrapDP Import Tests', () => {
       // Check for species observations
       const speciesObs = queryDatabase(
         dbPath,
-        "SELECT * FROM observations WHERE scientificName = 'Cervus elaphus'"
+        "SELECT * FROM observations WHERE scientificName = 'cervus elaphus'"
       )
       assert(speciesObs.length > 0, 'Should have Red Deer observations')
 
@@ -205,7 +205,7 @@ describe('CamTrapDP Import Tests', () => {
       assert.equal(redDeerObs.commonName, 'Red Deer', 'Should have correct common name')
       assert.equal(
         redDeerObs.scientificName,
-        'Cervus elaphus',
+        'cervus elaphus',
         'Should have correct scientific name'
       )
       assert.equal(redDeerObs.count, 2, 'Should have correct count')
@@ -318,9 +318,9 @@ describe('CamTrapDP Import Tests', () => {
 
       // Should have proper scientific names
       const scientificNames = observations.map((obs) => obs.scientificName)
-      assert(scientificNames.includes('Cervus elaphus'), 'Should have Cervus elaphus')
-      assert(scientificNames.includes('Vulpes vulpes'), 'Should have Vulpes vulpes')
-      assert(scientificNames.includes('Sus scrofa'), 'Should have Sus scrofa')
+      assert(scientificNames.includes('cervus elaphus'), 'Should have Cervus elaphus')
+      assert(scientificNames.includes('vulpes vulpes'), 'Should have Vulpes vulpes')
+      assert(scientificNames.includes('sus scrofa'), 'Should have Sus scrofa')
 
       // Should handle empty entries - they should have commonName = 'Empty' but scientificName = null
       const emptyObs = queryDatabase(

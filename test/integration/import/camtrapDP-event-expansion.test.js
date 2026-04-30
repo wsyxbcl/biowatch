@@ -82,7 +82,7 @@ describe('CamTrapDP Event-Based Observation Expansion', () => {
     // Check Red Deer observations were expanded to 3 media
     const redDeerObs = queryDatabase(
       dbPath,
-      "SELECT * FROM observations WHERE scientificName = 'Cervus elaphus' ORDER BY mediaID"
+      "SELECT * FROM observations WHERE scientificName = 'cervus elaphus' ORDER BY mediaID"
     )
     assert.equal(redDeerObs.length, 3, 'Red Deer event should expand to 3 observations')
 
@@ -107,7 +107,7 @@ describe('CamTrapDP Event-Based Observation Expansion', () => {
 
     const foxObs = queryDatabase(
       dbPath,
-      "SELECT * FROM observations WHERE scientificName = 'Vulpes vulpes' ORDER BY mediaID"
+      "SELECT * FROM observations WHERE scientificName = 'vulpes vulpes' ORDER BY mediaID"
     )
     assert.equal(foxObs.length, 2, 'Red Fox event should expand to 2 observations')
 
@@ -129,7 +129,7 @@ describe('CamTrapDP Event-Based Observation Expansion', () => {
     const directObs = queryDatabase(dbPath, "SELECT * FROM observations WHERE mediaID = 'media006'")
     assert.equal(directObs.length, 1, 'Direct observation should be preserved')
     assert.equal(directObs[0].observationID, 'obs-direct1')
-    assert.equal(directObs[0].scientificName, 'Sus scrofa')
+    assert.equal(directObs[0].scientificName, 'sus scrofa')
   })
 
   test('should preserve orphan observations with NULL deploymentID', async () => {

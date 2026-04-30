@@ -17,6 +17,7 @@ import { insertModelOutput } from '../database/index.js'
 import { media, observations, deployments } from '../database/models.js'
 import { resolveVideoTimestamp } from './import/timestamp.js'
 import { resolveCommonName } from '../../shared/commonNames/index.js'
+import { normalizeScientificName } from '../../shared/commonNames/normalize.js'
 import log from './logger.js'
 
 /**
@@ -277,9 +278,11 @@ export async function insertPrediction(db, prediction, modelInfo = {}) {
     }
   }
 
-  // Parse scientific name based on model type
+  // Parse scientific name based on model type. Normalize to canonical
+  // (lowercase, trimmed) form so observations stay deduplicated regardless of
+  // what casing the model emits.
   const modelType = modelInfo.modelID || 'speciesnet'
-  const resolvedScientificName = parseScientificName(prediction, modelType)
+  const resolvedScientificName = normalizeScientificName(parseScientificName(prediction, modelType))
 
   // Camtrap DP classification fields
   const classificationTimestamp = new Date().toISOString()
@@ -470,6 +473,7 @@ export async function insertVideoPredictions(db, predictions, mediaRecord, model
       ? calculateTimestamp(mediaRecord.timestamp, winnerData.lastFrame, fps)
       : null
 
+    const normalizedWinner = normalizeScientificName(winner)
     await db.insert(observations).values({
       observationID: crypto.randomUUID(),
       mediaID: mediaRecord.mediaID,
@@ -477,8 +481,8 @@ export async function insertVideoPredictions(db, predictions, mediaRecord, model
       eventID: eventID,
       eventStart: eventStart,
       eventEnd: eventEnd,
-      scientificName: winner,
-      commonName: resolveCommonName(winner),
+      scientificName: normalizedWinner,
+      commonName: resolveCommonName(normalizedWinner),
       confidence: winnerData.avgConfidence, // Use average confidence
       count: 1,
       // No bbox for video (movement can't be represented by single bbox)
