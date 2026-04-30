@@ -14,7 +14,7 @@ import { Link } from 'react-router'
  */
 function PlaceholderMap({ title, description, linkTo, linkText, studyId, icon: Icon = MapPin }) {
   return (
-    <div className="w-full h-full bg-white rounded border border-gray-200 relative">
+    <div className="w-full h-full bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden relative">
       <MapContainer
         center={[5, 20]}
         zoom={3}
