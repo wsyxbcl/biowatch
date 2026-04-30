@@ -60,9 +60,7 @@ export async function getOverviewStats(dbPath) {
     //    Each deployment contributes at minimum one camera-station event, so
     //    falling back to deploymentID gives a sensible non-zero number.
     const cameraCountRow = sqlite
-      .prepare(
-        `SELECT COUNT(DISTINCT COALESCE(cameraID, deploymentID)) AS n FROM deployments`
-      )
+      .prepare(`SELECT COUNT(DISTINCT COALESCE(cameraID, deploymentID)) AS n FROM deployments`)
       .get()
     const cameraCount = cameraCountRow?.n ?? 0
 
@@ -101,7 +99,10 @@ export async function getOverviewStats(dbPath) {
     const cameraDays = Math.round(cameraDaysRow?.days || 0)
 
     // 5. Media count
-    const mediaResult = await db.select({ n: count().as('n') }).from(media).get()
+    const mediaResult = await db
+      .select({ n: count().as('n') })
+      .from(media)
+      .get()
     const mediaCount = mediaResult?.n ?? 0
 
     // 6. Derived range

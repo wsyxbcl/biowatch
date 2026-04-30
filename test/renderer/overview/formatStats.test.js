@@ -61,7 +61,7 @@ describe('formatRangeShort', () => {
     assert.equal(formatRangeShort('2024-01-01', null), null)
   })
 
-  test("formats as \"MMM 'YY – MMM 'YY\"", () => {
+  test('formats as "MMM \'YY – MMM \'YY"', () => {
     // Use a regex to allow the U+2013 EN DASH (–) the formatter emits.
     const result = formatRangeShort('2020-01-15', '2024-12-15')
     assert.match(result, /^Jan '20\s–\sDec '24$/)
