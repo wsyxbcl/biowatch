@@ -53,7 +53,9 @@ function SpeciesRow({
               <span className="text-gray-400 text-xs italic ml-2">{species.scientificName}</span>
             )}
           </div>
-          <IucnBadge category={iucn} />
+          <div className="w-8 flex-shrink-0">
+            <IucnBadge category={iucn} />
+          </div>
           <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
               className="bg-blue-600 h-full rounded-full"
