@@ -20,7 +20,8 @@ import {
   getSequenceAwareHeatmapSQL,
   getSequenceAwareDailyActivitySQL,
   getBestMedia,
-  getDeploymentsActivity
+  getDeploymentsActivity,
+  getOverviewStats
 } from '../../database/index.js'
 import { getPaginatedSequences } from './pagination.js'
 import {
@@ -137,6 +138,13 @@ async function run() {
       // SUM(CASE) × N scan over observations was locking the renderer for
       // multiple seconds on first open of large studies.
       return getDeploymentsActivity(dbPath, workerData.periodCount)
+    }
+    case 'overview-stats': {
+      // Overview tab's KPI band — counts + derived range in two SQLite
+      // round-trips. Off the main thread because the underlying scans on
+      // observations / deployments / media are O(table size) and large
+      // studies show multi-hundred-ms latency.
+      return getOverviewStats(dbPath)
     }
     default:
       throw new Error(`Unknown worker task type: ${type}`)

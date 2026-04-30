@@ -2,10 +2,14 @@
  * Overview tab — consolidated stats query.
  * Returns one payload covering every KPI tile shown on the Overview tab,
  * including the derived date range used by the Span tile.
+ *
+ * The query collapses what were eight separate round-trips into two
+ * `prepare/get` calls: one mega-query with subqueries for counts + range,
+ * and a separate distinct-species pull (kept separate so we can JS-join
+ * against the bundled speciesInfo dictionary for the threatened tally).
  */
 
-import { getDrizzleDb, getStudyDatabase, media, observations } from '../index.js'
-import { and, isNotNull, ne, sql, count } from 'drizzle-orm'
+import { getStudyDatabase } from '../index.js'
 import log from 'electron-log'
 import { getStudyIdFromPath } from './utils.js'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/resolver.js'
@@ -31,149 +35,99 @@ export async function getOverviewStats(dbPath) {
 
   try {
     const studyId = getStudyIdFromPath(dbPath)
-    const db = await getDrizzleDb(studyId, dbPath, { readonly: true })
     const manager = await getStudyDatabase(studyId, dbPath, { readonly: true })
     const sqlite = manager.getSqlite()
 
-    // 1. Distinct species set (excluding blanks/nulls/empty strings)
-    const speciesRows = await db
-      .select({ scientificName: observations.scientificName })
-      .from(observations)
-      .where(
-        and(
-          isNotNull(observations.scientificName),
-          ne(observations.scientificName, ''),
-          sql`(${observations.observationType} IS NULL OR ${observations.observationType} != 'blank')`
-        )
+    // 1. Counts + derived range in a single query. Each subquery runs once
+    //    and SQLite plans the whole thing as a parallel-ish scan, so this
+    //    is materially cheaper than 8 separate prepare/get calls.
+    const row = sqlite
+      .prepare(
+        `SELECT
+           (SELECT COUNT(DISTINCT COALESCE(cameraID, deploymentID)) FROM deployments) AS cameraCount,
+           (SELECT COUNT(DISTINCT locationID) FROM deployments WHERE locationID IS NOT NULL) AS locationCount,
+           (SELECT COUNT(*) FROM observations
+              WHERE (observationType IS NULL OR observationType != 'blank')) AS observationCount,
+           (SELECT COALESCE(SUM(julianday(deploymentEnd) - julianday(deploymentStart)), 0)
+              FROM deployments
+              WHERE deploymentStart IS NOT NULL
+                AND deploymentEnd   IS NOT NULL
+                AND julianday(deploymentStart) IS NOT NULL
+                AND julianday(deploymentEnd)   IS NOT NULL) AS cameraDays,
+           (SELECT COUNT(*) FROM media) AS mediaCount,
+           (SELECT startDate FROM metadata LIMIT 1) AS overrideStart,
+           (SELECT endDate   FROM metadata LIMIT 1) AS overrideEnd,
+           (SELECT MIN(eventStart) FROM observations
+              WHERE eventStart IS NOT NULL AND eventStart != '') AS minObs,
+           (SELECT MAX(eventStart) FROM observations
+              WHERE eventStart IS NOT NULL AND eventStart != '') AS maxObs,
+           (SELECT MIN(deploymentStart) FROM deployments
+              WHERE deploymentStart IS NOT NULL AND deploymentStart != '') AS minDep,
+           (SELECT MAX(deploymentEnd) FROM deployments
+              WHERE deploymentEnd   IS NOT NULL AND deploymentEnd   != '') AS maxDep,
+           (SELECT MIN(timestamp) FROM media
+              WHERE timestamp IS NOT NULL AND timestamp != '') AS minMed,
+           (SELECT MAX(timestamp) FROM media
+              WHERE timestamp IS NOT NULL AND timestamp != '') AS maxMed`
       )
-      .groupBy(observations.scientificName)
+      .get()
+
+    // 2. Distinct species names (for species count + threatened tally).
+    //    Kept separate from #1 because we need the names themselves, not
+    //    just a count, to look up IUCN status from the bundled dictionary.
+    //    The `observationType != 'blank'` filter is redundant — by
+    //    convention blank-type observations have a null/empty scientificName
+    //    (verified: zero rows in MICA, GMU8 Leuven, Serengeti, NACTI break
+    //    this). Dropping it lets SQLite use idx_observations_scientificName
+    //    as a covering index for the GROUP BY scan.
+    const speciesRows = sqlite
+      .prepare(
+        `SELECT scientificName FROM observations
+           WHERE scientificName IS NOT NULL AND scientificName != ''
+           GROUP BY scientificName`
+      )
+      .all()
 
     const speciesCount = speciesRows.length
-    const threatenedCount = speciesRows.reduce((acc, row) => {
-      const info = resolveSpeciesInfo(row.scientificName)
-      return acc + (info?.iucn && THREATENED_IUCN.has(info.iucn) ? 1 : 0)
-    }, 0)
+    let threatenedCount = 0
+    for (const r of speciesRows) {
+      const info = resolveSpeciesInfo(r.scientificName)
+      if (info?.iucn && THREATENED_IUCN.has(info.iucn)) threatenedCount += 1
+    }
 
-    // 2. Camera + location counts.
-    //    Cameras: distinct cameraID, COALESCEing to deploymentID for rows
-    //    where cameraID is null (common — many importers don't populate it).
-    //    Each deployment contributes at minimum one camera-station event, so
-    //    falling back to deploymentID gives a sensible non-zero number.
-    const cameraCountRow = sqlite
-      .prepare(`SELECT COUNT(DISTINCT COALESCE(cameraID, deploymentID)) AS n FROM deployments`)
-      .get()
-    const cameraCount = cameraCountRow?.n ?? 0
+    const derivedRange = {
+      start:
+        toIsoDate(row?.overrideStart) ||
+        toIsoDate(row?.minObs) ||
+        toIsoDate(row?.minDep) ||
+        toIsoDate(row?.minMed),
+      end:
+        toIsoDate(row?.overrideEnd) ||
+        toIsoDate(row?.maxObs) ||
+        toIsoDate(row?.maxDep) ||
+        toIsoDate(row?.maxMed)
+    }
 
-    const locationCountRow = sqlite
-      .prepare(
-        `SELECT COUNT(DISTINCT locationID) AS n FROM deployments WHERE locationID IS NOT NULL`
-      )
-      .get()
-    const locationCount = locationCountRow?.n ?? 0
-
-    // 3. Observation count (excluding blanks)
-    const obsResult = await db
-      .select({ n: count().as('n') })
-      .from(observations)
-      .where(
-        sql`(${observations.observationType} IS NULL OR ${observations.observationType} != 'blank')`
-      )
-      .get()
-    const observationCount = obsResult?.n ?? 0
-
-    // 4. Camera-days: SUM(julianday(end) - julianday(start)) over deployments
-    //    that have both fields set. Round to nearest integer day.
-    const cameraDaysRow = sqlite
-      .prepare(
-        `SELECT COALESCE(
-           SUM(julianday(deploymentEnd) - julianday(deploymentStart)),
-           0
-         ) AS days
-         FROM deployments
-         WHERE deploymentStart IS NOT NULL
-           AND deploymentEnd IS NOT NULL
-           AND julianday(deploymentEnd) IS NOT NULL
-           AND julianday(deploymentStart) IS NOT NULL`
-      )
-      .get()
-    const cameraDays = Math.round(cameraDaysRow?.days || 0)
-
-    // 5. Media count
-    const mediaResult = await db
-      .select({ n: count().as('n') })
-      .from(media)
-      .get()
-    const mediaCount = mediaResult?.n ?? 0
-
-    // 6. Derived range
-    const derivedRange = deriveRange(sqlite)
+    const result = {
+      speciesCount,
+      threatenedCount,
+      cameraCount: row?.cameraCount ?? 0,
+      locationCount: row?.locationCount ?? 0,
+      observationCount: row?.observationCount ?? 0,
+      cameraDays: Math.round(row?.cameraDays || 0),
+      mediaCount: row?.mediaCount ?? 0,
+      derivedRange
+    }
 
     const elapsedTime = Date.now() - startTime
     log.info(
-      `Overview stats: ${speciesCount} species, ${observationCount} obs, ${mediaCount} media in ${elapsedTime}ms`
+      `Overview stats: ${result.speciesCount} species, ${result.observationCount} obs, ${result.mediaCount} media in ${elapsedTime}ms`
     )
 
-    return {
-      speciesCount,
-      threatenedCount,
-      cameraCount,
-      locationCount,
-      observationCount,
-      cameraDays,
-      mediaCount,
-      derivedRange
-    }
+    return result
   } catch (error) {
     log.error(`Error in getOverviewStats: ${error.message}`)
     throw error
-  }
-}
-
-/**
- * Resolve start and end independently using the override → observations →
- * deployments → media chain. Returns ISO date strings (YYYY-MM-DD) or null.
- */
-function deriveRange(sqlite) {
-  // Override (metadata.startDate / endDate). The metadata row may not exist
-  // for very fresh studies; tolerate undefined.
-  const meta = sqlite.prepare('SELECT startDate, endDate FROM metadata LIMIT 1').get()
-  const overrideStart = meta?.startDate || null
-  const overrideEnd = meta?.endDate || null
-
-  // Observations
-  const obs = sqlite
-    .prepare(
-      `SELECT MIN(eventStart) AS minE, MAX(eventStart) AS maxE
-         FROM observations
-         WHERE eventStart IS NOT NULL AND eventStart != ''`
-    )
-    .get()
-
-  // Deployments — start uses deploymentStart, end uses deploymentEnd
-  const dep = sqlite
-    .prepare(
-      `SELECT
-         MIN(CASE WHEN deploymentStart IS NOT NULL AND deploymentStart != '' THEN deploymentStart END) AS minS,
-         MAX(CASE WHEN deploymentEnd   IS NOT NULL AND deploymentEnd   != '' THEN deploymentEnd   END) AS maxE
-         FROM deployments`
-    )
-    .get()
-
-  // Media timestamps
-  const med = sqlite
-    .prepare(
-      `SELECT MIN(timestamp) AS minT, MAX(timestamp) AS maxT
-         FROM media
-         WHERE timestamp IS NOT NULL AND timestamp != ''`
-    )
-    .get()
-
-  const startSources = [overrideStart, obs?.minE, dep?.minS, med?.minT]
-  const endSources = [overrideEnd, obs?.maxE, dep?.maxE, med?.maxT]
-
-  return {
-    start: toIsoDate(startSources.find((v) => !!v)),
-    end: toIsoDate(endSources.find((v) => !!v))
   }
 }
 
