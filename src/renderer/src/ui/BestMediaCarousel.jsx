@@ -692,7 +692,7 @@ function MediaCard({ media, onClick, studyId }) {
  * @param {Object} props
  * @param {string} props.studyId - Study ID to fetch media for
  */
-export default function BestMediaCarousel({ studyId, isRunning }) {
+export default function BestMediaCarousel({ studyId, isRunning, renderEmpty }) {
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(null)
@@ -757,9 +757,12 @@ export default function BestMediaCarousel({ studyId, isRunning }) {
     })
   }
 
-  // Hide carousel while loading, on error, or if no data
-  if (isLoading || error || bestMedia.length === 0) {
+  // Hide carousel while loading or on error.
+  if (isLoading || error) {
     return null
+  }
+  if (bestMedia.length === 0) {
+    return renderEmpty ? renderEmpty() : null
   }
 
   return (
