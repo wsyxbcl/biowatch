@@ -1319,32 +1319,22 @@
       "reason": "Model label observed in biowatch studies; resolves to scapanus latimanus"
     },
     {
-      "scientificName": "mus norvegicus",
-      "commonName": "brown rat",
-      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
-    },
-    {
-      "scientificName": "mus norvegicus",
+      "scientificName": "rattus norvegicus",
       "label": "brown rat",
       "commonName": "brown rat",
-      "reason": "Model label observed in biowatch studies; resolves to mus norvegicus"
+      "reason": "Model label observed in biowatch studies; resolves to rattus norvegicus (the accepted name; mus norvegicus is a synonym GBIF still indexes)"
     },
     {
-      "scientificName": "mus norvegicus",
+      "scientificName": "rattus norvegicus",
       "label": "brown_rat",
       "commonName": "brown rat",
-      "reason": "Model label observed in biowatch studies; resolves to mus norvegicus"
+      "reason": "Model label observed in biowatch studies; resolves to rattus norvegicus"
     },
     {
-      "scientificName": "sterna stolida",
-      "commonName": "brown noddy",
-      "reason": "Auto-added from biowatch studies (rank=SPECIES)"
-    },
-    {
-      "scientificName": "sterna stolida",
+      "scientificName": "anous stolidus",
       "label": "brown_noddy",
       "commonName": "brown noddy",
-      "reason": "Model label observed in biowatch studies; resolves to sterna stolida"
+      "reason": "Model label observed in biowatch studies; resolves to anous stolidus (the accepted name; sterna stolida is a synonym GBIF still indexes)"
     },
     {
       "scientificName": "strix leptogrammica",

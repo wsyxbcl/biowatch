@@ -1792,10 +1792,16 @@
     "iucn": "LC"
   },
   "brown_noddy": {
-    "iucn": "NE"
+    "iucn": "LC",
+    "blurb": "The brown noddy, common noddy or noddy tern is a seabird in the family Laridae. The largest of the noddies, it can be told from the closely related black noddy by its larger size and plumage, which is dark brown rather than black. The brown noddy is a tropical seabird with a worldwide distribution, ranging from Hawaii to the Tuamotu Archipelago and Australia in the Pacific Ocean, from the Red Sea to the Seychelles and Australia in the Indian Ocean and in the Caribbean to Tristan da Cunha in the Atlantic Ocean. The brown noddy is colonial, usually nesting on elevated situations on cliffs or in short trees or shrubs. It only occasionally nests on the ground. A single egg is laid by the female of a pair each breeding season. In India, the brown noddy is protected in the PM Sayeed Marine Birds Conservation Reserve.",
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/Common_noddy_%28Anous_stolidus_pileatus%29_in_flight_Michaelmas_Cay.jpg/330px-Common_noddy_%28Anous_stolidus_pileatus%29_in_flight_Michaelmas_Cay.jpg",
+    "wikipediaUrl": "https://en.wikipedia.org/wiki/Brown_noddy"
   },
   "brown_rat": {
-    "iucn": "LC"
+    "iucn": "LC",
+    "blurb": "The brown rat, also known as the common rat, street rat, sewer rat, wharf rat, Hanover rat, Norway rat and Norwegian rat, is a widespread, common species of rat. One of the largest muroids, it is a brown or grey rodent with a body length of up to 28 cm (11 in) long, and a tail slightly shorter than that. It weighs between 140 and 500 g. Thought to have originated in northern China and neighbouring areas, it has now spread to all continents except Antarctica, and is the dominant rat in Europe and much of North America, having become naturalised across the world. With rare exceptions, the brown rat lives wherever humans live, particularly in urban areas. It is omnivorous, reproduces rapidly, and can be a vector for several human diseases.",
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Rattus_norvegicus_-_Brown_rat_02.jpg/330px-Rattus_norvegicus_-_Brown_rat_02.jpg",
+    "wikipediaUrl": "https://en.wikipedia.org/wiki/Brown_rat"
   },
   "brown_wood_owl": {
     "iucn": "LC",
@@ -9792,9 +9798,6 @@
     "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Mouse_white_background.jpg",
     "wikipediaUrl": "https://en.wikipedia.org/wiki/House_mouse"
   },
-  "mus norvegicus": {
-    "iucn": "LC"
-  },
   "muscisaxicola maclovianus": {
     "iucn": "LC",
     "blurb": "The dark-faced ground tyrant is a small passerine bird in the family Tyrannidae, the tyrant flycatchers. It is found in Argentina, Chile, Peru, Uruguay, the Falkland Islands, possibly in Ecuador, and as a vagrant to Brazil.",
@@ -14699,9 +14702,6 @@
     "blurb": "The crowned eagle, also known as the African crowned eagle or the crowned hawk-eagle, is a large bird of prey found in sub-Saharan Africa; in Southern Africa, it is restricted to more easterly areas. Its preferred habitats are principally riparian woodlands and various forests. The crowned eagle is the only extant member of the genus Stephanoaetus. A second species, the Malagasy crowned eagle, went extinct after early humans settled on Madagascar.",
     "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Crowned_Eagle_%28Stephanoaetus_coronatus%29_with_prey_..._%2829591438981%29.jpg/330px-Crowned_Eagle_%28Stephanoaetus_coronatus%29_with_prey_..._%2829591438981%29.jpg",
     "wikipediaUrl": "https://en.wikipedia.org/wiki/Crowned_eagle"
-  },
-  "sterna stolida": {
-    "iucn": "NE"
   },
   "stigmatopelia chinensis": {
     "iucn": "NE",
