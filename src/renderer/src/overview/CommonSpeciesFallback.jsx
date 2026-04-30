@@ -6,7 +6,7 @@ import { CameraOff, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useSequenceGap } from '../hooks/useSequenceGap'
 import { useCommonName } from '../utils/commonNames'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
-import { isBlank, isHumanOrVehicle, isNonSpeciesLabel } from '../utils/speciesUtils'
+import { isBlank, isDomestic, isHumanOrVehicle, isNonSpeciesLabel } from '../utils/speciesUtils'
 import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
 
 const TOP_N = 8
@@ -38,6 +38,7 @@ export default function CommonSpeciesFallback({ studyId }) {
       (s) =>
         !isBlank(s.scientificName) &&
         !isHumanOrVehicle(s.scientificName) &&
+        !isDomestic(s.scientificName) &&
         !isNonSpeciesLabel(s.scientificName)
     )
     .map((s) => ({
