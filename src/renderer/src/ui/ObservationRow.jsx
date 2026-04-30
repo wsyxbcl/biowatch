@@ -4,6 +4,7 @@ import SexSelector from './SexSelector'
 import LifeStageSelector from './LifeStageSelector'
 import BehaviorSelector from './BehaviorSelector'
 import SpeciesPicker from './SpeciesPicker'
+import { resolveCommonName } from '../../../shared/commonNames/index.js'
 
 const BBOX_TYPE_ICON = (
   <span
@@ -51,7 +52,12 @@ export default function ObservationRow({
   const isBbox = observation.bboxX != null
   const isHuman = observation.classificationMethod === 'human'
 
+  // Prefer the dictionary's curated common name over whatever the importer
+  // dropped in observations.commonName (LILA stores the snake_case category
+  // there, e.g. "yellow_baboon"). Falls through to the DB value, then to the
+  // scientific name.
   const displayName =
+    resolveCommonName(observation.scientificName) ||
     observation.commonName ||
     observation.scientificName ||
     (observation.observationType === 'blank' ? 'Blank' : '—')
@@ -106,7 +112,7 @@ export default function ObservationRow({
           className={`text-sm flex-1 min-w-0 truncate ${
             observation.observationType === 'blank'
               ? 'italic text-gray-400'
-              : 'text-[#030213] font-medium'
+              : 'text-[#030213] font-medium capitalize'
           }`}
         >
           {displayName}

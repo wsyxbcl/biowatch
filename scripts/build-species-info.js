@@ -24,6 +24,11 @@ import {
   parseWikipediaSummary
 } from './build-species-info.lib.js'
 import dictionary from '../src/shared/commonNames/dictionary.json' with { type: 'json' }
+import extras from '../src/shared/commonNames/extras.json' with { type: 'json' }
+import speciesnetSource from '../src/shared/commonNames/sources/speciesnet.json' with { type: 'json' }
+import deepfauneSource from '../src/shared/commonNames/sources/deepfaune.json' with { type: 'json' }
+import manasSource from '../src/shared/commonNames/sources/manas.json' with { type: 'json' }
+import { normalizeScientificName } from '../src/shared/commonNames/normalize.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
@@ -69,17 +74,90 @@ async function fetchJson(url) {
   }
 }
 
+/**
+ * Wikipedia REST sometimes returns a disambiguation page for genus/family
+ * names (e.g. "Anser", "Ardea") because the bare title also refers to a city,
+ * a constellation, etc. Retry with a rank-keyed suffix that points at the
+ * taxonomic page — `<Name>_(genus)`, `<Name>_(bird)`, `<Name>_(family)` etc.
+ * Returns the first non-disambig response, or the original disambig response
+ * so the caller can still log it.
+ */
+async function fetchWikipediaSummaryWithRetries(name, rank) {
+  const url = (title) =>
+    `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`
+  const first = await fetchJson(url(name))
+  if (!first || first.type !== 'disambiguation') return first
+
+  const suffixes = []
+  if (rank === 'GENUS') suffixes.push('(genus)', '(bird)', '(plant)', '(fish)', '(insect)')
+  else if (rank === 'FAMILY') suffixes.push('(family)', '(bird)', '(plant)')
+  else if (rank === 'ORDER') suffixes.push('(order)', '(bird)', '(plant)')
+  else if (rank === 'SUBFAMILY') suffixes.push('(subfamily)')
+
+  for (const suffix of suffixes) {
+    const titled = `${name.charAt(0).toUpperCase() + name.slice(1)} ${suffix}`
+    const resp = await fetchJson(url(titled))
+    if (resp && resp.type !== 'disambiguation') return resp
+  }
+  return first
+}
+
+const USEFUL_RANKS = new Set(['SPECIES', 'SUBSPECIES', 'GENUS', 'FAMILY', 'ORDER', 'SUBFAMILY'])
+
+/**
+ * Resolve a dictionary key to a GBIF taxon record. Three strategies, in order:
+ *   1. /species/match with the lowercase key (works for binomials).
+ *   2. /species/match with the first letter capitalized — GBIF is
+ *      case-sensitive for higher-rank taxa ("anser" matches a UNRANKED
+ *      synonym, while "Anser" returns the goose genus).
+ *   3. /species/search with rank filters. Required when /species/match returns
+ *      a useless KINGDOM/PHYLUM fallback (Gallus, Sciurus, Panthera) or
+ *      "Multiple equal matches" (Anura). Iterates SPECIES → GENUS → FAMILY →
+ *      ORDER and keeps the first ACCEPTED match whose canonical name equals
+ *      the query.
+ */
+async function fetchGbifMatch(name) {
+  const matchUrl = (n) => `https://api.gbif.org/v1/species/match?name=${encodeURIComponent(n)}`
+  const first = await fetchJson(matchUrl(name))
+  if (first && USEFUL_RANKS.has(first.rank)) return first
+
+  if (!/^[a-z]/.test(name)) return first
+  const cap = name.charAt(0).toUpperCase() + name.slice(1)
+  const second = await fetchJson(matchUrl(cap))
+  if (second && USEFUL_RANKS.has(second.rank)) return second
+
+  // Search-endpoint fallback. Restrict to Animalia + ACCEPTED, and require an
+  // exact canonical-name match (case-insensitive) so we don't accidentally
+  // pick up an unrelated taxon that merely contains the query string.
+  for (const rank of ['GENUS', 'FAMILY', 'ORDER', 'SUBFAMILY']) {
+    const data = await fetchJson(
+      `https://api.gbif.org/v1/species/search?q=${encodeURIComponent(cap)}&rank=${rank}&status=ACCEPTED&kingdom=Animalia&limit=10`
+    )
+    const hit = data?.results?.find(
+      (r) => r.canonicalName && r.canonicalName.toLowerCase() === name && r.rank === rank
+    )
+    if (hit) {
+      return {
+        usageKey: hit.key,
+        canonicalName: hit.canonicalName,
+        rank: hit.rank,
+        scientificName: hit.scientificName,
+        matchType: 'EXACT'
+      }
+    }
+  }
+  return first
+}
+
 async function fetchSpecies(name) {
-  const match = await fetchJson(
-    `https://api.gbif.org/v1/species/match?name=${encodeURIComponent(name)}`
-  )
+  const match = await fetchGbifMatch(name)
   const verdict = parseGbifMatch(match)
   if (!verdict.accept) return { skip: verdict.reason }
 
   // allSettled so a Wikipedia 429 doesn't wipe out the IUCN value (or vice versa).
   const [iucnSettled, wikiSettled] = await Promise.allSettled([
     fetchJson(`https://api.gbif.org/v1/species/${verdict.usageKey}/iucnRedListCategory`),
-    fetchJson(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`)
+    fetchWikipediaSummaryWithRetries(name, match.rank)
   ])
 
   const iucn = iucnSettled.status === 'fulfilled' ? parseGbifIucn(iucnSettled.value) : null
@@ -110,6 +188,44 @@ function loadExisting() {
   } catch {
     return {}
   }
+}
+
+/**
+ * Build a label → scientificName alias map from every source that emits both
+ * fields. Some models (DeepFaune, Manas, plus our own extras) ship a snake_case
+ * label alongside the canonical binomial — without this map, only the binomial
+ * key gets enriched and a UI lookup by label sees no IUCN/Wikipedia badge.
+ */
+function buildAliasMap() {
+  const aliases = new Map()
+  const sources = [speciesnetSource, deepfauneSource, manasSource, extras]
+  for (const src of sources) {
+    for (const entry of src.entries || []) {
+      if (!entry.scientificName || !entry.label) continue
+      const sci = normalizeScientificName(entry.scientificName)
+      const label = normalizeScientificName(entry.label)
+      if (!sci || !label || sci === label) continue
+      aliases.set(label, sci)
+    }
+  }
+  return aliases
+}
+
+/**
+ * Mirror data.json entries from canonical scientific names onto their label
+ * aliases. Pure copy — no extra GBIF/Wikipedia calls.
+ */
+function applyAliases(map) {
+  const aliases = buildAliasMap()
+  let mirrored = 0
+  for (const [label, sci] of aliases) {
+    if (label in map) continue
+    if (sci in map) {
+      map[label] = map[sci]
+      mirrored++
+    }
+  }
+  return mirrored
 }
 
 function writeOutput(map) {
@@ -197,6 +313,9 @@ async function main() {
   console.log(`processed: ${processed}, kept: ${kept}`)
   for (const [r, n] of skipReasons) console.log(`skip "${r}": ${n}`)
   console.log(`diff vs previous: +${added.length} / -${removed.length} / ~${changed.length}`)
+
+  const mirrored = applyAliases(out)
+  if (mirrored) console.log(`mirrored ${mirrored} label-alias entries`)
 
   if (args.dryRun) {
     console.log('--dry-run: not writing file')

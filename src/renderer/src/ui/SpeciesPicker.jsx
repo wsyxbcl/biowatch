@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Search, Plus } from 'lucide-react'
 import { searchSpecies } from '../utils/dictionarySearch'
+import { resolveCommonName } from '../../../shared/commonNames/index.js'
 
 /**
  * Species picker for one observation.
@@ -144,16 +145,26 @@ export default function SpeciesPicker({
                 index === highlightedIndex ? 'bg-[#f8f9fb]' : ''
               } ${species.scientificName === currentScientificName ? 'bg-gray-100' : ''}`}
             >
-              <div className="min-w-0 truncate">
-                <span className="text-sm font-medium">
-                  {species.commonName || species.scientificName}
-                </span>
-                {species.commonName && (
-                  <span className="text-xs text-gray-500 ml-2 italic">
-                    ({species.scientificName})
-                  </span>
-                )}
-              </div>
+              {(() => {
+                // Prefer the dictionary's curated common name over whatever
+                // the importer happened to drop in observations.commonName
+                // (LILA stores the snake_case category there, e.g.
+                // "yellow_baboon"). Falls through to the DB value, then to
+                // the scientific name.
+                const dictCommon = resolveCommonName(species.scientificName)
+                const display = dictCommon || species.commonName || species.scientificName
+                const showSci = display !== species.scientificName
+                return (
+                  <div className="min-w-0 truncate">
+                    <span className="text-sm font-medium capitalize">{display}</span>
+                    {showSci && (
+                      <span className="text-xs text-gray-500 ml-2 italic normal-case">
+                        ({species.scientificName})
+                      </span>
+                    )}
+                  </div>
+                )
+              })()}
               {species.inStudy !== false && typeof species.observationCount === 'number' && (
                 <span className="flex items-center gap-1 text-xs text-gray-400 shrink-0 ml-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#030213]" aria-hidden="true" />

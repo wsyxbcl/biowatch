@@ -12,6 +12,7 @@ import {
 } from '../../../database/index.js'
 import log from '../../logger.js'
 import { getBiowatchDataPath } from '../../paths.js'
+import { normalizeScientificName } from '../../../../shared/commonNames/normalize.js'
 
 /**
  * Import CamTrapDP dataset from a directory into a SQLite database
@@ -526,7 +527,7 @@ function transformObservationRow(row) {
     eventID: row.eventID || row.event_id || null,
     eventStart: transformDateField(row.eventStart || row.event_start),
     eventEnd: transformDateField(row.eventEnd || row.event_end),
-    scientificName: row.scientificName || row.scientific_name || null,
+    scientificName: normalizeScientificName(row.scientificName || row.scientific_name),
     observationType: row.observationType || row.observation_type || null,
     commonName: row.commonName || row.common_name || null,
     classificationProbability: parseFloat(row.classificationProbability) || null,
