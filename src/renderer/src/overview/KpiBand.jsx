@@ -1,15 +1,19 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { PawPrint, Camera, CalendarDays, Eye, Image as ImageIcon } from 'lucide-react'
+import { useNavigate } from 'react-router'
 import KpiTile from './KpiTile'
 import SpanPicker from './SpanPicker'
+import IucnBadge from '../ui/IucnBadge'
+import { useCommonName } from '../utils/commonNames'
 import { formatStatNumber, formatSpan, formatRangeShort } from './utils/formatStats'
 
 const ICON_SIZE = 14
 
 /**
  * KPI band for the Overview tab. Five tiles: Species, Cameras, Span, Observations, Media.
- * The Span tile is editable; clicking opens the DateTimePicker popover.
+ * - Span tile is editable (DateTimePicker popover).
+ * - Species tile is clickable when threatenedCount > 0 (threatened-list popover).
  *
  * @param {Object} props
  * @param {string} props.studyId
@@ -19,7 +23,9 @@ const ICON_SIZE = 14
 export default function KpiBand({ studyId, studyData, isImporting }) {
   const queryClient = useQueryClient()
   const [showPicker, setShowPicker] = useState(false)
+  const [showThreatened, setShowThreatened] = useState(false)
   const spanTriggerRef = useRef(null)
+  const speciesTriggerRef = useRef(null)
 
   const { data: stats } = useQuery({
     queryKey: ['overviewStats', studyId],
@@ -35,6 +41,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
 
   const speciesCount = stats?.speciesCount ?? null
   const threatenedCount = stats?.threatenedCount ?? null
+  const threatenedSpecies = stats?.threatenedSpecies ?? []
   const cameraCount = stats?.cameraCount ?? null
   const locationCount = stats?.locationCount ?? null
   const observationCount = stats?.observationCount ?? null
@@ -67,13 +74,27 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
 
   return (
     <div className="grid grid-cols-5 gap-2.5">
-      <KpiTile
-        icon={<PawPrint size={ICON_SIZE} />}
-        label="Species"
-        value={formatStatNumber(speciesCount)}
-        sub={threatenedCount > 0 ? 'threatened' : null}
-        subAccent={threatenedCount > 0 ? formatStatNumber(threatenedCount) : null}
-      />
+      <div className="relative flex" ref={speciesTriggerRef}>
+        <KpiTile
+          icon={<PawPrint size={ICON_SIZE} />}
+          label="Species"
+          value={formatStatNumber(speciesCount)}
+          sub={threatenedCount > 0 ? 'threatened' : null}
+          subAccent={threatenedCount > 0 ? formatStatNumber(threatenedCount) : null}
+          onClick={threatenedCount > 0 ? () => setShowThreatened((v) => !v) : undefined}
+        />
+        {showThreatened && threatenedSpecies.length > 0 && (
+          <div className="absolute left-0 top-full mt-2 z-50">
+            <ThreatenedSpeciesPopover
+              studyId={studyId}
+              species={threatenedSpecies}
+              onClose={() => setShowThreatened(false)}
+              ignoreOutsideClickRef={speciesTriggerRef}
+            />
+          </div>
+        )}
+      </div>
+
       <KpiTile
         icon={<Camera size={ICON_SIZE} />}
         label="Cameras"
@@ -116,5 +137,86 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
         sub={mediaCount > 0 ? 'photos & videos' : null}
       />
     </div>
+  )
+}
+
+/**
+ * Popover listing the threatened species detected in this study.
+ * Each row links to the media tab filtered by that species.
+ */
+function ThreatenedSpeciesPopover({ studyId, species, onClose, ignoreOutsideClickRef }) {
+  const navigate = useNavigate()
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    const onMouseDown = (e) => {
+      if (containerRef.current && containerRef.current.contains(e.target)) return
+      if (ignoreOutsideClickRef?.current && ignoreOutsideClickRef.current.contains(e.target)) return
+      onClose()
+    }
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        onClose()
+      }
+    }
+    document.addEventListener('mousedown', onMouseDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [onClose, ignoreOutsideClickRef])
+
+  const handleClick = (scientificName) => {
+    navigate(`/study/${studyId}/media?species=${encodeURIComponent(scientificName)}`)
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="bg-white rounded-lg shadow-xl border border-gray-200 w-72 max-h-80 overflow-y-auto"
+    >
+      <div className="px-3 py-2 border-b border-gray-100 sticky top-0 bg-white">
+        <div className="text-[0.7rem] uppercase tracking-wider text-gray-500 font-semibold">
+          Threatened species
+        </div>
+      </div>
+      <ul className="py-1">
+        {species.map((s) => (
+          <ThreatenedSpeciesRow
+            key={s.scientificName}
+            scientificName={s.scientificName}
+            iucn={s.iucn}
+            onClick={() => handleClick(s.scientificName)}
+          />
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function ThreatenedSpeciesRow({ scientificName, iucn, onClick }) {
+  const commonName = useCommonName(scientificName)
+  const display = commonName && commonName !== scientificName ? commonName : scientificName
+  const showScientific = commonName && commonName !== scientificName
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onClick}
+        className="w-full text-left px-3 py-1.5 hover:bg-blue-50 transition-colors flex items-center gap-2"
+      >
+        <span className="flex-shrink-0">
+          <IucnBadge category={iucn} />
+        </span>
+        <span className="min-w-0 flex-1 truncate">
+          <span className="text-sm capitalize text-gray-900">{display}</span>
+          {showScientific && (
+            <span className="text-xs italic text-gray-400 ml-1.5">{scientificName}</span>
+          )}
+        </span>
+      </button>
+    </li>
   )
 }

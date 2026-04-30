@@ -3,29 +3,37 @@ import { Pencil } from 'lucide-react'
 /**
  * One KPI tile — icon + label + number + optional sub-detail.
  *
+ * Two interaction flavors, mutually exclusive:
+ *   - `onEdit`  → tile is editable; shows a pencil on hover. (Span tile.)
+ *   - `onClick` → tile is clickable for a view action; no pencil. (Species
+ *     tile when there are threatened species to surface.)
+ *
  * @param {Object} props
  * @param {React.ReactNode} props.icon - Lucide icon element (already sized 14x14).
  * @param {string} props.label - Uppercase label text.
  * @param {string} props.value - Pre-formatted number (or "—").
  * @param {string} [props.sub] - Sub-detail line (omitted if falsy).
  * @param {React.ReactNode} [props.subAccent] - Optional accent fragment for the sub line.
- * @param {() => void} [props.onEdit] - When provided, the tile is editable: shows a pencil on hover and clicking the tile (or pencil) calls onEdit.
+ * @param {() => void} [props.onEdit] - Edit action handler.
+ * @param {() => void} [props.onClick] - Click action handler (no edit pencil).
  */
-export default function KpiTile({ icon, label, value, sub, subAccent, onEdit }) {
-  const editable = typeof onEdit === 'function'
-  const Tag = editable ? 'button' : 'div'
+export default function KpiTile({ icon, label, value, sub, subAccent, onEdit, onClick }) {
+  const action = onEdit || onClick
+  const interactive = typeof action === 'function'
+  const showPencil = typeof onEdit === 'function'
+  const Tag = interactive ? 'button' : 'div'
 
   return (
     <Tag
-      type={editable ? 'button' : undefined}
-      onClick={editable ? onEdit : undefined}
+      type={interactive ? 'button' : undefined}
+      onClick={interactive ? action : undefined}
       className={`group relative w-full bg-white border border-gray-200 rounded-lg px-3.5 py-3.5 text-left transition-shadow ${
-        editable
+        interactive
           ? 'cursor-pointer hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300'
           : ''
       }`}
     >
-      {editable && (
+      {showPencil && (
         <Pencil
           size={11}
           className="absolute top-2 right-2 text-gray-400 opacity-0 group-hover:opacity-60 transition-opacity"

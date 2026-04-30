@@ -21,6 +21,7 @@ const THREATENED_IUCN = new Set(['VU', 'EN', 'CR', 'EW', 'EX'])
  * @returns {Promise<{
  *   speciesCount: number,
  *   threatenedCount: number,
+ *   threatenedSpecies: Array<{ scientificName: string, iucn: string }>,
  *   cameraCount: number,
  *   locationCount: number,
  *   observationCount: number,
@@ -89,11 +90,14 @@ export async function getOverviewStats(dbPath) {
       .all()
 
     const speciesCount = speciesRows.length
-    let threatenedCount = 0
+    const threatenedSpecies = []
     for (const r of speciesRows) {
       const info = resolveSpeciesInfo(r.scientificName)
-      if (info?.iucn && THREATENED_IUCN.has(info.iucn)) threatenedCount += 1
+      if (info?.iucn && THREATENED_IUCN.has(info.iucn)) {
+        threatenedSpecies.push({ scientificName: r.scientificName, iucn: info.iucn })
+      }
     }
+    const threatenedCount = threatenedSpecies.length
 
     const derivedRange = {
       start:
@@ -111,6 +115,7 @@ export async function getOverviewStats(dbPath) {
     const result = {
       speciesCount,
       threatenedCount,
+      threatenedSpecies,
       cameraCount: row?.cameraCount ?? 0,
       locationCount: row?.locationCount ?? 0,
       observationCount: row?.observationCount ?? 0,
