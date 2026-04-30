@@ -134,7 +134,7 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
   }, [description, descExpanded, editingDescription])
 
   return (
-    <header className="grid grid-cols-[minmax(20rem,_42%)_1fr] gap-6 mb-6">
+    <header className="grid grid-cols-[minmax(20rem,_42%)_1fr] gap-6 flex-1 min-h-[18rem]">
       <div className="group flex flex-col">
         {/* Title */}
         <div className="flex items-baseline gap-2">
@@ -260,7 +260,7 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
         />
       </div>
 
-      <div className="h-80">{mapSlot}</div>
+      <div className="h-full">{mapSlot}</div>
 
       <ContributorsModal
         open={contributorsOpen}

@@ -3,6 +3,7 @@ import ReactDOMServer from 'react-dom/server'
 import L from 'leaflet'
 import { LayersControl, MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { Camera, MapPin } from 'lucide-react'
 import PlaceholderMap from './ui/PlaceholderMap'
 import { useImportStatus } from '@renderer/hooks/import'
@@ -247,25 +248,36 @@ export default function Overview({ data, studyId, studyName }) {
   const error = speciesError?.message || deploymentsError?.message || null
 
   return (
-    <div className="flex flex-col px-6 gap-6 h-full overflow-y-auto overflow-x-hidden py-4">
-      <EditorialHeader
-        studyId={studyId}
-        studyName={studyName}
-        studyData={data}
-        mapSlot={<DeploymentMap key={studyId} deployments={deploymentsData} studyId={studyId} />}
-      />
+    <div className="flex flex-col px-6 h-full overflow-x-hidden">
+      <PanelGroup direction="vertical" autoSaveId="overview-layout">
+        <Panel defaultSize={50} minSize={20} className="flex flex-col">
+          <div className="flex flex-col gap-6 h-full pt-4 pb-2 pr-1">
+            <EditorialHeader
+              studyId={studyId}
+              studyName={studyName}
+              studyData={data}
+              mapSlot={
+                <DeploymentMap key={studyId} deployments={deploymentsData} studyId={studyId} />
+              }
+            />
+            <KpiBand studyId={studyId} studyData={data} isImporting={importStatus?.isRunning} />
+          </div>
+        </Panel>
 
-      <KpiBand studyId={studyId} studyData={data} isImporting={importStatus?.isRunning} />
+        <PanelResizeHandle className="h-1 my-1.5 rounded-full bg-gray-100 hover:bg-gray-300 data-[resize-handle-state=drag]:bg-blue-300 cursor-row-resize transition-colors" />
 
-      <BestCapturesSection studyId={studyId} isRunning={importStatus?.isRunning} />
-
-      <SpeciesDistribution
-        studyId={studyId}
-        speciesData={speciesData}
-        taxonomicData={data?.taxonomic || null}
-      />
-
-      {error && <div className="text-red-500 text-sm">Error: {error}</div>}
+        <Panel defaultSize={50} minSize={20} className="flex flex-col">
+          <div className="flex flex-col gap-6 overflow-y-auto pt-2 pb-4 pr-1">
+            <BestCapturesSection studyId={studyId} isRunning={importStatus?.isRunning} />
+            <SpeciesDistribution
+              studyId={studyId}
+              speciesData={speciesData}
+              taxonomicData={data?.taxonomic || null}
+            />
+            {error && <div className="text-red-500 text-sm">Error: {error}</div>}
+          </div>
+        </Panel>
+      </PanelGroup>
     </div>
   )
 }
