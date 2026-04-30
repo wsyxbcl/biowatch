@@ -190,7 +190,7 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
               <div
                 ref={descRef}
                 className={`text-sm text-gray-700 leading-relaxed ${
-                  !descExpanded ? 'line-clamp-5 overflow-hidden' : ''
+                  !descExpanded ? 'line-clamp-7 overflow-hidden' : ''
                 }`}
               >
                 {description || (
