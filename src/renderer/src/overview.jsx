@@ -154,7 +154,7 @@ function DeploymentMap({ deployments, studyId }) {
   })
 
   return (
-    <div className="w-full h-full bg-white rounded border border-gray-200">
+    <div className="w-full h-full bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden">
       <MapContainer
         key={studyId}
         bounds={bounds}
