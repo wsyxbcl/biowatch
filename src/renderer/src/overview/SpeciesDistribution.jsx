@@ -72,7 +72,7 @@ function SpeciesRow({
           <HoverCard.Content
             side="top"
             sideOffset={8}
-            align="start"
+            align="end"
             avoidCollisions={true}
             collisionPadding={16}
             className="z-[10000]"
