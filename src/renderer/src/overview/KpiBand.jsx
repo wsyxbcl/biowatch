@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import * as HoverCard from '@radix-ui/react-hover-card'
 import { PawPrint, Camera, CalendarDays, Eye, Image as ImageIcon } from 'lucide-react'
@@ -14,6 +15,42 @@ import {
   formatSpan,
   formatRangeShort
 } from './utils/formatStats'
+
+/**
+ * Render `children` in a fixed-position layer anchored just below
+ * `triggerRef`'s bounding rect, portalled to document.body so the popover
+ * escapes the surrounding Panel's `overflow: hidden` (react-resizable-panels
+ * sets that on every Panel container).
+ */
+function PortalPopover({ open, triggerRef, children }) {
+  const [pos, setPos] = useState(null)
+
+  useEffect(() => {
+    if (!open || !triggerRef.current) {
+      setPos(null)
+      return
+    }
+    const update = () => {
+      const rect = triggerRef.current?.getBoundingClientRect()
+      if (rect) setPos({ left: rect.left, top: rect.bottom + 8 })
+    }
+    update()
+    window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, true)
+    return () => {
+      window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update, true)
+    }
+  }, [open, triggerRef])
+
+  if (!open || !pos) return null
+  return createPortal(
+    <div className="fixed z-[1000]" style={{ left: pos.left, top: pos.top }}>
+      {children}
+    </div>,
+    document.body
+  )
+}
 
 const ICON_SIZE = 14
 
@@ -81,7 +118,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
 
   return (
     <div className="grid grid-cols-5 gap-2.5">
-      <div className="relative flex" ref={speciesTriggerRef}>
+      <div className="flex" ref={speciesTriggerRef}>
         <KpiTile
           icon={<PawPrint size={ICON_SIZE} />}
           label="Species"
@@ -90,17 +127,18 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
           subAccent={threatenedCount > 0 ? formatStatNumber(threatenedCount) : null}
           onClick={threatenedCount > 0 ? () => setShowThreatened((v) => !v) : undefined}
         />
-        {showThreatened && threatenedSpecies.length > 0 && (
-          <div className="absolute left-0 top-full mt-2 z-50">
-            <ThreatenedSpeciesPopover
-              studyId={studyId}
-              species={threatenedSpecies}
-              onClose={() => setShowThreatened(false)}
-              ignoreOutsideClickRef={speciesTriggerRef}
-            />
-          </div>
-        )}
       </div>
+      <PortalPopover
+        open={showThreatened && threatenedSpecies.length > 0}
+        triggerRef={speciesTriggerRef}
+      >
+        <ThreatenedSpeciesPopover
+          studyId={studyId}
+          species={threatenedSpecies}
+          onClose={() => setShowThreatened(false)}
+          ignoreOutsideClickRef={speciesTriggerRef}
+        />
+      </PortalPopover>
 
       <KpiTile
         icon={<Camera size={ICON_SIZE} />}
@@ -109,7 +147,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
         sub={locationCount > 0 ? `across ${formatStatNumber(locationCount)} locations` : null}
       />
 
-      <div className="relative flex" ref={spanTriggerRef}>
+      <div className="flex" ref={spanTriggerRef}>
         <KpiTile
           icon={<CalendarDays size={ICON_SIZE} />}
           label="Span"
@@ -117,19 +155,17 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
           sub={formatRangeShort(rangeStart, rangeEnd)}
           onEdit={() => setShowPicker((v) => !v)}
         />
-        {showPicker && (
-          <div className="absolute left-0 top-full mt-2 z-50">
-            <SpanPicker
-              startValue={rangeStart}
-              endValue={rangeEnd}
-              onSave={saveRange}
-              onCancel={() => setShowPicker(false)}
-              onResetToAuto={resetDatesToAuto}
-              ignoreOutsideClickRef={spanTriggerRef}
-            />
-          </div>
-        )}
       </div>
+      <PortalPopover open={showPicker} triggerRef={spanTriggerRef}>
+        <SpanPicker
+          startValue={rangeStart}
+          endValue={rangeEnd}
+          onSave={saveRange}
+          onCancel={() => setShowPicker(false)}
+          onResetToAuto={resetDatesToAuto}
+          ignoreOutsideClickRef={spanTriggerRef}
+        />
+      </PortalPopover>
 
       <KpiTile
         icon={<Eye size={ICON_SIZE} />}
