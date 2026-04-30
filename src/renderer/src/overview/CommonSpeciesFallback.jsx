@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
+import * as HoverCard from '@radix-ui/react-hover-card'
 import { CameraOff, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useSequenceGap } from '../hooks/useSequenceGap'
 import { useCommonName } from '../utils/commonNames'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
 import { isBlank, isHumanOrVehicle, isNonSpeciesLabel } from '../utils/speciesUtils'
+import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
 
 const TOP_N = 8
 
@@ -58,7 +60,12 @@ export default function CommonSpeciesFallback({ studyId }) {
       </h3>
       <ScrollableStrip>
         {candidates.map((c) => (
-          <SpeciesReferenceCard key={c.scientificName} species={c} onClick={handleClick} />
+          <SpeciesReferenceCard
+            key={c.scientificName}
+            species={c}
+            studyId={studyId}
+            onClick={handleClick}
+          />
         ))}
       </ScrollableStrip>
     </section>
@@ -141,39 +148,59 @@ function ScrollableStrip({ children }) {
   )
 }
 
-function SpeciesReferenceCard({ species, onClick }) {
+function SpeciesReferenceCard({ species, studyId, onClick }) {
   const [imageError, setImageError] = useState(false)
   const commonName =
     useCommonName(species.scientificName) || species.scientificName || 'Unknown species'
 
   return (
-    <button
-      type="button"
-      onClick={() => onClick(species.scientificName)}
-      className="flex-shrink-0 w-40 rounded-lg overflow-hidden cursor-pointer border border-gray-200 shadow-sm hover:shadow-md transition-shadow text-left bg-white"
-    >
-      <div className="relative w-full h-28 bg-gray-100">
-        {imageError ? (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-300">
-            <CameraOff size={24} />
+    <HoverCard.Root openDelay={200} closeDelay={120}>
+      <HoverCard.Trigger asChild>
+        <button
+          type="button"
+          onClick={() => onClick(species.scientificName)}
+          className="flex-shrink-0 w-40 rounded-lg overflow-hidden cursor-pointer border border-gray-200 shadow-sm hover:shadow-md transition-shadow text-left bg-white"
+        >
+          <div className="relative w-full h-28 bg-gray-100">
+            {imageError ? (
+              <div className="absolute inset-0 flex items-center justify-center text-gray-300">
+                <CameraOff size={24} />
+              </div>
+            ) : (
+              <img
+                src={species.info.imageUrl}
+                alt={species.scientificName}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                onError={() => setImageError(true)}
+                referrerPolicy="no-referrer"
+              />
+            )}
           </div>
-        ) : (
-          <img
-            src={species.info.imageUrl}
-            alt={species.scientificName}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            onError={() => setImageError(true)}
-            referrerPolicy="no-referrer"
+          <div className="px-2 py-1.5">
+            <p className="text-xs font-medium text-gray-900 truncate capitalize">{commonName}</p>
+            <p className="text-[0.65rem] text-gray-500">
+              {species.count.toLocaleString('en-US')} observations
+            </p>
+          </div>
+        </button>
+      </HoverCard.Trigger>
+      <HoverCard.Portal>
+        <HoverCard.Content
+          side="top"
+          sideOffset={8}
+          align="center"
+          avoidCollisions={true}
+          collisionPadding={16}
+          className="z-[10000]"
+        >
+          <SpeciesTooltipContent
+            imageData={{ scientificName: species.scientificName }}
+            studyId={studyId}
+            size="lg"
           />
-        )}
-      </div>
-      <div className="px-2 py-1.5">
-        <p className="text-xs font-medium text-gray-900 truncate capitalize">{commonName}</p>
-        <p className="text-[0.65rem] text-gray-500">
-          {species.count.toLocaleString('en-US')} observations
-        </p>
-      </div>
-    </button>
+        </HoverCard.Content>
+      </HoverCard.Portal>
+    </HoverCard.Root>
   )
 }
