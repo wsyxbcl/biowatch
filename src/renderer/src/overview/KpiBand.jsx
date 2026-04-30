@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import * as HoverCard from '@radix-ui/react-hover-card'
 import { PawPrint, Camera, CalendarDays, Eye, Image as ImageIcon } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import KpiTile from './KpiTile'
 import SpanPicker from './SpanPicker'
 import IucnBadge from '../ui/IucnBadge'
+import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
 import { useCommonName } from '../utils/commonNames'
 import { formatStatNumber, formatSpan, formatRangeShort } from './utils/formatStats'
 
@@ -97,7 +99,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
 
       <KpiTile
         icon={<Camera size={ICON_SIZE} />}
-        label="Cameras"
+        label="Deployments"
         value={formatStatNumber(cameraCount)}
         sub={locationCount > 0 ? `across ${formatStatNumber(locationCount)} locations` : null}
       />
@@ -186,6 +188,7 @@ function ThreatenedSpeciesPopover({ studyId, species, onClose, ignoreOutsideClic
         {species.map((s) => (
           <ThreatenedSpeciesRow
             key={s.scientificName}
+            studyId={studyId}
             scientificName={s.scientificName}
             iucn={s.iucn}
             onClick={() => handleClick(s.scientificName)}
@@ -196,27 +199,43 @@ function ThreatenedSpeciesPopover({ studyId, species, onClose, ignoreOutsideClic
   )
 }
 
-function ThreatenedSpeciesRow({ scientificName, iucn, onClick }) {
+function ThreatenedSpeciesRow({ studyId, scientificName, iucn, onClick }) {
   const commonName = useCommonName(scientificName)
   const display = commonName && commonName !== scientificName ? commonName : scientificName
   const showScientific = commonName && commonName !== scientificName
   return (
     <li>
-      <button
-        type="button"
-        onClick={onClick}
-        className="w-full text-left px-3 py-1.5 hover:bg-blue-50 transition-colors flex items-center gap-2"
-      >
-        <span className="flex-shrink-0">
-          <IucnBadge category={iucn} />
-        </span>
-        <span className="min-w-0 flex-1 truncate">
-          <span className="text-sm capitalize text-gray-900">{display}</span>
-          {showScientific && (
-            <span className="text-xs italic text-gray-400 ml-1.5">{scientificName}</span>
-          )}
-        </span>
-      </button>
+      <HoverCard.Root openDelay={200} closeDelay={120}>
+        <HoverCard.Trigger asChild>
+          <button
+            type="button"
+            onClick={onClick}
+            className="w-full text-left px-3 py-1.5 hover:bg-blue-50 transition-colors flex items-center gap-2"
+          >
+            <span className="flex-shrink-0">
+              <IucnBadge category={iucn} />
+            </span>
+            <span className="min-w-0 flex-1 truncate">
+              <span className="text-sm capitalize text-gray-900">{display}</span>
+              {showScientific && (
+                <span className="text-xs italic text-gray-400 ml-1.5">{scientificName}</span>
+              )}
+            </span>
+          </button>
+        </HoverCard.Trigger>
+        <HoverCard.Portal>
+          <HoverCard.Content
+            side="right"
+            sideOffset={8}
+            align="center"
+            avoidCollisions={true}
+            collisionPadding={16}
+            className="z-[10001]"
+          >
+            <SpeciesTooltipContent imageData={{ scientificName }} studyId={studyId} size="lg" />
+          </HoverCard.Content>
+        </HoverCard.Portal>
+      </HoverCard.Root>
     </li>
   )
 }
