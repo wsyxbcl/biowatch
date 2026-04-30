@@ -66,8 +66,14 @@ const ICON_SIZE = 14
  */
 export default function KpiBand({ studyId, studyData, isImporting }) {
   const queryClient = useQueryClient()
-  const [showPicker, setShowPicker] = useState(false)
-  const [showThreatened, setShowThreatened] = useState(false)
+  // Single open-popover state — opening one auto-closes its sibling so the
+  // Span picker and the Threatened-species list never stack on top of
+  // each other.
+  const [openPopover, setOpenPopover] = useState(null) // 'span' | 'threatened' | null
+  const showPicker = openPopover === 'span'
+  const showThreatened = openPopover === 'threatened'
+  const togglePopover = (which) => setOpenPopover((cur) => (cur === which ? null : which))
+  const closePopover = () => setOpenPopover(null)
   const spanTriggerRef = useRef(null)
   const speciesTriggerRef = useRef(null)
 
@@ -101,7 +107,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
     })
     queryClient.invalidateQueries({ queryKey: ['study'] })
     queryClient.invalidateQueries({ queryKey: ['overviewStats', studyId] })
-    setShowPicker(false)
+    closePopover()
   }
 
   const resetDatesToAuto = async () => {
@@ -113,7 +119,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
     })
     queryClient.invalidateQueries({ queryKey: ['study'] })
     queryClient.invalidateQueries({ queryKey: ['overviewStats', studyId] })
-    setShowPicker(false)
+    closePopover()
   }
 
   return (
@@ -125,7 +131,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
           value={formatStatNumber(speciesCount)}
           sub={threatenedCount > 0 ? 'threatened' : null}
           subAccent={threatenedCount > 0 ? formatStatNumber(threatenedCount) : null}
-          onClick={threatenedCount > 0 ? () => setShowThreatened((v) => !v) : undefined}
+          onClick={threatenedCount > 0 ? () => togglePopover('threatened') : undefined}
         />
       </div>
       <PortalPopover
@@ -135,7 +141,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
         <ThreatenedSpeciesPopover
           studyId={studyId}
           species={threatenedSpecies}
-          onClose={() => setShowThreatened(false)}
+          onClose={closePopover}
           ignoreOutsideClickRef={speciesTriggerRef}
         />
       </PortalPopover>
@@ -153,7 +159,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
           label="Span"
           value={formatSpan(rangeStart, rangeEnd)}
           sub={formatRangeShort(rangeStart, rangeEnd)}
-          onEdit={() => setShowPicker((v) => !v)}
+          onEdit={() => togglePopover('span')}
         />
       </div>
       <PortalPopover open={showPicker} triggerRef={spanTriggerRef}>
@@ -161,7 +167,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
           startValue={rangeStart}
           endValue={rangeEnd}
           onSave={saveRange}
-          onCancel={() => setShowPicker(false)}
+          onCancel={closePopover}
           onResetToAuto={resetDatesToAuto}
           ignoreOutsideClickRef={spanTriggerRef}
         />

@@ -528,6 +528,12 @@ function transformObservationRow(row) {
     eventStart: transformDateField(row.eventStart || row.event_start),
     eventEnd: transformDateField(row.eventEnd || row.event_end),
     scientificName: normalizeScientificName(row.scientificName || row.scientific_name),
+    // Convention: observationType='blank' rows MUST have null/empty
+    // scientificName. The Overview-tab species DISTINCT query (queries/
+    // overview.js) drops the observationType filter for index-coverage perf
+    // and relies on this — if a future importer produces blank-type rows
+    // with a populated scientificName, threatenedCount/speciesCount will
+    // double-count those rows.
     observationType: row.observationType || row.observation_type || null,
     commonName: row.commonName || row.common_name || null,
     classificationProbability: parseFloat(row.classificationProbability) || null,

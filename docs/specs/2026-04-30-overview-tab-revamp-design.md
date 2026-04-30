@@ -140,7 +140,7 @@ A two-column grid (`grid-cols-[55%_1fr]` with `gap-6`):
   - `✎ Manage` link appears at the end of the byline only on hover of
     the editorial header.
   - When `data.contributors` is empty: byline reads `No contributors
-    yet ·  ✎ Add` (pencil always visible in this case).
+yet ·  ✎ Add` (pencil always visible in this case).
 
 **Right column** — map:
 
@@ -174,13 +174,13 @@ hover:border-blue-300 hover:bg-slate-50`. Number is
 
 The 5 tiles, with their icon, label, source, and sub-detail:
 
-| # | Icon (Lucide)   | Label        | Number                                                | Sub-detail                                                                                            |
-| - | --------------- | ------------ | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| 1 | `PawPrint`      | Species      | distinct `observations.scientificName` count          | `<N> threatened` — count of distinct species whose `speciesInfo` IUCN category ∈ {VU, EN, CR, EW, EX} |
-| 2 | `Camera`        | Cameras      | distinct `deployments.cameraID` count                 | `across <N> locations` — distinct `deployments.locationID` count                                      |
-| 3 | `CalendarDays`  | Span         | year delta — formatted `<N> yr` or `<N> mo`           | `<short start> – <short end>` — derived range (see "Date derivation" below)                           |
-| 4 | `Eye`           | Observations | `observations` row count                              | `from <N> camera-days` — sum of deployment durations across all deployments                           |
-| 5 | `Image`         | Media        | `media` row count, formatted `1.2K` / `1.2M` etc.     | `photos & videos`                                                                                     |
+| #   | Icon (Lucide)  | Label        | Number                                            | Sub-detail                                                                                            |
+| --- | -------------- | ------------ | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 1   | `PawPrint`     | Species      | distinct `observations.scientificName` count      | `<N> threatened` — count of distinct species whose `speciesInfo` IUCN category ∈ {VU, EN, CR, EW, EX} |
+| 2   | `Camera`       | Cameras      | distinct `deployments.cameraID` count             | `across <N> locations` — distinct `deployments.locationID` count                                      |
+| 3   | `CalendarDays` | Span         | year delta — formatted `<N> yr` or `<N> mo`       | `<short start> – <short end>` — derived range (see "Date derivation" below)                           |
+| 4   | `Eye`          | Observations | `observations` row count                          | `from <N> camera-days` — sum of deployment durations across all deployments                           |
+| 5   | `Image`        | Media        | `media` row count, formatted `1.2K` / `1.2M` etc. | `photos & videos`                                                                                     |
 
 Tile #3 (Span) is editable: hovering it shows a faint pencil in the
 top-right corner. Click the tile or pencil opens the existing
@@ -198,13 +198,13 @@ mockups is dropped to make room for Media.)
 When the underlying data is missing or zero, replace the number with
 an em-dash (`—`) in `text-gray-400`. Sub-detail can also degrade:
 
-| Tile         | Empty number condition                          | Empty sub-detail                              |
-| ------------ | ----------------------------------------------- | --------------------------------------------- |
-| Species      | no observations OR all observations are blanks  | omit (no "0 threatened")                      |
-| Cameras      | no deployments                                  | omit                                          |
-| Span         | no derivable range (chain exhausted)            | omit                                          |
-| Observations | no observations                                 | omit (don't render "from 0 camera-days")      |
-| Media        | no media                                        | "photos & videos" stays                       |
+| Tile         | Empty number condition                         | Empty sub-detail                         |
+| ------------ | ---------------------------------------------- | ---------------------------------------- |
+| Species      | no observations OR all observations are blanks | omit (no "0 threatened")                 |
+| Cameras      | no deployments                                 | omit                                     |
+| Span         | no derivable range (chain exhausted)           | omit                                     |
+| Observations | no observations                                | omit (don't render "from 0 camera-days") |
+| Media        | no media                                       | "photos & videos" stays                  |
 
 ### 4. Best captures band
 
@@ -224,7 +224,7 @@ Full-width section directly below the KPI band:
   └──────────────────────────────────────────────────────┘
   ```
   `bg-gray-50 border border-dashed border-gray-200 rounded-lg
-  px-4 py-6 text-sm text-gray-500 text-center`. No CTA button — the
+px-4 py-6 text-sm text-gray-500 text-center`. No CTA button — the
   message is enough; "Run a model" actions live elsewhere.
 - Modify `BestMediaCarousel` to accept a `renderEmpty` prop; the
   Overview passes the placeholder. Other callers (none today) keep the
@@ -250,8 +250,8 @@ restyled for full-width and with a small fixed-width name block:
 Per row (existing markup adapted):
 
 - Name block: fixed `w-64`, common name (`text-sm text-gray-900
-  font-medium capitalize`) + scientific name (`text-xs italic
-  text-gray-400 ml-2`).
+font-medium capitalize`) + scientific name (`text-xs italic
+text-gray-400 ml-2`).
 - IUCN badge: existing `IucnBadge` component, no change.
 - Bar: flex-1, `h-2 bg-gray-100 rounded-full`, fill `bg-blue-600`,
   width `(species.count / totalCount) * 100%`.
@@ -282,18 +282,18 @@ The header is in "view mode" by default — no pencils, no buttons. On
 mouse enter of the editorial header (the title-row + description
 column), affordances surface:
 
-| Element              | View                                | Hover-revealed              | Click target                   | Edit UI                                                                                                  |
-| -------------------- | ----------------------------------- | --------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| Title                | plain `<a>` (or text)               | faint pencil at end of line | title text or pencil           | Inline `<input>` — existing `isEditingTitle` flow                                                        |
-| Description          | prose with `Show more`              | dashed outline around block | anywhere in the block          | Inline `<textarea>` — existing `isEditingDescription` flow                                               |
-| Contributors byline  | "By A · B · C +N more"              | `✎ Manage` link at end      | `Manage` link or any name      | **New**: contributors modal (see below)                                                                  |
-| Span KPI tile        | tile with number + range sub-detail | pencil top-right corner     | tile body or pencil            | Existing `DateTimePicker` popover, pre-populated with current effective range; "Reset to auto" link new  |
+| Element             | View                                | Hover-revealed              | Click target              | Edit UI                                                                                                 |
+| ------------------- | ----------------------------------- | --------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Title               | plain `<a>` (or text)               | faint pencil at end of line | title text or pencil      | Inline `<input>` — existing `isEditingTitle` flow                                                       |
+| Description         | prose with `Show more`              | dashed outline around block | anywhere in the block     | Inline `<textarea>` — existing `isEditingDescription` flow                                              |
+| Contributors byline | "By A · B · C +N more"              | `✎ Manage` link at end      | `Manage` link or any name | **New**: contributors modal (see below)                                                                 |
+| Span KPI tile       | tile with number + range sub-detail | pencil top-right corner     | tile body or pencil       | Existing `DateTimePicker` popover, pre-populated with current effective range; "Reset to auto" link new |
 
 Hover state implementation: a single `group` class on the editorial
 header section + `group-hover:opacity-100 opacity-0` on the pencils,
 matching the existing pattern (`overview.jsx:920-927`).
 
-The KPI band is *not* part of the editorial header's hover group; the
+The KPI band is _not_ part of the editorial header's hover group; the
 Span tile manages its own hover state independently so hovering it
 doesn't reveal the title pencil and vice versa.
 
@@ -370,13 +370,13 @@ auto" button clears both, falling back to derivation.
 All sub-details derive from existing tables. New IPC additions consolidate
 these into a single overview-stats query.
 
-| Sub-detail               | Source                                                                                                                       |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `<N> threatened`         | join species set (distinct `scientificName`) against `speciesInfo`; count those with IUCN ∈ {VU, EN, CR, EW, EX}             |
-| `across <N> locations`   | `SELECT COUNT(DISTINCT locationID) FROM deployments WHERE locationID IS NOT NULL`                                            |
-| `<from> – <to>`          | derived range (see Date derivation)                                                                                          |
-| `from <N> camera-days`   | `SELECT SUM(julianday(deploymentEnd) - julianday(deploymentStart)) FROM deployments WHERE both fields not null`              |
-| `photos & videos`        | static label                                                                                                                 |
+| Sub-detail             | Source                                                                                                           |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `<N> threatened`       | join species set (distinct `scientificName`) against `speciesInfo`; count those with IUCN ∈ {VU, EN, CR, EW, EX} |
+| `across <N> locations` | `SELECT COUNT(DISTINCT locationID) FROM deployments WHERE locationID IS NOT NULL`                                |
+| `<from> – <to>`        | derived range (see Date derivation)                                                                              |
+| `from <N> camera-days` | `SELECT SUM(julianday(deploymentEnd) - julianday(deploymentStart)) FROM deployments WHERE both fields not null`  |
+| `photos & videos`      | static label                                                                                                     |
 
 A new IPC method `getOverviewStats(studyId)` returns:
 
@@ -488,3 +488,72 @@ To prevent regressions, these behaviors must remain identical:
 - Naming: "from 4,200 camera-days" vs "across 4,200 camera-days".
   Pick one in implementation; the spec uses "from" as the more
   common phrasing in field-research literature.
+
+## Implementation deltas
+
+Decisions accepted during manual verification (Task 11) that diverge
+from the original spec above. The shipped commits are the source of
+truth; this section is a navigation aid for readers who only read the
+spec.
+
+- **"Featured species" fallback band** (was: hide Best Captures when
+  empty). When `getBestMedia` returns nothing but observations exist,
+  the band falls back to a strip of cards using bundled
+  `speciesInfo.imageUrl` (Wikipedia thumbnails). Excludes blanks,
+  humans/vehicles, non-species labels, and a small set of common
+  domestic species (cat, dog, horse, chicken, cow). See
+  `src/renderer/src/overview/CommonSpeciesFallback.jsx`.
+- **Span tile is a real range picker** (was: single `DateTimePicker`
+  reused for the start, end as future work). New `SpanPicker` shows
+  two side-by-side calendars with one shared Reset/Cancel/Save row.
+  Single popover instance. `src/renderer/src/overview/SpanPicker.jsx`.
+- **Threatened-species popover.** When `threatenedCount > 0`, the
+  Species KPI tile becomes clickable and opens a list of the
+  threatened species (with hover cards). Spec mentioned the count;
+  the popover was added during verification.
+- **Hover cards on cards.** Both Best Captures cards and Featured
+  species cards now wrap their click target with a HoverCard that
+  pops a larger `SpeciesTooltipContent` (size='lg'). Same hover-card
+  pattern as the species list rows. The tooltip gained a `size` prop
+  with `lg` adding bigger image / wider card / larger text; default
+  `md` unchanged.
+- **Vertical resize handle.** Page wrapped in `react-resizable-panels`
+  PanelGroup (vertical). Top panel: editorial header (with map
+  growing to fill height) + KPI band. Bottom panel: best captures +
+  species. Preference persists via `autoSaveId='overview-layout'`.
+  Map slot is `h-full` instead of fixed `h-80`.
+- **PortalPopover.** Span and Threatened popovers render via
+  `createPortal` to `document.body` so they escape the Panel's
+  `overflow: hidden`. Position recomputes on window resize and
+  scroll.
+- **IUCN legend includes NE.** "Not Evaluated" row added to the
+  legend at the bottom of the species list.
+- **Card sizes / styling.** Best Captures and Featured species cards
+  share a single style: `w-56 / h-40 image area`, name footer below,
+  `shadow / hover:shadow-md`. Best Captures dropped its internal
+  `<h3>` and the timestamp footer (the latter looked weird when
+  missing). Strip wrappers have `py-3` so hover shadow doesn't get
+  clipped by the carousel's `overflow-x-auto`.
+- **Map styling.** `rounded-xl` + `shadow-md` + `overflow-hidden` on
+  both the loaded map and `PlaceholderMap` (which was also shrunk so
+  the underlying world map stays visible around it).
+- **`Cameras` → `Deployments`.** The KPI tile counts
+  `COALESCE(cameraID, deploymentID)` — most importers don't
+  populate `cameraID`, so "Deployments" matches what's actually
+  counted.
+- **Compact camera-days.** Sub-line uses `formatCompactCount`
+  (lowercase `k` from 1000) instead of `formatStatNumber` so
+  `from 1,095 camera-days` doesn't wrap on narrow viewports.
+- **Single-popover state.** `KpiBand` uses one `openPopover`
+  enum (`'span' | 'threatened' | null`) so opening one
+  auto-closes the other.
+- **Domestic-species filter.** New `isDomestic(scientificName)` in
+  `utils/speciesUtils.js` covers cat / dog / horse / chicken / cow.
+  Used only by the Featured species fallback; the species
+  distribution list still shows them.
+- **Loading skeleton.** `SpeciesDistribution` shows 5 pulsing
+  placeholder rows while the query is in flight; the
+  "No species detected yet" empty state now only renders after the
+  query resolves with zero rows.
+- **Description editing.** Textarea auto-grows to fit content (capped
+  at 60vh) so it no longer shrinks below the displayed prose.

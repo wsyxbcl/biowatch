@@ -35,9 +35,11 @@ function SpeciesRow({
   }, [scrollSignal])
 
   return (
-    <div
-      className="cursor-pointer hover:bg-blue-50 transition-colors py-2.5 px-3 rounded flex items-center gap-3"
+    <button
+      type="button"
+      className="cursor-pointer hover:bg-blue-50 transition-colors py-2.5 px-3 rounded flex items-center gap-3 w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
       onClick={() => onRowClick(species)}
+      aria-label={`View ${displayName} in media tab`}
     >
       <HoverCard.Root
         key={species.scientificName}
@@ -83,7 +85,7 @@ function SpeciesRow({
       <span className="w-14 text-right text-xs text-gray-500 tabular-nums flex-shrink-0">
         {species.count.toLocaleString('en-US')}
       </span>
-    </div>
+    </button>
   )
 }
 
@@ -134,6 +136,13 @@ export default function SpeciesDistribution({ studyId, speciesData, taxonomicDat
     [speciesData]
   )
 
+  // Memoize the sort — without it, every scrollSignal bump (one per scroll
+  // event) would re-sort the array before the rows compare equal.
+  const sortedSpecies = useMemo(
+    () => (speciesData ? sortSpeciesHumansLast(speciesData) : []),
+    [speciesData]
+  )
+
   const handleRowClick = (species) => {
     navigate(`/study/${studyId}/media?species=${encodeURIComponent(species.scientificName)}`)
   }
@@ -156,7 +165,7 @@ export default function SpeciesDistribution({ studyId, speciesData, taxonomicDat
       ) : (
         <>
           <div className="overflow-y-auto overflow-x-hidden pr-3" onScroll={handleScroll}>
-            {sortSpeciesHumansLast(speciesData).map((species) => {
+            {sortedSpecies.map((species) => {
               const storedCommonName = scientificToCommonMap[species.scientificName] || null
               return (
                 <SpeciesRow

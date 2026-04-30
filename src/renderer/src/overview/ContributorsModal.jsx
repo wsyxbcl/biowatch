@@ -29,6 +29,7 @@ export default function ContributorsModal({ open, onClose, studyId, studyData })
   const [newContrib, setNewContrib] = useState(EMPTY_CONTRIBUTOR)
   const [deletingIndex, setDeletingIndex] = useState(null)
   const dialogRef = useRef(null)
+  const titleId = 'contributors-modal-title'
 
   const contributors = studyData?.contributors || []
 
@@ -52,6 +53,44 @@ export default function ContributorsModal({ open, onClose, studyId, studyData })
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [open, onClose, deletingIndex])
+
+  // Focus management: move focus into the dialog on open, restore to the
+  // previously-focused element on close. Trap Tab inside the dialog.
+  useEffect(() => {
+    if (!open) return
+    const previouslyFocused = document.activeElement
+    // Defer to next tick so children have mounted.
+    requestAnimationFrame(() => {
+      const root = dialogRef.current
+      if (!root) return
+      const focusable = root.querySelector(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+      focusable?.focus()
+    })
+    const onKey = (e) => {
+      if (e.key !== 'Tab' || !dialogRef.current) return
+      const root = dialogRef.current
+      const focusables = root.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus()
+    }
+  }, [open])
 
   if (!open) return null
 
@@ -111,9 +150,14 @@ export default function ContributorsModal({ open, onClose, studyId, studyData })
     >
       <div
         ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6"
       >
-        <h3 className="text-lg font-medium mb-1">Manage contributors</h3>
+        <h3 id={titleId} className="text-lg font-medium mb-1">
+          Manage contributors
+        </h3>
         <p className="text-sm text-gray-500 mb-4">
           Researchers and organizations associated with this study.
         </p>
@@ -214,12 +258,14 @@ export default function ContributorsModal({ open, onClose, studyId, studyData })
             </p>
             <div className="flex justify-end gap-2">
               <button
+                type="button"
                 onClick={() => setDeletingIndex(null)}
                 className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={() => remove(deletingIndex)}
                 className="px-3 py-1.5 text-sm bg-red-600 text-white hover:bg-red-700 rounded"
               >
@@ -282,6 +328,7 @@ function ContributorEditForm({ value, onChange, onSave, onCancel }) {
       />
       <div className="flex justify-end gap-1">
         <button
+          type="button"
           onClick={onCancel}
           className="p-1 hover:bg-red-50 rounded text-red-600"
           title="Cancel"
@@ -289,6 +336,7 @@ function ContributorEditForm({ value, onChange, onSave, onCancel }) {
           <X size={16} />
         </button>
         <button
+          type="button"
           onClick={onSave}
           className="p-1 hover:bg-green-50 rounded text-green-600"
           title="Save"

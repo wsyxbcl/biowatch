@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import * as HoverCard from '@radix-ui/react-hover-card'
 import { ChevronLeft, ChevronRight, CameraOff, X, Heart, Play, Loader2 } from 'lucide-react'
 import { useCommonName } from '../utils/commonNames'
+import SpeciesTooltipContent from './SpeciesTooltipContent'
 
 function toTitleCase(str) {
   return str.replace(/\b\w/g, (c) => c.toUpperCase())
@@ -609,7 +611,7 @@ function MediaCard({ media, onClick, studyId }) {
     }
   }, [isVideo, media?.filePath, media?.mediaID, studyId])
 
-  return (
+  const cardButton = (
     <button
       type="button"
       onClick={() => onClick(media)}
@@ -681,6 +683,31 @@ function MediaCard({ media, onClick, studyId }) {
         </p>
       </div>
     </button>
+  )
+
+  // No species attached → no hover card (e.g., misc captures)
+  if (!media.scientificName) return cardButton
+
+  return (
+    <HoverCard.Root openDelay={200} closeDelay={120}>
+      <HoverCard.Trigger asChild>{cardButton}</HoverCard.Trigger>
+      <HoverCard.Portal>
+        <HoverCard.Content
+          side="top"
+          sideOffset={8}
+          align="center"
+          avoidCollisions={true}
+          collisionPadding={16}
+          className="z-[10000]"
+        >
+          <SpeciesTooltipContent
+            imageData={{ scientificName: media.scientificName }}
+            studyId={studyId}
+            size="lg"
+          />
+        </HoverCard.Content>
+      </HoverCard.Portal>
+    </HoverCard.Root>
   )
 }
 
