@@ -44,7 +44,7 @@ function SpeciesRow({
     >
       <HoverCard.Trigger asChild>
         <div
-          className="cursor-pointer hover:bg-blue-50 transition-colors py-2 px-2 -mx-2 rounded flex items-center gap-3"
+          className="cursor-pointer hover:bg-blue-50 transition-colors py-2.5 px-3 -mx-3 rounded flex items-center gap-3"
           onClick={() => onRowClick(species)}
         >
           <div className="w-64 min-w-0 truncate flex-shrink-0">
