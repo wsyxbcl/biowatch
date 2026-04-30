@@ -48,7 +48,9 @@ export default function KpiTile({ icon, label, value, sub, subAccent, onEdit, on
         </span>
       </div>
 
-      <div className="text-2xl font-bold text-gray-900 tabular-nums leading-none">{value}</div>
+      <div className="text-2xl font-bold text-gray-900 tabular-nums leading-none text-center">
+        {value}
+      </div>
 
       {/* Anchor sub-detail to the bottom so wrapping in one tile (e.g. a long
           camera-days line) doesn't push the number row out of alignment with
