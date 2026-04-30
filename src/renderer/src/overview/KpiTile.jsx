@@ -41,7 +41,7 @@ export default function KpiTile({ icon, label, value, sub, subAccent, onEdit, on
         />
       )}
 
-      <div className="flex items-center gap-1.5 mb-1.5 text-blue-600">
+      <div className="flex items-center justify-center gap-1.5 mb-1.5 text-blue-600">
         {icon}
         <span className="text-[0.65rem] font-semibold tracking-wide text-gray-500 uppercase">
           {label}
@@ -57,7 +57,7 @@ export default function KpiTile({ icon, label, value, sub, subAccent, onEdit, on
           its siblings — the grid stretches all tiles to the tallest, and
           mt-auto keeps the visual baselines matching. */}
       {sub && (
-        <div className="mt-auto pt-2 text-[0.7rem] text-gray-500">
+        <div className="mt-auto pt-2 text-[0.7rem] text-gray-500 text-center">
           {subAccent && <span className="text-blue-700 font-semibold">{subAccent}</span>}
           {subAccent && ' '}
           {sub}
