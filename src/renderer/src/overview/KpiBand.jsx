@@ -82,7 +82,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
         sub={locationCount > 0 ? `across ${formatStatNumber(locationCount)} locations` : null}
       />
 
-      <div className="relative">
+      <div className="relative flex">
         <KpiTile
           icon={<CalendarDays size={ICON_SIZE} />}
           label="Span"
