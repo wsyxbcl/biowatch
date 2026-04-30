@@ -42,13 +42,16 @@ function isRemoteUrl(filePath) {
 // Used to decide whether the "Show more" toggle is worth rendering.
 const BLURB_CLAMP_THRESHOLD = 250
 
-export default function SpeciesTooltipContent({ imageData, studyId }) {
+export default function SpeciesTooltipContent({ imageData, studyId, size = 'md' }) {
   const [imageError, setImageError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [blurbExpanded, setBlurbExpanded] = useState(false)
   const sciName = imageData?.scientificName
   const common = useCommonName(sciName)
   const info = resolveSpeciesInfo(sciName)
+  const isLarge = size === 'lg'
+  const cardWidth = isLarge ? 'w-[400px]' : 'w-[320px]'
+  const imageHeight = isLarge ? 'h-[230px]' : 'h-[180px]'
 
   // Reset state when imageData changes
   useEffect(() => {
@@ -78,10 +81,12 @@ export default function SpeciesTooltipContent({ imageData, studyId }) {
   const hasCommon = common && common !== sciName
 
   return (
-    <div className="w-[320px] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
+    <div
+      className={`${cardWidth} bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden`}
+    >
       {/* Image */}
       <div
-        className={`relative w-full h-[180px] ${usingFallbackImage ? 'bg-black' : 'bg-gray-100'}`}
+        className={`relative w-full ${imageHeight} ${usingFallbackImage ? 'bg-black' : 'bg-gray-100'}`}
       >
         {!imageSource || imageError ? (
           <div className="absolute inset-0 flex items-center justify-center">

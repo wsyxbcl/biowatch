@@ -35,53 +35,53 @@ function SpeciesRow({
   }, [scrollSignal])
 
   return (
-    <HoverCard.Root
-      key={species.scientificName}
-      open={hoverOpen}
-      onOpenChange={setHoverOpen}
-      openDelay={200}
-      closeDelay={120}
+    <div
+      className="cursor-pointer hover:bg-blue-50 transition-colors py-2.5 px-3 rounded flex items-center gap-3"
+      onClick={() => onRowClick(species)}
     >
-      <HoverCard.Trigger asChild>
-        <div
-          className="cursor-pointer hover:bg-blue-50 transition-colors py-2.5 px-3 rounded flex items-center gap-3"
-          onClick={() => onRowClick(species)}
-        >
+      <HoverCard.Root
+        key={species.scientificName}
+        open={hoverOpen}
+        onOpenChange={setHoverOpen}
+        openDelay={200}
+        closeDelay={120}
+      >
+        <HoverCard.Trigger asChild>
           <div className="w-64 min-w-0 truncate flex-shrink-0">
             <span className="capitalize text-sm text-gray-900 font-medium">{displayName}</span>
             {showScientific && (
               <span className="text-gray-400 text-xs italic ml-2">{species.scientificName}</span>
             )}
           </div>
-          <div className="w-8 flex-shrink-0">
-            <IucnBadge category={iucn} />
-          </div>
-          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="bg-blue-600 h-full rounded-full"
-              style={{ width: `${(species.count / totalCount) * 100}%` }}
-            />
-          </div>
-          <span className="w-12 text-right text-sm text-gray-500 tabular-nums flex-shrink-0">
-            {species.count}
-          </span>
-        </div>
-      </HoverCard.Trigger>
-      {tooltipImageData && (
-        <HoverCard.Portal>
-          <HoverCard.Content
-            side="top"
-            sideOffset={8}
-            align="end"
-            avoidCollisions={true}
-            collisionPadding={16}
-            className="z-[10000]"
-          >
-            <SpeciesTooltipContent imageData={tooltipImageData} studyId={studyId} />
-          </HoverCard.Content>
-        </HoverCard.Portal>
-      )}
-    </HoverCard.Root>
+        </HoverCard.Trigger>
+        {tooltipImageData && (
+          <HoverCard.Portal>
+            <HoverCard.Content
+              side="right"
+              sideOffset={12}
+              align="center"
+              avoidCollisions={true}
+              collisionPadding={16}
+              className="z-[10000]"
+            >
+              <SpeciesTooltipContent imageData={tooltipImageData} studyId={studyId} size="lg" />
+            </HoverCard.Content>
+          </HoverCard.Portal>
+        )}
+      </HoverCard.Root>
+      <div className="w-8 flex-shrink-0">
+        <IucnBadge category={iucn} />
+      </div>
+      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div
+          className="bg-blue-600 h-full rounded-full"
+          style={{ width: `${(species.count / totalCount) * 100}%` }}
+        />
+      </div>
+      <span className="w-12 text-right text-sm text-gray-500 tabular-nums flex-shrink-0">
+        {species.count}
+      </span>
+    </div>
   )
 }
 
