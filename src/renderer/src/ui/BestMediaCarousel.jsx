@@ -613,9 +613,9 @@ function MediaCard({ media, onClick, studyId }) {
     <button
       type="button"
       onClick={() => onClick(media)}
-      className="flex-shrink-0 w-48 rounded-lg overflow-hidden cursor-pointer border border-gray-200 shadow hover:shadow-md transition-shadow text-left bg-white"
+      className="flex-shrink-0 w-56 rounded-lg overflow-hidden cursor-pointer border border-gray-200 shadow hover:shadow-md transition-shadow text-left bg-white"
     >
-      <div className="relative w-full h-36 bg-gray-100">
+      <div className="relative w-full h-40 bg-gray-100">
         {isVideo ? (
           <>
             {/* Video placeholder background */}
