@@ -68,8 +68,8 @@ function SpeciesRow({
       {tooltipImageData && (
         <HoverCard.Portal>
           <HoverCard.Content
-            side="right"
-            sideOffset={12}
+            side="top"
+            sideOffset={8}
             align="start"
             avoidCollisions={true}
             collisionPadding={16}
@@ -148,24 +148,49 @@ export default function SpeciesDistribution({ studyId, speciesData, taxonomicDat
           </p>
         </div>
       ) : (
-        <div className="overflow-y-auto" onScroll={handleScroll}>
-          {sortSpeciesHumansLast(speciesData).map((species) => {
-            const storedCommonName = scientificToCommonMap[species.scientificName] || null
-            return (
-              <SpeciesRow
-                key={species.scientificName}
-                species={species}
-                storedCommonName={storedCommonName}
-                speciesImageMap={speciesImageMap}
-                studyId={studyId}
-                totalCount={totalCount}
-                onRowClick={handleRowClick}
-                scrollSignal={scrollSignal}
-              />
-            )
-          })}
-        </div>
+        <>
+          <div className="overflow-y-auto overflow-x-hidden" onScroll={handleScroll}>
+            {sortSpeciesHumansLast(speciesData).map((species) => {
+              const storedCommonName = scientificToCommonMap[species.scientificName] || null
+              return (
+                <SpeciesRow
+                  key={species.scientificName}
+                  species={species}
+                  storedCommonName={storedCommonName}
+                  speciesImageMap={speciesImageMap}
+                  studyId={studyId}
+                  totalCount={totalCount}
+                  onRowClick={handleRowClick}
+                  scrollSignal={scrollSignal}
+                />
+              )
+            })}
+          </div>
+          <IucnLegend />
+        </>
       )}
     </section>
+  )
+}
+
+function IucnLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-gray-100 text-[0.7rem] text-gray-500">
+      <span>IUCN status:</span>
+      <LegendItem code="LC" label="Least Concern" />
+      <LegendItem code="NT" label="Near Threatened" />
+      <LegendItem code="VU" label="Vulnerable" />
+      <LegendItem code="EN" label="Endangered" />
+      <LegendItem code="CR" label="Critically Endangered" />
+    </div>
+  )
+}
+
+function LegendItem({ code, label }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <IucnBadge category={code} />
+      {label}
+    </span>
   )
 }

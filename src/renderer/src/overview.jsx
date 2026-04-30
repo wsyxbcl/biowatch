@@ -247,7 +247,7 @@ export default function Overview({ data, studyId, studyName }) {
   const error = speciesError?.message || deploymentsError?.message || null
 
   return (
-    <div className="flex flex-col px-6 gap-6 h-full overflow-y-auto py-4">
+    <div className="flex flex-col px-6 gap-6 h-full overflow-y-auto overflow-x-hidden py-4">
       <EditorialHeader
         studyId={studyId}
         studyName={studyName}

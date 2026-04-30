@@ -19,7 +19,7 @@ export default function KpiTile({ icon, label, value, sub, subAccent, onEdit }) 
     <Tag
       type={editable ? 'button' : undefined}
       onClick={editable ? onEdit : undefined}
-      className={`group relative bg-white border border-gray-200 rounded-lg px-3.5 py-3.5 text-left transition-colors hover:border-blue-300 hover:bg-slate-50 ${
+      className={`group relative w-full bg-white border border-gray-200 rounded-lg px-3.5 py-3.5 text-left transition-colors hover:border-blue-300 hover:bg-slate-50 ${
         editable
           ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300'
           : ''

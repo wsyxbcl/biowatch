@@ -768,8 +768,6 @@ export default function BestMediaCarousel({ studyId, isRunning, renderEmpty }) {
   return (
     <>
       <div className="relative">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Best Captures</h3>
-
         {/* Left scroll button */}
         {canScrollLeft && (
           <button
@@ -794,12 +792,12 @@ export default function BestMediaCarousel({ studyId, isRunning, renderEmpty }) {
 
         {/* Left fade effect */}
         {canScrollLeft && (
-          <div className="absolute left-0 top-6 bottom-0 w-12 bg-gradient-to-r from-white to-transparent z-[1] pointer-events-none" />
+          <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent z-[1] pointer-events-none" />
         )}
 
         {/* Right fade effect */}
         {canScrollRight && (
-          <div className="absolute right-0 top-6 bottom-0 w-12 bg-gradient-to-l from-white to-transparent z-[1] pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent z-[1] pointer-events-none" />
         )}
 
         {/* Carousel container */}

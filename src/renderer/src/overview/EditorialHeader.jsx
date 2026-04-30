@@ -230,7 +230,7 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
         />
       </div>
 
-      <div className="h-56">{mapSlot}</div>
+      <div className="h-80">{mapSlot}</div>
 
       <ContributorsModal
         open={contributorsOpen}
