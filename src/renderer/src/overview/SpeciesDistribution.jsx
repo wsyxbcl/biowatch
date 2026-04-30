@@ -177,6 +177,7 @@ function IucnLegend() {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-gray-100 text-[0.7rem] text-gray-500">
       <span>IUCN status:</span>
+      <LegendItem code="NE" label="Not Evaluated" />
       <LegendItem code="LC" label="Least Concern" />
       <LegendItem code="NT" label="Near Threatened" />
       <LegendItem code="VU" label="Vulnerable" />
