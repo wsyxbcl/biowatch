@@ -221,8 +221,8 @@ Study-level metadata (one row per database).
 | `importerName` | TEXT | NOT NULL | Import source identifier |
 | `contributors` | TEXT | JSON | Array of contributor objects |
 | `updatedAt` | TEXT | | Last modification |
-| `startDate` | TEXT | | Temporal coverage start |
-| `endDate` | TEXT | | Temporal coverage end |
+| `startDate` | TEXT | | Temporal coverage start (ISO date). User override for the Overview tab's Span tile — when set, beats `observations.eventStart` / `deployments.deploymentStart` / `media.timestamp` derivation. |
+| `endDate` | TEXT | | Temporal coverage end (ISO date). Same override semantics as `startDate`. |
 | `sequenceGap` | INTEGER | | Media grouping threshold in seconds (null = smart default) |
 
 ```javascript
