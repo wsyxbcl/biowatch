@@ -54,12 +54,8 @@ export default function CommonSpeciesFallback({ studyId }) {
   return (
     <section>
       <h3 className="text-[0.7rem] uppercase tracking-wider text-gray-500 font-semibold mb-3">
-        Most common species
+        Featured species
       </h3>
-      <p className="text-xs text-gray-500 mb-3">
-        Reference imagery from Wikipedia. Top captures from your study will appear here once
-        classification produces detection bounding boxes.
-      </p>
       <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
         {candidates.map((c) => (
           <SpeciesReferenceCard key={c.scientificName} species={c} onClick={handleClick} />
