@@ -47,11 +47,16 @@ function SpeciesRow({
         closeDelay={120}
       >
         <HoverCard.Trigger asChild>
-          <div className="w-64 min-w-0 truncate flex-shrink-0">
-            <span className="capitalize text-sm text-gray-900 font-medium">{displayName}</span>
-            {showScientific && (
-              <span className="text-gray-400 text-xs italic ml-2">{species.scientificName}</span>
-            )}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="w-64 min-w-0 truncate">
+              <span className="capitalize text-sm text-gray-900 font-medium">{displayName}</span>
+              {showScientific && (
+                <span className="text-gray-400 text-xs italic ml-2">{species.scientificName}</span>
+              )}
+            </div>
+            <div className="w-8 flex-shrink-0">
+              <IucnBadge category={iucn} />
+            </div>
           </div>
         </HoverCard.Trigger>
         {tooltipImageData && (
@@ -69,9 +74,6 @@ function SpeciesRow({
           </HoverCard.Portal>
         )}
       </HoverCard.Root>
-      <div className="w-8 flex-shrink-0">
-        <IucnBadge category={iucn} />
-      </div>
       <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
         <div
           className="bg-blue-600 h-full rounded-full"
