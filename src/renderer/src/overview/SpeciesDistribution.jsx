@@ -1,0 +1,171 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import * as HoverCard from '@radix-ui/react-hover-card'
+import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router'
+import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
+import IucnBadge from '../ui/IucnBadge'
+import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
+import { useCommonName } from '../utils/commonNames'
+import { sortSpeciesHumansLast } from '../utils/speciesUtils'
+
+/**
+ * Single species row. Restyled for the full-width Overview placement.
+ */
+function SpeciesRow({
+  species,
+  storedCommonName,
+  speciesImageMap,
+  studyId,
+  totalCount,
+  onRowClick,
+  scrollSignal
+}) {
+  const displayName =
+    useCommonName(species.scientificName, { storedCommonName }) || species.scientificName
+  const showScientific = species.scientificName && displayName !== species.scientificName
+  const info = resolveSpeciesInfo(species.scientificName)
+  const iucn = info?.iucn
+  const studyImage = speciesImageMap[species.scientificName]
+  const tooltipImageData =
+    studyImage || (info?.imageUrl ? { scientificName: species.scientificName } : null)
+  const [hoverOpen, setHoverOpen] = useState(false)
+
+  useEffect(() => {
+    if (scrollSignal > 0) setHoverOpen(false)
+  }, [scrollSignal])
+
+  return (
+    <HoverCard.Root
+      key={species.scientificName}
+      open={hoverOpen}
+      onOpenChange={setHoverOpen}
+      openDelay={200}
+      closeDelay={120}
+    >
+      <HoverCard.Trigger asChild>
+        <div
+          className="cursor-pointer hover:bg-blue-50 transition-colors py-2 px-2 -mx-2 rounded flex items-center gap-3"
+          onClick={() => onRowClick(species)}
+        >
+          <div className="w-64 min-w-0 truncate flex-shrink-0">
+            <span className="capitalize text-sm text-gray-900 font-medium">{displayName}</span>
+            {showScientific && (
+              <span className="text-gray-400 text-xs italic ml-2">{species.scientificName}</span>
+            )}
+          </div>
+          <IucnBadge category={iucn} />
+          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="bg-blue-600 h-full rounded-full"
+              style={{ width: `${(species.count / totalCount) * 100}%` }}
+            />
+          </div>
+          <span className="w-12 text-right text-sm text-gray-500 tabular-nums flex-shrink-0">
+            {species.count}
+          </span>
+        </div>
+      </HoverCard.Trigger>
+      {tooltipImageData && (
+        <HoverCard.Portal>
+          <HoverCard.Content
+            side="right"
+            sideOffset={12}
+            align="start"
+            avoidCollisions={true}
+            collisionPadding={16}
+            className="z-[10000]"
+          >
+            <SpeciesTooltipContent imageData={tooltipImageData} studyId={studyId} />
+          </HoverCard.Content>
+        </HoverCard.Portal>
+      )}
+    </HoverCard.Root>
+  )
+}
+
+/**
+ * Full-width species distribution section. Pulls its own best-images.
+ *
+ * @param {Object} props
+ * @param {string} props.studyId
+ * @param {Array} props.speciesData - Sequence-aware species distribution.
+ * @param {Array} props.taxonomicData - Taxonomic data from study metadata (for stored common names).
+ */
+export default function SpeciesDistribution({ studyId, speciesData, taxonomicData }) {
+  const navigate = useNavigate()
+  const [scrollSignal, setScrollSignal] = useState(0)
+  const handleScroll = useCallback(() => setScrollSignal((s) => s + 1), [])
+
+  const { data: bestImagesData } = useQuery({
+    queryKey: ['bestImagesPerSpecies', studyId],
+    queryFn: async () => {
+      const response = await window.api.getBestImagePerSpecies(studyId)
+      if (response.error) throw new Error(response.error)
+      return response.data
+    },
+    enabled: !!studyId,
+    staleTime: 60000
+  })
+
+  const speciesImageMap = useMemo(() => {
+    const map = {}
+    if (bestImagesData) bestImagesData.forEach((item) => (map[item.scientificName] = item))
+    return map
+  }, [bestImagesData])
+
+  const scientificToCommonMap = useMemo(() => {
+    const map = {}
+    if (taxonomicData && Array.isArray(taxonomicData)) {
+      taxonomicData.forEach((taxon) => {
+        if (taxon.scientificName && taxon?.vernacularNames?.eng) {
+          map[taxon.scientificName] = taxon.vernacularNames.eng
+        }
+      })
+    }
+    return map
+  }, [taxonomicData])
+
+  const totalCount = useMemo(
+    () => (speciesData || []).reduce((sum, item) => sum + item.count, 0),
+    [speciesData]
+  )
+
+  const handleRowClick = (species) => {
+    navigate(`/study/${studyId}/media?species=${encodeURIComponent(species.scientificName)}`)
+  }
+
+  return (
+    <section className="flex flex-col min-h-0">
+      <h3 className="text-[0.7rem] uppercase tracking-wider text-gray-500 font-semibold mb-3">
+        Species distribution
+      </h3>
+
+      {!speciesData || speciesData.length === 0 ? (
+        <div className="bg-gray-50 border border-dashed border-gray-200 rounded-lg px-4 py-8 text-center">
+          <p className="text-sm font-medium text-gray-600">No species detected yet</p>
+          <p className="text-xs text-gray-500 mt-1">
+            Run a classification model to see what&apos;s been captured.
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-y-auto" onScroll={handleScroll}>
+          {sortSpeciesHumansLast(speciesData).map((species) => {
+            const storedCommonName = scientificToCommonMap[species.scientificName] || null
+            return (
+              <SpeciesRow
+                key={species.scientificName}
+                species={species}
+                storedCommonName={storedCommonName}
+                speciesImageMap={speciesImageMap}
+                studyId={studyId}
+                totalCount={totalCount}
+                onRowClick={handleRowClick}
+                scrollSignal={scrollSignal}
+              />
+            )
+          })}
+        </div>
+      )}
+    </section>
+  )
+}
