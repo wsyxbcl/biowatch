@@ -159,7 +159,7 @@ function SpeciesReferenceCard({ species, studyId, onClick }) {
         <button
           type="button"
           onClick={() => onClick(species.scientificName)}
-          className="flex-shrink-0 w-40 rounded-lg overflow-hidden cursor-pointer border border-gray-200 shadow-sm hover:shadow-md transition-shadow text-left bg-white"
+          className="flex-shrink-0 w-40 rounded-lg overflow-hidden cursor-pointer border border-gray-200 shadow-md hover:shadow-lg transition-shadow text-left bg-white"
         >
           <div className="relative w-full h-28 bg-gray-100">
             {imageError ? (
