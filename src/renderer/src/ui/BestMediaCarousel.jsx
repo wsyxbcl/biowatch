@@ -802,7 +802,7 @@ export default function BestMediaCarousel({ studyId, isRunning, renderEmpty }) {
         {/* Carousel container */}
         <div
           ref={carouselRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide"
+          className="flex gap-4 overflow-x-auto scrollbar-hide py-2"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {bestMedia.map((media, index) => (

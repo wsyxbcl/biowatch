@@ -139,7 +139,7 @@ function ScrollableStrip({ children }) {
       )}
       <div
         ref={containerRef}
-        className="flex gap-3 overflow-x-auto scrollbar-hide"
+        className="flex gap-3 overflow-x-auto scrollbar-hide py-2"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {children}
