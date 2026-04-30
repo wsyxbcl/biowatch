@@ -27,7 +27,7 @@ export default function KpiTile({ icon, label, value, sub, subAccent, onEdit, on
     <Tag
       type={interactive ? 'button' : undefined}
       onClick={interactive ? action : undefined}
-      className={`group relative w-full bg-white border border-gray-200 rounded-lg px-3.5 py-3.5 text-left transition-shadow ${
+      className={`group relative w-full bg-white border border-gray-200 rounded-lg px-3.5 py-3.5 text-left transition-shadow flex flex-col ${
         interactive
           ? 'cursor-pointer hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300'
           : ''
@@ -50,8 +50,12 @@ export default function KpiTile({ icon, label, value, sub, subAccent, onEdit, on
 
       <div className="text-2xl font-bold text-gray-900 tabular-nums leading-none">{value}</div>
 
+      {/* Anchor sub-detail to the bottom so wrapping in one tile (e.g. a long
+          camera-days line) doesn't push the number row out of alignment with
+          its siblings — the grid stretches all tiles to the tallest, and
+          mt-auto keeps the visual baselines matching. */}
       {sub && (
-        <div className="mt-1.5 text-[0.7rem] text-gray-500">
+        <div className="mt-auto pt-2 text-[0.7rem] text-gray-500">
           {subAccent && <span className="text-blue-700 font-semibold">{subAccent}</span>}
           {subAccent && ' '}
           {sub}
