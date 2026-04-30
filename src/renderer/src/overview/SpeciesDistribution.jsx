@@ -80,8 +80,8 @@ function SpeciesRow({
           style={{ width: `${(species.count / totalCount) * 100}%` }}
         />
       </div>
-      <span className="w-12 text-right text-sm text-gray-500 tabular-nums flex-shrink-0">
-        {species.count}
+      <span className="w-14 text-right text-xs text-gray-500 tabular-nums flex-shrink-0">
+        {species.count.toLocaleString('en-US')}
       </span>
     </div>
   )
