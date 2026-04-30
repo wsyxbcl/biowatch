@@ -30,8 +30,18 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
   const [editedDescription, setEditedDescription] = useState('')
   const descRef = useRef(null)
   const descEditRef = useRef(null)
+  const descTextareaRef = useRef(null)
   const [descExpanded, setDescExpanded] = useState(false)
   const [descTruncated, setDescTruncated] = useState(false)
+
+  // Resize the description textarea to fit its content. Capped at 60vh so
+  // a runaway-long description doesn't push everything else off screen.
+  const autoGrowDescription = (el) => {
+    if (!el) return
+    el.style.height = 'auto'
+    const cap = Math.round(window.innerHeight * 0.6)
+    el.style.height = `${Math.min(el.scrollHeight, cap)}px`
+  }
 
   // Contributors modal
   const [contributorsOpen, setContributorsOpen] = useState(false)
@@ -103,6 +113,11 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingDescription, editedDescription])
 
+  // Size the textarea to its content the moment editing opens.
+  useEffect(() => {
+    if (editingDescription) autoGrowDescription(descTextareaRef.current)
+  }, [editingDescription])
+
   // Detect truncation for "Show more"
   useEffect(() => {
     if (!descRef.current || editingDescription) {
@@ -165,8 +180,12 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
           {editingDescription ? (
             <div ref={descEditRef}>
               <textarea
+                ref={descTextareaRef}
                 value={editedDescription}
-                onChange={(e) => setEditedDescription(e.target.value)}
+                onChange={(e) => {
+                  setEditedDescription(e.target.value)
+                  autoGrowDescription(e.target)
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                     e.preventDefault()
@@ -175,10 +194,21 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
                     cancelDescription()
                   }
                 }}
-                className="w-full text-sm text-gray-700 leading-relaxed border-2 border-blue-500 rounded p-2 focus:outline-none resize-y min-h-[120px] max-w-prose"
+                className="w-full text-sm text-gray-700 leading-relaxed border-2 border-blue-500 rounded p-2 focus:outline-none resize-none overflow-hidden min-h-[160px] max-w-prose"
                 autoFocus
                 placeholder="Camera trap dataset containing deployment information, media files metadata, and species observations collected during wildlife monitoring."
               />
+              <div className="text-[0.7rem] text-gray-400 mt-1 max-w-prose">
+                Press{' '}
+                <kbd className="px-1 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-[0.65rem]">
+                  ⌘ Enter
+                </kbd>{' '}
+                to save,{' '}
+                <kbd className="px-1 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-[0.65rem]">
+                  Esc
+                </kbd>{' '}
+                to cancel
+              </div>
             </div>
           ) : (
             <button
