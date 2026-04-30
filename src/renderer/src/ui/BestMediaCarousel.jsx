@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, CameraOff, X, Heart, Play, Loader2 } from 'lucide-react'
 import { useCommonName } from '../utils/commonNames'
-import { formatGridTimestamp } from '../utils/formatTimestamp'
 
 function toTitleCase(str) {
   return str.replace(/\b\w/g, (c) => c.toUpperCase())
@@ -679,9 +678,6 @@ function MediaCard({ media, onClick, studyId }) {
       <div className="px-2 py-1.5">
         <p className="text-xs font-medium text-gray-900 truncate capitalize">
           <SpeciesThumbnailLabel scientificName={media.scientificName} />
-        </p>
-        <p className="text-[0.65rem] text-gray-500 truncate">
-          {media.timestamp ? formatGridTimestamp(media.timestamp) : 'No timestamp'}
         </p>
       </div>
     </button>
