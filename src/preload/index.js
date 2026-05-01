@@ -81,6 +81,9 @@ const api = {
   getBestImagePerSpecies: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('species:get-best-images', studyId)
   },
+  getOverviewStats: async (studyId) => {
+    return await electronAPI.ipcRenderer.invoke('overview:get-stats', studyId)
+  },
   // Sequence-aware species distribution APIs (pre-computed in main thread)
   // gapSeconds is fetched from study metadata in the backend
   getSequenceAwareSpeciesDistribution: async (studyId) => {

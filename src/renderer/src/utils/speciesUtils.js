@@ -39,6 +39,34 @@ export const isNonSpeciesLabel = (scientificName) => {
   return NON_SPECIES_LABELS.has(scientificName.trim().toLowerCase())
 }
 
+// Domestic species we want to exclude from "wildlife" surfaces (e.g., the
+// Featured species fallback). Note: wild forms with the same genus are
+// intentionally NOT in this set — `Sus scrofa` (wild boar) is left in even
+// though `Sus scrofa domesticus` (pig) is implicitly excluded by absence
+// of an entry, and `Gallus gallus` (red junglefowl, wild) is left in while
+// `Gallus gallus domesticus` (chicken) is excluded.
+const DOMESTIC_SPECIES = new Set([
+  'felis catus', // cat
+  'canis familiaris', // dog
+  'canis lupus familiaris', // dog (formal)
+  'equus caballus', // horse
+  'equus ferus caballus', // horse (formal)
+  'gallus gallus domesticus', // chicken
+  'bos taurus', // cow
+  'bos primigenius taurus' // cow (formal)
+])
+
+/**
+ * Check if a name is a known domestic species (cat / dog / horse / chicken /
+ * cow). Case-insensitive, trim-tolerant.
+ * @param {string} scientificName
+ * @returns {boolean}
+ */
+export const isDomestic = (scientificName) => {
+  if (!scientificName || typeof scientificName !== 'string') return false
+  return DOMESTIC_SPECIES.has(scientificName.trim().toLowerCase())
+}
+
 /**
  * Check if a species is human or vehicle (should be sorted to bottom of lists)
  * @param {string} scientificName - The scientific name to check

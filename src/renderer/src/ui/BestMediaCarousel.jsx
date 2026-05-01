@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import * as HoverCard from '@radix-ui/react-hover-card'
 import { ChevronLeft, ChevronRight, CameraOff, X, Heart, Play, Loader2 } from 'lucide-react'
 import { useCommonName } from '../utils/commonNames'
+import SpeciesTooltipContent from './SpeciesTooltipContent'
 
 function toTitleCase(str) {
   return str.replace(/\b\w/g, (c) => c.toUpperCase())
@@ -609,79 +611,103 @@ function MediaCard({ media, onClick, studyId }) {
     }
   }, [isVideo, media?.filePath, media?.mediaID, studyId])
 
-  return (
-    <div
-      className="flex-shrink-0 w-48 h-36 rounded-lg overflow-hidden cursor-pointer border border-gray-200 shadow-sm hover:shadow-md transition-shadow relative bg-gray-100"
+  const cardButton = (
+    <button
+      type="button"
       onClick={() => onClick(media)}
+      className="flex-shrink-0 w-56 rounded-lg overflow-hidden cursor-pointer border border-gray-200 shadow hover:shadow-md transition-shadow text-left bg-white"
     >
-      {isVideo ? (
-        <>
-          {/* Video placeholder background */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-gray-400">
-            {isExtractingThumbnail ? (
-              <>
-                <Loader2 size={32} className="animate-spin" />
-                <span className="text-xs mt-1">Loading...</span>
-              </>
-            ) : (
-              <>
-                <Play size={32} />
-                <span className="text-xs mt-1">Video</span>
-              </>
-            )}
-          </div>
+      <div className="relative w-full h-40 bg-gray-100">
+        {isVideo ? (
+          <>
+            {/* Video placeholder background */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-gray-400">
+              {isExtractingThumbnail ? (
+                <>
+                  <Loader2 size={28} className="animate-spin" />
+                  <span className="text-xs mt-1">Loading...</span>
+                </>
+              ) : (
+                <>
+                  <Play size={28} />
+                  <span className="text-xs mt-1">Video</span>
+                </>
+              )}
+            </div>
 
-          {/* Show extracted thumbnail for unsupported formats */}
-          {thumbnailUrl ? (
+            {/* Show extracted thumbnail for unsupported formats */}
+            {thumbnailUrl ? (
+              <img
+                src={thumbnailUrl}
+                alt={media.fileName || `Video ${media.mediaID}`}
+                className="relative z-10 w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              /* Video element - overlays placeholder when it loads successfully */
+              <video
+                src={constructImageUrl(media.filePath, studyId)}
+                className={`relative z-10 w-full h-full object-cover ${imageError ? 'hidden' : ''}`}
+                onError={() => setImageError(true)}
+                muted
+                preload="metadata"
+              />
+            )}
+
+            {/* Video indicator badge */}
+            <div className="absolute bottom-1.5 right-1.5 z-20 bg-black/70 text-white px-1.5 py-0.5 rounded text-xs flex items-center gap-1">
+              <Play size={11} />
+            </div>
+          </>
+        ) : (
+          <>
             <img
-              src={thumbnailUrl}
-              alt={media.fileName || `Video ${media.mediaID}`}
-              className="relative z-10 w-full h-full object-cover"
+              src={constructImageUrl(media.filePath, studyId)}
+              alt={media.scientificName || 'Wildlife'}
+              className={`w-full h-full object-cover ${imageError ? 'hidden' : ''}`}
+              onError={() => setImageError(true)}
               loading="lazy"
             />
-          ) : (
-            /* Video element - overlays placeholder when it loads successfully */
-            <video
-              src={constructImageUrl(media.filePath, studyId)}
-              className={`relative z-10 w-full h-full object-cover ${imageError ? 'hidden' : ''}`}
-              onError={() => setImageError(true)}
-              muted
-              preload="metadata"
-            />
-          )}
+            {imageError && (
+              <div className="absolute inset-0 flex items-center justify-center text-gray-300">
+                <CameraOff size={24} />
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
-          {/* Video indicator badge */}
-          <div className="absolute bottom-8 right-2 z-20 bg-black/70 text-white px-1.5 py-0.5 rounded text-xs flex items-center gap-1">
-            <Play size={12} />
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Image thumbnail */}
-          <img
-            src={constructImageUrl(media.filePath, studyId)}
-            alt={media.scientificName || 'Wildlife'}
-            className={`w-full h-full object-cover ${imageError ? 'hidden' : ''}`}
-            onError={() => setImageError(true)}
-            loading="lazy"
-          />
-
-          {/* Error fallback */}
-          {imageError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
-              <CameraOff size={24} className="text-gray-400" />
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Species label */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 z-20">
-        <p className="text-white text-xs font-medium truncate">
+      <div className="px-2 py-1.5">
+        <p className="text-xs font-medium text-gray-900 truncate capitalize">
           <SpeciesThumbnailLabel scientificName={media.scientificName} />
         </p>
       </div>
-    </div>
+    </button>
+  )
+
+  // No species attached → no hover card (e.g., misc captures)
+  if (!media.scientificName) return cardButton
+
+  return (
+    <HoverCard.Root openDelay={200} closeDelay={120}>
+      <HoverCard.Trigger asChild>{cardButton}</HoverCard.Trigger>
+      <HoverCard.Portal>
+        <HoverCard.Content
+          side="top"
+          sideOffset={8}
+          align="center"
+          avoidCollisions={true}
+          collisionPadding={16}
+          className="z-[10000]"
+        >
+          <SpeciesTooltipContent
+            imageData={{ scientificName: media.scientificName }}
+            studyId={studyId}
+            size="lg"
+          />
+        </HoverCard.Content>
+      </HoverCard.Portal>
+    </HoverCard.Root>
   )
 }
 
@@ -692,7 +718,7 @@ function MediaCard({ media, onClick, studyId }) {
  * @param {Object} props
  * @param {string} props.studyId - Study ID to fetch media for
  */
-export default function BestMediaCarousel({ studyId, isRunning }) {
+export default function BestMediaCarousel({ studyId, isRunning, renderEmpty }) {
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(null)
@@ -757,16 +783,17 @@ export default function BestMediaCarousel({ studyId, isRunning }) {
     })
   }
 
-  // Hide carousel while loading, on error, or if no data
-  if (isLoading || error || bestMedia.length === 0) {
+  // Hide carousel while loading or on error.
+  if (isLoading || error) {
     return null
+  }
+  if (bestMedia.length === 0) {
+    return renderEmpty ? renderEmpty() : null
   }
 
   return (
     <>
       <div className="relative">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Best Captures</h3>
-
         {/* Left scroll button */}
         {canScrollLeft && (
           <button
@@ -791,18 +818,18 @@ export default function BestMediaCarousel({ studyId, isRunning }) {
 
         {/* Left fade effect */}
         {canScrollLeft && (
-          <div className="absolute left-0 top-6 bottom-0 w-12 bg-gradient-to-r from-white to-transparent z-[1] pointer-events-none" />
+          <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent z-[1] pointer-events-none" />
         )}
 
         {/* Right fade effect */}
         {canScrollRight && (
-          <div className="absolute right-0 top-6 bottom-0 w-12 bg-gradient-to-l from-white to-transparent z-[1] pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent z-[1] pointer-events-none" />
         )}
 
         {/* Carousel container */}
         <div
           ref={carouselRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide"
+          className="flex gap-4 overflow-x-auto scrollbar-hide py-3"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {bestMedia.map((media, index) => (

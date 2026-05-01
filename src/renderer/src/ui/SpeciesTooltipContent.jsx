@@ -42,13 +42,19 @@ function isRemoteUrl(filePath) {
 // Used to decide whether the "Show more" toggle is worth rendering.
 const BLURB_CLAMP_THRESHOLD = 250
 
-export default function SpeciesTooltipContent({ imageData, studyId }) {
+export default function SpeciesTooltipContent({ imageData, studyId, size = 'md' }) {
   const [imageError, setImageError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [blurbExpanded, setBlurbExpanded] = useState(false)
   const sciName = imageData?.scientificName
   const common = useCommonName(sciName)
   const info = resolveSpeciesInfo(sciName)
+  const isLarge = size === 'lg'
+  const cardWidth = isLarge ? 'w-[400px]' : 'w-[320px]'
+  const imageHeight = isLarge ? 'h-[230px]' : 'h-[180px]'
+  const nameClass = isLarge ? 'text-sm text-gray-700' : 'text-xs text-gray-600'
+  const blurbClass = isLarge ? 'text-[13px] text-gray-700' : 'text-[11px] text-gray-700'
+  const linkClass = isLarge ? 'text-[12px]' : 'text-[10px]'
 
   // Reset state when imageData changes
   useEffect(() => {
@@ -78,10 +84,12 @@ export default function SpeciesTooltipContent({ imageData, studyId }) {
   const hasCommon = common && common !== sciName
 
   return (
-    <div className="w-[320px] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
+    <div
+      className={`${cardWidth} bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden`}
+    >
       {/* Image */}
       <div
-        className={`relative w-full h-[180px] ${usingFallbackImage ? 'bg-black' : 'bg-gray-100'}`}
+        className={`relative w-full ${imageHeight} ${usingFallbackImage ? 'bg-black' : 'bg-gray-100'}`}
       >
         {!imageSource || imageError ? (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -112,7 +120,7 @@ export default function SpeciesTooltipContent({ imageData, studyId }) {
       {/* Footer: name + badge + blurb + Wikipedia link */}
       <div className="px-2.5 py-2 bg-gray-50 border-t border-gray-100 space-y-1.5">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <p className="text-xs text-gray-600 truncate">
+          <p className={`${nameClass} truncate`}>
             {hasCommon ? (
               <>
                 {toTitleCase(common)}{' '}
@@ -128,7 +136,7 @@ export default function SpeciesTooltipContent({ imageData, studyId }) {
         {info?.blurb && (
           <>
             <p
-              className={`text-[11px] text-gray-700 leading-snug ${
+              className={`${blurbClass} leading-snug ${
                 blurbExpanded ? 'max-h-48 overflow-y-auto pr-1' : 'line-clamp-5'
               }`}
             >
@@ -138,7 +146,7 @@ export default function SpeciesTooltipContent({ imageData, studyId }) {
               <button
                 type="button"
                 onClick={() => setBlurbExpanded((v) => !v)}
-                className="text-[10px] text-blue-600 hover:underline"
+                className={`${linkClass} text-blue-600 hover:underline`}
               >
                 {blurbExpanded ? 'Show less' : 'Show more'}
               </button>
@@ -151,7 +159,7 @@ export default function SpeciesTooltipContent({ imageData, studyId }) {
             href={info.wikipediaUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-[10px] text-blue-600 hover:underline"
+            className={`block ${linkClass} text-blue-600 hover:underline`}
           >
             Read on Wikipedia
           </a>
