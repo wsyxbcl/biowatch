@@ -9,6 +9,7 @@ import SpanPicker from './SpanPicker'
 import IucnBadge from '../ui/IucnBadge'
 import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
 import { useCommonName } from '../utils/commonNames'
+import { resolveCommonName } from '../../../shared/commonNames/index.js'
 import {
   formatStatNumber,
   formatCompactCount,
@@ -200,6 +201,10 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
 function ThreatenedSpeciesPopover({ studyId, species, onClose, ignoreOutsideClickRef }) {
   const navigate = useNavigate()
   const containerRef = useRef(null)
+  // Bumped on every scroll of the list — child rows watch this and close
+  // their hover card when it changes so the card doesn't drift while the
+  // anchor moves with the scroll.
+  const [scrollSignal, setScrollSignal] = useState(0)
 
   useEffect(() => {
     const onMouseDown = (e) => {
@@ -225,9 +230,20 @@ function ThreatenedSpeciesPopover({ studyId, species, onClose, ignoreOutsideClic
     navigate(`/study/${studyId}/media?species=${encodeURIComponent(scientificName)}`)
   }
 
+  // Sort by display name (common name from the bundled dictionary, falling
+  // back to scientific name) so the popover lists species alphabetically.
+  // The synchronous dictionary lookup is enough — GBIF-resolved common
+  // names are an edge case and would require holding state for async work.
+  const sortedSpecies = [...species].sort((a, b) => {
+    const aDisplay = (resolveCommonName(a.scientificName) || a.scientificName).toLowerCase()
+    const bDisplay = (resolveCommonName(b.scientificName) || b.scientificName).toLowerCase()
+    return aDisplay.localeCompare(bDisplay)
+  })
+
   return (
     <div
       ref={containerRef}
+      onScroll={() => setScrollSignal((s) => s + 1)}
       className="bg-white rounded-lg shadow-xl border border-gray-200 w-72 max-h-80 overflow-y-auto"
     >
       <div className="px-3 py-2 border-b border-gray-100 sticky top-0 bg-white">
@@ -236,13 +252,14 @@ function ThreatenedSpeciesPopover({ studyId, species, onClose, ignoreOutsideClic
         </div>
       </div>
       <ul className="py-1">
-        {species.map((s) => (
+        {sortedSpecies.map((s) => (
           <ThreatenedSpeciesRow
             key={s.scientificName}
             studyId={studyId}
             scientificName={s.scientificName}
             iucn={s.iucn}
             onClick={() => handleClick(s.scientificName)}
+            scrollSignal={scrollSignal}
           />
         ))}
       </ul>
@@ -250,13 +267,19 @@ function ThreatenedSpeciesPopover({ studyId, species, onClose, ignoreOutsideClic
   )
 }
 
-function ThreatenedSpeciesRow({ studyId, scientificName, iucn, onClick }) {
+function ThreatenedSpeciesRow({ studyId, scientificName, iucn, onClick, scrollSignal }) {
   const commonName = useCommonName(scientificName)
   const display = commonName && commonName !== scientificName ? commonName : scientificName
   const showScientific = commonName && commonName !== scientificName
+  const [hoverOpen, setHoverOpen] = useState(false)
+  // Close any open card when the parent list scrolls — Radix HoverCard
+  // tracks its trigger, so without this the card "rides along" with the row.
+  useEffect(() => {
+    if (scrollSignal > 0) setHoverOpen(false)
+  }, [scrollSignal])
   return (
     <li>
-      <HoverCard.Root openDelay={200} closeDelay={120}>
+      <HoverCard.Root open={hoverOpen} onOpenChange={setHoverOpen} openDelay={200} closeDelay={120}>
         <HoverCard.Trigger asChild>
           <button
             type="button"
