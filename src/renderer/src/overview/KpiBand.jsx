@@ -66,6 +66,7 @@ const ICON_SIZE = 14
  */
 export default function KpiBand({ studyId, studyData, isImporting }) {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   // Single open-popover state — opening one auto-closes its sibling so the
   // Span picker and the Threatened-species list never stack on top of
   // each other.
@@ -151,6 +152,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
         label="Deployments"
         value={formatStatNumber(cameraCount)}
         sub={locationCount > 0 ? `across ${formatStatNumber(locationCount)} locations` : null}
+        onClick={cameraCount > 0 ? () => navigate(`/study/${studyId}/deployments`) : undefined}
       />
 
       <div className="flex" ref={spanTriggerRef}>
@@ -178,12 +180,14 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
         label="Observations"
         value={formatStatNumber(observationCount)}
         sub={cameraDays > 0 ? `from ${formatCompactCount(cameraDays)} camera-days` : null}
+        onClick={observationCount > 0 ? () => navigate(`/study/${studyId}/media`) : undefined}
       />
       <KpiTile
         icon={<ImageIcon size={ICON_SIZE} />}
         label="Media"
         value={formatStatNumber(mediaCount)}
         sub={mediaCount > 0 ? 'photos & videos' : null}
+        onClick={mediaCount > 0 ? () => navigate(`/study/${studyId}/media`) : undefined}
       />
     </div>
   )
