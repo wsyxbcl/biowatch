@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Pencil, ChevronDown, ChevronUp } from 'lucide-react'
+import { Pencil, ChevronDown, X } from 'lucide-react'
 import ContributorByline from './ContributorByline'
 import ContributorsModal from './ContributorsModal'
 
@@ -31,8 +31,8 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
   const descRef = useRef(null)
   const descEditRef = useRef(null)
   const descTextareaRef = useRef(null)
-  const [descExpanded, setDescExpanded] = useState(false)
   const [descTruncated, setDescTruncated] = useState(false)
+  const [descModalOpen, setDescModalOpen] = useState(false)
 
   // Resize the description textarea to fit its content. Capped at 60vh so
   // a runaway-long description doesn't push everything else off screen.
@@ -118,20 +118,28 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
     if (editingDescription) autoGrowDescription(descTextareaRef.current)
   }, [editingDescription])
 
-  // Detect truncation for "Show more"
+  // Detect whether the in-place description is truncated (content taller than
+  // the column's allocated space). Drives the "Show more" button. Uses a
+  // ResizeObserver so panel-handle drags trigger re-checks (no window resize
+  // event in that case).
   useEffect(() => {
     if (!descRef.current || editingDescription) {
       setDescTruncated(false)
       return
     }
+    const el = descRef.current
     const check = () => {
-      const el = descRef.current
-      if (el) setDescTruncated(el.scrollHeight > el.clientHeight)
+      setDescTruncated(el.scrollHeight > el.clientHeight + 1)
     }
     check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
     window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [description, descExpanded, editingDescription])
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', check)
+    }
+  }, [description, editingDescription])
 
   return (
     <header className="grid grid-cols-[minmax(20rem,_42%)_1fr] gap-6 flex-1 min-h-[18rem] min-h-0 overflow-hidden">
@@ -176,7 +184,7 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
         </div>
 
         {/* Description */}
-        <div className="relative mt-2 flex-1">
+        <div className="relative mt-2 flex-1 min-h-0 flex flex-col">
           {editingDescription ? (
             <div ref={descEditRef}>
               <textarea
@@ -214,16 +222,12 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
             <button
               type="button"
               onClick={startDescriptionEdit}
-              className="text-left w-full block max-w-prose px-2 py-1 -mx-2 rounded transition-colors group-hover:outline group-hover:outline-1 group-hover:outline-dashed group-hover:outline-blue-200"
+              className="text-left w-full block max-w-prose px-2 py-1 -mx-2 rounded transition-colors group-hover:outline group-hover:outline-1 group-hover:outline-dashed group-hover:outline-blue-200 flex-1 min-h-0 flex flex-col"
               title="Edit description"
             >
               <div
                 ref={descRef}
-                className={`text-sm text-gray-700 leading-relaxed ${
-                  !descExpanded
-                    ? 'line-clamp-7 overflow-hidden'
-                    : 'max-h-[20rem] overflow-y-auto pr-2'
-                }`}
+                className="text-sm text-gray-700 leading-relaxed flex-1 min-h-0 overflow-hidden"
               >
                 {description || (
                   <span className="text-gray-400 italic">
@@ -234,23 +238,14 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
               </div>
             </button>
           )}
-          {!editingDescription && description && (descTruncated || descExpanded) && (
+          {!editingDescription && description && descTruncated && (
             <button
               type="button"
-              onClick={() => setDescExpanded(!descExpanded)}
-              className="text-gray-500 text-xs flex items-center hover:text-blue-700 transition-colors mt-1"
+              onClick={() => setDescModalOpen(true)}
+              className="text-gray-500 text-xs flex items-center hover:text-blue-700 transition-colors mt-1 flex-shrink-0"
             >
-              {descExpanded ? (
-                <>
-                  Show less
-                  <ChevronUp size={14} className="ml-1" />
-                </>
-              ) : (
-                <>
-                  Show more
-                  <ChevronDown size={14} className="ml-1" />
-                </>
-              )}
+              Show more
+              <ChevronDown size={14} className="ml-1" />
             </button>
           )}
         </div>
@@ -270,6 +265,183 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
         studyId={studyId}
         studyData={studyData}
       />
+
+      <DescriptionModal
+        open={descModalOpen}
+        onClose={() => setDescModalOpen(false)}
+        title={studyName}
+        description={description}
+        onSave={async (text) => {
+          await window.api.updateStudy(studyId, {
+            data: { ...studyData, description: text.trim() }
+          })
+          queryClient.invalidateQueries({ queryKey: ['study'] })
+          setDescModalOpen(false)
+        }}
+      />
     </header>
+  )
+}
+
+/**
+ * Modal showing the full study description. Read-only by default; Edit
+ * switches the body to a textarea and adds Save / Cancel buttons.
+ */
+function DescriptionModal({ open, onClose, onSave, title, description }) {
+  const dialogRef = useRef(null)
+  const textareaRef = useRef(null)
+  const titleId = 'description-modal-title'
+
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+
+  // Reset edit state on close.
+  useEffect(() => {
+    if (!open) {
+      setEditing(false)
+      setDraft('')
+    }
+  }, [open])
+
+  // Esc cancels edit when editing, otherwise closes the modal.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      if (editing) {
+        setEditing(false)
+        setDraft('')
+      } else {
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, editing, onClose])
+
+  // Auto-grow textarea on mount and on change.
+  const autoGrow = (el) => {
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }
+  useEffect(() => {
+    if (editing) autoGrow(textareaRef.current)
+  }, [editing])
+
+  const startEdit = () => {
+    setDraft(description || '')
+    setEditing(true)
+  }
+
+  const cancelEdit = () => {
+    setEditing(false)
+    setDraft('')
+  }
+
+  const handleSave = async () => {
+    await onSave?.(draft)
+  }
+
+  if (!open) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-[1000] bg-black/50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (dialogRef.current && !dialogRef.current.contains(e.target)) onClose()
+      }}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col overflow-hidden"
+      >
+        <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-gray-100">
+          <h3 id={titleId} className="text-base font-semibold text-gray-900 capitalize truncate">
+            {title}
+          </h3>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {!editing && onSave && (
+              <button
+                type="button"
+                onClick={startEdit}
+                className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded inline-flex items-center gap-1"
+                title="Edit description"
+              >
+                <Pencil size={12} />
+                Edit
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 -mr-1 hover:bg-gray-100 rounded text-gray-500"
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        {editing ? (
+          <>
+            <div className="px-5 py-4 overflow-y-auto flex-1">
+              <textarea
+                ref={textareaRef}
+                value={draft}
+                onChange={(e) => {
+                  setDraft(e.target.value)
+                  autoGrow(e.target)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault()
+                    handleSave()
+                  }
+                }}
+                className="w-full text-sm text-gray-700 leading-relaxed border border-gray-300 rounded p-2 focus:outline-none focus:border-blue-500 resize-none overflow-hidden min-h-[160px]"
+                autoFocus
+                placeholder="Camera trap dataset containing deployment information, media files metadata, and species observations collected during wildlife monitoring."
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2 px-5 py-3 border-t border-gray-100 bg-gray-50">
+              <span className="text-[0.7rem] text-gray-500">
+                <kbd className="px-1 py-0.5 bg-white rounded border border-gray-200 font-mono text-[0.65rem]">
+                  ⌘ Enter
+                </kbd>{' '}
+                to save,{' '}
+                <kbd className="px-1 py-0.5 bg-white rounded border border-gray-200 font-mono text-[0.65rem]">
+                  Esc
+                </kbd>{' '}
+                to cancel
+              </span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="px-5 py-4 overflow-y-auto text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+            {description}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
