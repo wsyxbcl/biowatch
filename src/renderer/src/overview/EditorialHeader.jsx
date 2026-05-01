@@ -134,8 +134,8 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
   }, [description, descExpanded, editingDescription])
 
   return (
-    <header className="grid grid-cols-[minmax(20rem,_42%)_1fr] gap-6 flex-1 min-h-[18rem]">
-      <div className="group flex flex-col">
+    <header className="grid grid-cols-[minmax(20rem,_42%)_1fr] gap-6 flex-1 min-h-[18rem] min-h-0 overflow-hidden">
+      <div className="group flex flex-col min-h-0">
         {/* Title */}
         <div className="flex items-baseline gap-2">
           {editingTitle ? (
@@ -220,7 +220,9 @@ export default function EditorialHeader({ studyId, studyName, studyData, mapSlot
               <div
                 ref={descRef}
                 className={`text-sm text-gray-700 leading-relaxed ${
-                  !descExpanded ? 'line-clamp-7 overflow-hidden' : ''
+                  !descExpanded
+                    ? 'line-clamp-7 overflow-hidden'
+                    : 'max-h-[20rem] overflow-y-auto pr-2'
                 }`}
               >
                 {description || (
