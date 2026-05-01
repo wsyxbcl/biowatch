@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Pencil, Trash2, Check, X, Plus } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select.jsx'
 
 const CONTRIBUTOR_ROLES = [
   { value: 'contact', label: 'Contact' },
@@ -145,7 +146,9 @@ export default function ContributorsModal({ open, onClose, studyId, studyData })
     <div
       className="fixed inset-0 z-[1000] bg-black/50 flex items-center justify-center p-4"
       onClick={(e) => {
-        if (dialogRef.current && !dialogRef.current.contains(e.target)) onClose()
+        // Only close on clicks inside the overlay itself (the backdrop), not
+        // on portalled descendants like the role-picker dropdown.
+        if (e.target === e.currentTarget) onClose()
       }}
     >
       <div
@@ -224,7 +227,7 @@ export default function ContributorsModal({ open, onClose, studyId, studyData })
                 setAdding(true)
                 cancelEdit()
               }}
-              className="border border-dashed border-blue-200 text-blue-600 rounded-md px-3 py-2 hover:border-blue-400 hover:bg-blue-50 transition-colors flex items-center justify-center gap-1.5 text-sm"
+              className="border border-dashed border-gray-300 text-gray-600 rounded-md px-3 py-2 hover:border-gray-400 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5 text-sm"
             >
               <Plus size={14} />
               Add contributor
@@ -282,7 +285,7 @@ export default function ContributorsModal({ open, onClose, studyId, studyData })
 function ContributorEditForm({ value, onChange, onSave, onCancel }) {
   return (
     <div
-      className="border border-blue-200 rounded-md px-3 py-2 flex flex-col gap-2 bg-blue-50/30"
+      className="border border-gray-200 rounded-md px-3 py-2 flex flex-col gap-2 bg-gray-50"
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           e.preventDefault()
@@ -296,41 +299,41 @@ function ContributorEditForm({ value, onChange, onSave, onCancel }) {
         type="text"
         value={value.title || ''}
         onChange={(e) => onChange({ ...value, title: e.target.value })}
-        className="border border-gray-300 rounded px-2 py-1 text-sm"
+        className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         placeholder="Name *"
         autoFocus
       />
-      <select
-        value={value.role || ''}
-        onChange={(e) => onChange({ ...value, role: e.target.value })}
-        className="border border-gray-300 rounded px-2 py-1 text-sm"
-      >
-        <option value="">Select role…</option>
-        {CONTRIBUTOR_ROLES.map((r) => (
-          <option key={r.value} value={r.value}>
-            {r.label}
-          </option>
-        ))}
-      </select>
+      <Select value={value.role || ''} onValueChange={(v) => onChange({ ...value, role: v })}>
+        <SelectTrigger className="w-full bg-white border-gray-300 px-2 py-1.5 h-auto data-[placeholder]:text-gray-400">
+          <SelectValue placeholder="Select role…" />
+        </SelectTrigger>
+        <SelectContent className="z-[1001] bg-white">
+          {CONTRIBUTOR_ROLES.map((r) => (
+            <SelectItem key={r.value} value={r.value}>
+              {r.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <input
         type="text"
         value={value.organization || ''}
         onChange={(e) => onChange({ ...value, organization: e.target.value })}
-        className="border border-gray-300 rounded px-2 py-1 text-sm"
+        className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         placeholder="Organization"
       />
       <input
         type="email"
         value={value.email || ''}
         onChange={(e) => onChange({ ...value, email: e.target.value })}
-        className="border border-gray-300 rounded px-2 py-1 text-sm"
+        className="border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         placeholder="Email"
       />
       <div className="flex justify-end gap-1">
         <button
           type="button"
           onClick={onCancel}
-          className="p-1 hover:bg-red-50 rounded text-red-600"
+          className="p-1 hover:bg-gray-100 rounded text-gray-500"
           title="Cancel"
         >
           <X size={16} />
@@ -338,7 +341,7 @@ function ContributorEditForm({ value, onChange, onSave, onCancel }) {
         <button
           type="button"
           onClick={onSave}
-          className="p-1 hover:bg-green-50 rounded text-green-600"
+          className="p-1 hover:bg-blue-50 rounded text-blue-600"
           title="Save"
         >
           <Check size={16} />
