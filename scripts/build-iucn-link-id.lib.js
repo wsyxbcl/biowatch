@@ -83,8 +83,10 @@ export function mergeIdsIntoSpeciesData(data, ids, aliases, meta) {
     } else {
       // Strip stale IDs so reruns stay idempotent after a name is removed
       // from the IUCN export.
-      const { iucnTaxonId: _t, iucnAssessmentId: _a, ...rest } = entry
-      out[key] = rest
+      const next = { ...entry }
+      delete next.iucnTaxonId
+      delete next.iucnAssessmentId
+      out[key] = next
     }
   }
   return out

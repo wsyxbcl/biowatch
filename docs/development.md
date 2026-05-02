@@ -84,6 +84,7 @@ These regenerate static JSON files bundled into the renderer. Run periodically (
 |--------|-------------|
 | `npm run dict:build` | Rebuild `src/shared/commonNames/dictionary.json` from source files (SpeciesNet / DeepFaune / Manas / `extras.json`). |
 | `npm run species-info:build` | Rebuild `src/shared/speciesInfo/data.json` (IUCN status + Wikipedia blurb + image URL per species). Hits GBIF + Wikipedia; takes ~45–60 minutes for the full dictionary at the current ~25 species/min throughput. |
+| `npm run iucn-link-id:build` | Add IUCN Red List link IDs (`iucnTaxonId`, `iucnAssessmentId`) to `src/shared/speciesInfo/data.json` for VU/EN/CR species. Reads `data/redlist_species_data_*/assessments.csv` (account-bound, gitignored). See "IUCN Red List link IDs" below for the workflow. |
 
 `species-info:build` flags:
 
@@ -96,6 +97,25 @@ npm run species-info:build -- --dry-run       # don't write the output file
 ```
 
 The script is idempotent and resumable. SIGINT (Ctrl-C) flushes partial progress to disk before exiting; resume with `--resume`.
+
+### IUCN Red List link IDs
+
+The species hover card on the Overview tab includes a click-through to the official IUCN Red List assessment for species classified as Vulnerable, Endangered, or Critically Endangered. The required public IDs (`iucnTaxonId` and `iucnAssessmentId`) are baked into `src/shared/speciesInfo/data.json` by `npm run iucn-link-id:build`, which reads from a gitignored bulk export.
+
+**Why a bulk export instead of the API?** The IUCN T&C (Section 4) prohibit redistribution of Red List Data — including inside a derivative app — without a written waiver. The committed `data.json` deliberately stores only the public numeric identifiers (which the IUCN URL itself exposes), never rationale text, criteria strings, threats lists, or any other CSV text field. Section 3 explicitly carves out the IUCN Categories themselves (VU/EN/CR/...) as freely usable, which is what we already display on the badges.
+
+**Refreshing the link IDs:**
+
+1. Sign in at https://www.iucnredlist.org and run a search filtered to Red List Category = Vulnerable, Endangered, Critically Endangered.
+2. Use "Download → Search Results". You'll get an emailed link to a zip.
+3. Unzip into `data/`, ending up with `data/redlist_species_data_<uuid>/`. The folder is gitignored.
+4. From the repo root: `npm run iucn-link-id:build`. The script picks up the most recent `data/redlist_species_data_*` folder automatically. Override with `--from <path>` if needed.
+5. Optionally pass `--version 2025-1` (or whatever Red List version you downloaded) so `_iucnSourceVersion` in `data.json` is human-readable. When omitted, the script infers a version from the folder name or falls back to the folder's mtime as YYYY-MM-DD.
+6. Commit the resulting `data.json` diff. Two top-level metadata keys (`_iucnSourceVersion` and `_iucnRefreshedAt`) record provenance.
+
+The script is idempotent — running it twice in a row produces an identical `data.json` (modulo the `_iucnRefreshedAt` timestamp).
+
+**Refresh cadence.** IUCN publishes new Red List versions roughly once or twice a year. Refresh when a new version drops or when a new threatened species is added to the camera-trap dictionaries shipped with Biowatch.
 
 ### Linux build notes
 

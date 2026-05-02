@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { CameraOff, Loader2 } from 'lucide-react'
 import { useCommonName } from '../utils/commonNames'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
-import IucnBadge, { IUCN_ACCENT_BORDER } from './IucnBadge'
+import IucnBadge from './IucnBadge'
+import { IUCN_ACCENT_BORDER } from './iucnPalette'
 
 function toTitleCase(str) {
   return str.replace(/\b\w/g, (c) => c.toUpperCase())
