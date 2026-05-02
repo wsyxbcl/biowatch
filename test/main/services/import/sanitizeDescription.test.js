@@ -92,7 +92,7 @@ describe('sanitizeDescription — HTML entities', () => {
     assert.equal(sanitizeDescription('&quot;hi&quot;'), '"hi"')
   })
 
-  test("decodes &apos; and &#39;", () => {
+  test('decodes &apos; and &#39;', () => {
     assert.equal(sanitizeDescription('&apos;a&#39;'), "'a'")
   })
 
