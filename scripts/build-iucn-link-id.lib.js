@@ -39,6 +39,29 @@ export function pickLatestPerTaxon(rows) {
   return out
 }
 
+/**
+ * Try to extract a Red List version tag (e.g. "2025-1") from the export
+ * folder's name; fall back to the folder's mtime as an ISO date.
+ *
+ * IUCN bulk-export folders are typically uuid-suffixed
+ * (`redlist_species_data_<uuid>`), so the version tag is usually absent and
+ * we end up with the date fallback. Pass `--version` on the CLI to override
+ * with the actual Red List version (e.g. `2025-1`).
+ *
+ * The regex requires a 4-digit year followed by `-` followed by 1-2 digits.
+ * It anchors on non-alphanumeric / non-dash characters on both sides so it
+ * doesn't false-match inside the hex chunks of a uuid (where letters break
+ * the digit run anyway, but cheap defense in depth).
+ *
+ * @param {{ name: string, mtime: number }} folder
+ * @returns {string}
+ */
+export function inferSourceVersion(folder) {
+  const m = folder.name.match(/(?:^|[^0-9a-zA-Z-])(\d{4}-\d{1,2})(?=[^0-9a-zA-Z-]|$)/)
+  if (m) return m[1]
+  return new Date(folder.mtime).toISOString().slice(0, 10)
+}
+
 const THREATENED_CODES = new Set(['VU', 'EN', 'CR'])
 
 /**

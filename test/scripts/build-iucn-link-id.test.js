@@ -4,7 +4,8 @@ import assert from 'node:assert/strict'
 import {
   parseRedlistRow,
   pickLatestPerTaxon,
-  mergeIdsIntoSpeciesData
+  mergeIdsIntoSpeciesData,
+  inferSourceVersion
 } from '../../scripts/build-iucn-link-id.lib.js'
 
 describe('parseRedlistRow', () => {
@@ -197,5 +198,33 @@ describe('mergeIdsIntoSpeciesData', () => {
     const a = mergeIdsIntoSpeciesData(data, ids, new Map(), meta)
     const b = mergeIdsIntoSpeciesData(a, ids, new Map(), meta)
     assert.deepEqual(a, b)
+  })
+})
+
+describe('inferSourceVersion', () => {
+  test('extracts a Red List version tag like "2025-1" when present', () => {
+    assert.equal(inferSourceVersion({ name: 'redlist_species_data_2025-1', mtime: 0 }), '2025-1')
+    assert.equal(
+      inferSourceVersion({ name: 'redlist_species_data_2024-2_export', mtime: 0 }),
+      '2024-2'
+    )
+  })
+
+  test('extracts a two-digit minor version', () => {
+    assert.equal(inferSourceVersion({ name: 'redlist_2030-12_export', mtime: 0 }), '2030-12')
+  })
+
+  test('does not match hex chunks of a uuid', () => {
+    // uuid contains "30ca-49b0" which is hex, not pure digits — must not match.
+    const folder = {
+      name: 'redlist_species_data_b198a2bb-30ca-49b0-91cb-fb575493dfda',
+      mtime: Date.UTC(2026, 4, 2) // 2026-05-02
+    }
+    assert.equal(inferSourceVersion(folder), '2026-05-02')
+  })
+
+  test('falls back to mtime as YYYY-MM-DD when no version tag is present', () => {
+    const folder = { name: 'redlist_export', mtime: Date.UTC(2025, 0, 15) }
+    assert.equal(inferSourceVersion(folder), '2025-01-15')
   })
 })

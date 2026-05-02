@@ -124,7 +124,7 @@ Specifics:
 - **New**: `scripts/build-iucn-link-id.js`.
 - **Edit**: extract `buildAliasMap` from `scripts/build-species-info.js` into a shared util (e.g., `scripts/lib/aliases.js`) so both builders consume it; update `build-species-info.js` to import from there.
 - **New**: tests for the new builder (parser, latest-year tiebreak, idempotency, alias resolution).
-- **Edit**: `package.json` — add `build:iucn-link-id` script.
+- **Edit**: `package.json` — add `iucn-link-id:build` script.
 - **Edit**: `src/shared/speciesInfo/data.json` — populated by the build script (committed artifact); gains the per-species ID fields plus the two top-level `_iucnSourceVersion` / `_iucnRefreshedAt` metadata keys.
 - **Edit**: `src/shared/speciesInfo/resolver.js` — extend the JSDoc return shape to include `iucnTaxonId` and `iucnAssessmentId`. Skip the `_`-prefixed metadata keys when iterating species (no logic change otherwise; the resolver looks species up by name, so leading-underscore keys are naturally excluded).
 - **Edit**: `src/renderer/src/ui/SpeciesTooltipContent.jsx` — render the "Why threatened?" call-to-action, demote the Wikipedia blurb when `iucnTaxonId` is present.
@@ -139,9 +139,9 @@ The IUCN bulk export is account-bound and not redistributable, so only contribut
 |---|---|---|
 | Use the committed `data.json` (run the app, ship a build) | Nothing | Anyone — clone the repo and you're done |
 | Refresh GBIF + Wikipedia fields (`npm run build:species-info`) | Network access | Anyone — the script hits live APIs that don't need auth |
-| Refresh IUCN link IDs (`npm run build:iucn-link-id`) | A logged-in IUCN account that requested a bulk export, with the resulting folder placed under `data/` | Only contributors with their own download |
+| Refresh IUCN link IDs (`npm run iucn-link-id:build`) | A logged-in IUCN account that requested a bulk export, with the resulting folder placed under `data/` | Only contributors with their own download |
 
-Recommended cadence: rerun `build:iucn-link-id` when IUCN publishes a new Red List version (typically once or twice a year — versions are tagged like "2024-1", "2024-2", "2025-1"). The two `_iucnSourceVersion` / `_iucnRefreshedAt` metadata fields in `data.json` make it easy to see at a glance whether a refresh is overdue. New species added to the camera-trap dictionary between IUCN refreshes simply won't have an `iucnTaxonId` in the meantime — the hover card falls back to its non-threatened layout, and a maintainer with the export catches them up on the next refresh.
+Recommended cadence: rerun `iucn-link-id:build` when IUCN publishes a new Red List version (typically once or twice a year — versions are tagged like "2024-1", "2024-2", "2025-1"). The two `_iucnSourceVersion` / `_iucnRefreshedAt` metadata fields in `data.json` make it easy to see at a glance whether a refresh is overdue. New species added to the camera-trap dictionary between IUCN refreshes simply won't have an `iucnTaxonId` in the meantime — the hover card falls back to its non-threatened layout, and a maintainer with the export catches them up on the next refresh.
 
 CI does not run either build script. CI consumes the committed `data.json` as-is. There's no special CI permission, no IUCN token in CI secrets, and no fetch step in the build pipeline.
 

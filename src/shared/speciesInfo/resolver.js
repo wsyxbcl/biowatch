@@ -9,6 +9,9 @@ export function makeResolver(map) {
   return function resolveSpeciesInfo(scientificName) {
     const key = normalizeScientificName(scientificName)
     if (!key) return null
+    // Top-level metadata keys (e.g. `_iucnSourceVersion`) live in the same
+    // map as species entries — never resolve them as if they were species.
+    if (key.startsWith('_')) return null
     return map[key] ?? null
   }
 }

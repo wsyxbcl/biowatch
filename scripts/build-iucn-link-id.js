@@ -28,7 +28,8 @@ import { buildAliasMap } from './lib/aliases.js'
 import {
   parseRedlistRow,
   pickLatestPerTaxon,
-  mergeIdsIntoSpeciesData
+  mergeIdsIntoSpeciesData,
+  inferSourceVersion
 } from './build-iucn-link-id.lib.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -63,14 +64,6 @@ function findLatestExport() {
     })
     .sort((a, b) => b.mtime - a.mtime)
   return candidates[0] || null
-}
-
-function inferSourceVersion(folder) {
-  // Try to extract a "YYYY-N" version tag from the folder name (uncommon
-  // but supported); fall back to the folder's mtime as an ISO date.
-  const m = folder.name.match(/(\d{4}-\d+)/)
-  if (m) return m[1]
-  return new Date(folder.mtime).toISOString().slice(0, 10)
 }
 
 async function streamRows(csvPath) {
@@ -135,10 +128,16 @@ async function main() {
 
   const aliases = buildAliasMap()
   const data = loadData()
-  const meta = {
-    sourceVersion: args.version || inferSourceVersion(folder),
-    refreshedAt: new Date().toISOString().slice(0, 10)
+  const refreshedAt = new Date().toISOString().slice(0, 10)
+  const sourceVersion = args.version || inferSourceVersion(folder)
+  if (!args.version && sourceVersion === refreshedAt) {
+    console.warn(
+      `\n[warn] Could not infer a Red List version tag from "${folder.name}". ` +
+        `Falling back to today's date for _iucnSourceVersion. ` +
+        `Pass --version <id> (e.g. "2025-1") to record the actual Red List version.\n`
+    )
   }
+  const meta = { sourceVersion, refreshedAt }
   const merged = mergeIdsIntoSpeciesData(data, ids, aliases, meta)
 
   // Summary
