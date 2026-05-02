@@ -12,7 +12,7 @@ import EditableLocationName from './EditableLocationName'
 export default function DeploymentDetailPane({ deployment, onClose, onRenameLocation }) {
   return (
     <div className="flex flex-col h-full bg-white min-h-0">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 flex-shrink-0 gap-2">
+      <div className="flex items-center justify-between px-2 py-2 border-b border-gray-200 flex-shrink-0 gap-2">
         {/* isSelected=false keeps the header in the same neutral gray as
             the rest of the pane chrome — the blue "selected" treatment is
             for the list rows where it's a state indicator. */}
