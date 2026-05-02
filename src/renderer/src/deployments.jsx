@@ -1235,7 +1235,7 @@ export default function Deployments({ studyId }) {
         </Panel>
         {selectedLocation && (
           <>
-            <PanelResizeHandle className="h-1 my-1.5 rounded-full bg-gray-100 hover:bg-gray-300 data-[resize-handle-state=drag]:bg-blue-300 cursor-row-resize transition-colors" />
+            <PanelResizeHandle className="h-1 my-3 rounded-full bg-gray-100 hover:bg-gray-300 data-[resize-handle-state=drag]:bg-blue-300 cursor-row-resize transition-colors" />
             <Panel defaultSize={62} minSize={20} className="flex flex-col">
               <DeploymentDetailPane
                 deployment={selectedLocation}
