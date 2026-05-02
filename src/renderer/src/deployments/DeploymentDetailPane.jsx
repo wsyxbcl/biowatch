@@ -1,8 +1,9 @@
-import { Filter, X } from 'lucide-react'
+import { Check, Filter, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import DeploymentMediaGallery from '../media/DeploymentMediaGallery'
 import EditableLocationName from './EditableLocationName'
+import { resolveCommonName } from '../../../shared/commonNames/index.js'
 
 /**
  * Bottom-pane container for the Deployments tab. Mounted only when a
@@ -137,41 +138,60 @@ function SpeciesFilterButton({ studyId, deploymentID, selectedSpecies, onChange 
       {isOpen && (
         <div
           ref={popoverRef}
-          className="absolute right-0 top-full mt-1 w-72 max-h-80 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg z-[1100] p-2"
+          className="absolute right-0 top-full mt-1 w-80 max-h-96 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg z-[1100]"
         >
-          <div className="flex items-center justify-between px-1 pb-2 mb-1 border-b border-gray-100">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 sticky top-0 bg-white">
             <span className="text-xs font-medium text-gray-700">Filter by species</span>
             {hasFilter && (
-              <button
-                onClick={clearAll}
-                className="text-xs text-blue-600 hover:underline"
-              >
+              <button onClick={clearAll} className="text-xs text-blue-600 hover:underline">
                 Clear
               </button>
             )}
           </div>
           {speciesList.length === 0 ? (
-            <div className="px-2 py-3 text-xs text-gray-400">Loading…</div>
+            <div className="px-3 py-3 text-xs text-gray-400">Loading…</div>
           ) : (
-            <div className="flex flex-wrap gap-1.5">
+            <ul className="py-1">
               {speciesList.map((s) => {
                 const isSelected = selectedSpecies.includes(s.scientificName)
+                const commonName = resolveCommonName(s.scientificName)
                 return (
-                  <button
-                    key={s.scientificName}
-                    onClick={() => toggle(s.scientificName)}
-                    className={`text-xs px-2 py-1 rounded-full border transition-colors ${
-                      isSelected
-                        ? 'bg-blue-500 border-blue-500 text-white hover:bg-blue-600'
-                        : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                    }`}
-                    title={`${s.scientificName} (${s.count})`}
-                  >
-                    {s.scientificName}
-                  </button>
+                  <li key={s.scientificName}>
+                    <button
+                      onClick={() => toggle(s.scientificName)}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${
+                        isSelected ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      <span
+                        className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
+                          isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300 bg-white'
+                        }`}
+                      >
+                        {isSelected && <Check size={12} className="text-white" />}
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span
+                          className={`block text-sm truncate ${
+                            isSelected ? 'text-blue-900 font-medium' : 'text-gray-800'
+                          }`}
+                        >
+                          {commonName || s.scientificName}
+                        </span>
+                        {commonName && (
+                          <span className="block text-xs italic text-gray-500 truncate">
+                            {s.scientificName}
+                          </span>
+                        )}
+                      </span>
+                      <span className="flex-shrink-0 text-xs tabular-nums text-gray-500">
+                        {s.count}
+                      </span>
+                    </button>
+                  </li>
                 )
               })}
-            </div>
+            </ul>
           )}
         </div>
       )}
