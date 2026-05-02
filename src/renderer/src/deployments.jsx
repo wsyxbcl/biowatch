@@ -1204,7 +1204,27 @@ export default function Deployments({ studyId }) {
     >
       <PanelGroup direction="vertical" autoSaveId="deployments-v2">
         <Panel defaultSize={selectedLocation ? 38 : 100} minSize={20} className="flex flex-col">
-          <PanelGroup direction="horizontal" autoSaveId="deployments-v2-top">
+          <PanelGroup direction="horizontal" autoSaveId="deployments-v3-top">
+            <Panel defaultSize={62} minSize={20} className="flex flex-col">
+              {isActivityLoading ? (
+                <SkeletonDeploymentsList itemCount={6} />
+              ) : activity ? (
+                <LocationsList
+                  activity={activity}
+                  selectedLocation={selectedLocation}
+                  setSelectedLocation={setSelectedLocation}
+                  onNewLatitude={onNewLatitude}
+                  onNewLongitude={onNewLongitude}
+                  onEnterPlaceMode={handleEnterPlaceMode}
+                  onRenameLocation={onRenameLocation}
+                  isPlaceMode={isPlaceMode}
+                  groupToExpand={groupToExpand}
+                  onGroupExpanded={handleGroupExpanded}
+                  onPeriodCountChange={setPeriodCount}
+                />
+              ) : null}
+            </Panel>
+            <PanelResizeHandle className="w-1 mx-1.5 rounded-full bg-gray-100 hover:bg-gray-300 data-[resize-handle-state=drag]:bg-blue-300 cursor-col-resize transition-colors" />
             <Panel defaultSize={38} minSize={20} className="flex flex-col">
               {/* Cap the map at a comfortable max-height so on tall windows
                   it doesn't stretch to the full panel — the list timeline
@@ -1225,26 +1245,6 @@ export default function Deployments({ studyId }) {
                   />
                 )}
               </div>
-            </Panel>
-            <PanelResizeHandle className="w-1 mx-1.5 rounded-full bg-gray-100 hover:bg-gray-300 data-[resize-handle-state=drag]:bg-blue-300 cursor-col-resize transition-colors" />
-            <Panel defaultSize={62} minSize={20} className="flex flex-col">
-              {isActivityLoading ? (
-                <SkeletonDeploymentsList itemCount={6} />
-              ) : activity ? (
-                <LocationsList
-                  activity={activity}
-                  selectedLocation={selectedLocation}
-                  setSelectedLocation={setSelectedLocation}
-                  onNewLatitude={onNewLatitude}
-                  onNewLongitude={onNewLongitude}
-                  onEnterPlaceMode={handleEnterPlaceMode}
-                  onRenameLocation={onRenameLocation}
-                  isPlaceMode={isPlaceMode}
-                  groupToExpand={groupToExpand}
-                  onGroupExpanded={handleGroupExpanded}
-                  onPeriodCountChange={setPeriodCount}
-                />
-              ) : null}
             </Panel>
           </PanelGroup>
         </Panel>
