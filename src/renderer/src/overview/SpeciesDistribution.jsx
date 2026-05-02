@@ -190,9 +190,9 @@ export default function SpeciesDistribution({ studyId, speciesData, taxonomicDat
 
 function IucnLegend() {
   return (
-    <div className="mt-3 pt-3 border-t border-gray-100 text-[0.7rem] text-gray-500">
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 md:flex md:flex-wrap md:items-center">
-        <span className="col-span-2 md:col-auto">IUCN status:</span>
+    <div className="mt-3 pt-3 border-t border-gray-100 text-[0.7rem] text-gray-500 flex items-start gap-x-4">
+      <span className="flex-shrink-0 leading-5">IUCN status:</span>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
         <LegendItem code="NE" label="Not Evaluated" />
         <LegendItem code="LC" label="Least Concern" />
         <LegendItem code="NT" label="Near Threatened" />
