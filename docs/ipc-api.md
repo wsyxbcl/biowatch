@@ -150,7 +150,8 @@ Returns pre-grouped sequences with cursor-based pagination for the media gallery
   filters: {
     species: string[],        // Species to filter by
     dateRange: { start, end }, // Date range filter
-    timeRange: { start, end }  // Time of day range (hours 0-23)
+    timeRange: { start, end }, // Time of day range (hours 0-23)
+    deploymentID?: string     // If set, only media for this deploymentID
   }
 }
 ```
