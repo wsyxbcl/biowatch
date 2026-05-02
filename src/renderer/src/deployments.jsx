@@ -1096,14 +1096,18 @@ export default function Deployments({ studyId }) {
     () => resolveSelectedDeployment(searchParams, deploymentsList),
     [searchParams, deploymentsList]
   )
+  // Toggle-off when clicking the already-selected deployment: clearing the
+  // selection closes the media pane. Map markers reuse the same path, so
+  // clicking the active marker also deselects.
   const setSelectedLocation = useCallback(
     (location) => {
-      setSearchParams(
-        withDeploymentParam(searchParams, location?.deploymentID ?? null),
-        { replace: true }
-      )
+      const nextID =
+        location && location.deploymentID === selectedLocation?.deploymentID
+          ? null
+          : location?.deploymentID ?? null
+      setSearchParams(withDeploymentParam(searchParams, nextID), { replace: true })
     },
-    [searchParams, setSearchParams]
+    [searchParams, setSearchParams, selectedLocation]
   )
 
   // Heavy per-deployment period-bucket query for the list timeline. Runs in
