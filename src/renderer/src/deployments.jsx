@@ -1296,6 +1296,19 @@ export default function Deployments({ studyId }) {
     [studyId, queryClient]
   )
 
+  // Esc closes the media pane. The map's own Esc handler (for exiting place
+  // mode) runs alongside; we gate on !isPlaceMode so closing place mode
+  // doesn't also clear the selection.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape' && selectedLocation && !isPlaceMode) {
+        setSelectedLocation(null)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedLocation, isPlaceMode, setSelectedLocation])
+
   return (
     <div
       className={`flex flex-col px-4 h-full overflow-hidden ${isPlaceMode ? 'place-mode-active' : ''}`}
