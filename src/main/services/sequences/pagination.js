@@ -79,7 +79,7 @@ function isVideoMedia(media) {
 export async function getPaginatedSequences(dbPath, options = {}) {
   const { gapSeconds = 60, limit = 20, cursor: cursorStr = null, filters = {} } = options
 
-  const { species = [], dateRange = {}, timeRange = {} } = filters
+  const { species = [], dateRange = {}, timeRange = {}, deploymentID = null } = filters
 
   const startTime = Date.now()
   log.info(`[Sequences] Getting paginated sequences (limit: ${limit}, gapSeconds: ${gapSeconds})`)
@@ -90,7 +90,12 @@ export async function getPaginatedSequences(dbPath, options = {}) {
 
   // If no cursor, check if we should start in null phase (no timestamped media)
   if (!cursor) {
-    const hasTimestamped = await hasTimestampedMedia(dbPath, { species, dateRange, timeRange })
+    const hasTimestamped = await hasTimestampedMedia(dbPath, {
+      species,
+      dateRange,
+      timeRange,
+      deploymentID
+    })
     if (!hasTimestamped) {
       log.info('[Sequences] No timestamped media, starting in null phase')
       phase = 'null'
@@ -109,7 +114,8 @@ export async function getPaginatedSequences(dbPath, options = {}) {
       cursor,
       species,
       dateRange,
-      timeRange
+      timeRange,
+      deploymentID
     })
 
     sequences.push(...result.sequences)
@@ -136,7 +142,8 @@ export async function getPaginatedSequences(dbPath, options = {}) {
         offset,
         species,
         dateRange,
-        timeRange
+        timeRange,
+        deploymentID
       })
 
       sequences.push(...result.sequences)
@@ -171,7 +178,7 @@ export async function getPaginatedSequences(dbPath, options = {}) {
  * @returns {Promise<{ sequences: Array, nextCursor: Object|null, hasMoreNull: boolean }>}
  */
 async function fetchTimestampedSequences(dbPath, options) {
-  const { gapSeconds, limit, cursor, species, dateRange, timeRange } = options
+  const { gapSeconds, limit, cursor, species, dateRange, timeRange, deploymentID } = options
 
   // Fetch a batch of media
   const batchSize = Math.max(DEFAULT_BATCH_SIZE, limit * 10) // Ensure we have enough for look-ahead
@@ -180,7 +187,8 @@ async function fetchTimestampedSequences(dbPath, options) {
     batchSize,
     species,
     dateRange,
-    timeRange
+    timeRange,
+    deploymentID
   })
 
   const { media: mediaItems, hasMoreTimestamped, hasMoreNull } = dbResult
@@ -227,6 +235,7 @@ async function fetchTimestampedSequences(dbPath, options) {
       species,
       dateRange,
       timeRange,
+      deploymentID,
       existingMedia: mediaItems,
       batchSize
     })
@@ -284,7 +293,16 @@ async function fetchTimestampedSequences(dbPath, options) {
  * Keep fetching until we find the sequence boundary
  */
 async function fetchMoreForLargeSequence(dbPath, options) {
-  const { gapSeconds, limit, species, dateRange, timeRange, existingMedia, batchSize } = options
+  const {
+    gapSeconds,
+    limit,
+    species,
+    dateRange,
+    timeRange,
+    deploymentID,
+    existingMedia,
+    batchSize
+  } = options
 
   let allMedia = [...existingMedia]
   let lastItem = allMedia[allMedia.length - 1]
@@ -304,7 +322,8 @@ async function fetchMoreForLargeSequence(dbPath, options) {
       batchSize,
       species,
       dateRange,
-      timeRange
+      timeRange,
+      deploymentID
     })
 
     if (dbResult.media.length === 0) {
@@ -394,14 +413,15 @@ async function fetchMoreForLargeSequence(dbPath, options) {
  * @returns {Promise<{ sequences: Array, hasMore: boolean }>}
  */
 async function fetchNullTimestampSequences(dbPath, options) {
-  const { limit, offset, species } = options
+  const { limit, offset, species, deploymentID } = options
 
   const dbResult = await getMediaForSequencePagination(dbPath, {
     cursor: { phase: 'null', offset },
     batchSize: limit,
     species,
     dateRange: {}, // Date range doesn't apply to null-timestamp media
-    timeRange: {} // Time range doesn't apply to null-timestamp media
+    timeRange: {}, // Time range doesn't apply to null-timestamp media
+    deploymentID
   })
 
   const { media: mediaItems, hasMoreNull } = dbResult
