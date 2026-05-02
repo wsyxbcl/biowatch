@@ -1,8 +1,10 @@
 import { Check, Filter, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import * as HoverCard from '@radix-ui/react-hover-card'
 import DeploymentMediaGallery from '../media/DeploymentMediaGallery'
 import EditableLocationName from './EditableLocationName'
+import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
 import { resolveCommonName } from '../../../shared/commonNames/index.js'
 
 /**
@@ -72,6 +74,10 @@ export default function DeploymentDetailPane({
  */
 function SpeciesFilterButton({ studyId, deploymentID, selectedSpecies, onChange }) {
   const [isOpen, setIsOpen] = useState(false)
+  // Bump on every scroll inside the popover so each row's HoverCard can
+  // close itself — Radix HoverCard tracks its trigger, so without this
+  // the card "rides along" with the scrolling row.
+  const [scrollSignal, setScrollSignal] = useState(0)
   const popoverRef = useRef(null)
   const buttonRef = useRef(null)
 
@@ -138,6 +144,7 @@ function SpeciesFilterButton({ studyId, deploymentID, selectedSpecies, onChange 
       {isOpen && (
         <div
           ref={popoverRef}
+          onScroll={() => setScrollSignal((n) => n + 1)}
           className="absolute right-0 top-full mt-1 w-80 max-h-96 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg z-[1100]"
         >
           <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 sticky top-0 bg-white">
@@ -152,49 +159,85 @@ function SpeciesFilterButton({ studyId, deploymentID, selectedSpecies, onChange 
             <div className="px-3 py-3 text-xs text-gray-400">Loading…</div>
           ) : (
             <ul className="py-1">
-              {speciesList.map((s) => {
-                const isSelected = selectedSpecies.includes(s.scientificName)
-                const commonName = resolveCommonName(s.scientificName)
-                return (
-                  <li key={s.scientificName}>
-                    <button
-                      onClick={() => toggle(s.scientificName)}
-                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${
-                        isSelected ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <span
-                        className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
-                          isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300 bg-white'
-                        }`}
-                      >
-                        {isSelected && <Check size={12} className="text-white" />}
-                      </span>
-                      <span className="flex-1 min-w-0">
-                        <span
-                          className={`block text-sm truncate ${
-                            isSelected ? 'text-blue-900 font-medium' : 'text-gray-800'
-                          }`}
-                        >
-                          {commonName || s.scientificName}
-                        </span>
-                        {commonName && (
-                          <span className="block text-xs italic text-gray-500 truncate">
-                            {s.scientificName}
-                          </span>
-                        )}
-                      </span>
-                      <span className="flex-shrink-0 text-xs tabular-nums text-gray-500">
-                        {s.count}
-                      </span>
-                    </button>
-                  </li>
-                )
-              })}
+              {speciesList.map((s) => (
+                <SpeciesFilterRow
+                  key={s.scientificName}
+                  studyId={studyId}
+                  scientificName={s.scientificName}
+                  count={s.count}
+                  isSelected={selectedSpecies.includes(s.scientificName)}
+                  onToggle={() => toggle(s.scientificName)}
+                  scrollSignal={scrollSignal}
+                />
+              ))}
             </ul>
           )}
         </div>
       )}
     </div>
+  )
+}
+
+function SpeciesFilterRow({ studyId, scientificName, count, isSelected, onToggle, scrollSignal }) {
+  const commonName = resolveCommonName(scientificName)
+  const [hoverOpen, setHoverOpen] = useState(false)
+  // Close any open card when the popover scrolls.
+  useEffect(() => {
+    if (scrollSignal > 0) setHoverOpen(false)
+  }, [scrollSignal])
+
+  return (
+    <li>
+      <HoverCard.Root
+        open={hoverOpen}
+        onOpenChange={setHoverOpen}
+        openDelay={250}
+        closeDelay={120}
+      >
+        <HoverCard.Trigger asChild>
+          <button
+            onClick={onToggle}
+            className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${
+              isSelected ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'
+            }`}
+          >
+            <span
+              className={`flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
+                isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300 bg-white'
+              }`}
+            >
+              {isSelected && <Check size={12} className="text-white" />}
+            </span>
+            <span className="flex-1 min-w-0">
+              <span
+                className={`block text-sm truncate ${
+                  isSelected ? 'text-blue-900 font-medium' : 'text-gray-800'
+                }`}
+              >
+                {commonName || scientificName}
+              </span>
+              {commonName && (
+                <span className="block text-xs italic text-gray-500 truncate">
+                  {scientificName}
+                </span>
+              )}
+            </span>
+            <span className="flex-shrink-0 text-xs tabular-nums text-gray-500">{count}</span>
+          </button>
+        </HoverCard.Trigger>
+        <HoverCard.Portal>
+          <HoverCard.Content
+            side="left"
+            sideOffset={8}
+            align="start"
+            avoidCollisions={true}
+            collisionPadding={16}
+            className="z-[10001]"
+          >
+            <SpeciesTooltipContent imageData={{ scientificName }} studyId={studyId} size="lg" />
+          </HoverCard.Content>
+        </HoverCard.Portal>
+      </HoverCard.Root>
+    </li>
   )
 }
