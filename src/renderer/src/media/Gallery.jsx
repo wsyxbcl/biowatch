@@ -19,7 +19,6 @@ import {
   Clock,
   Eye,
   EyeOff,
-  SquarePlus,
   Layers,
   Play,
   Loader2,
@@ -1314,17 +1313,6 @@ function ImageModal({
                         <Loader2 size={32} className="animate-spin text-white/70" />
                       </div>
                     )}
-                    {/* Empty-state hint - shown when image has no detections */}
-                    {!hasBboxes &&
-                      isCurrentImageReady &&
-                      !imageError &&
-                      !isDrawMode &&
-                      !isVideoMedia(media) && (
-                        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-sm text-white/70 text-[11px] font-medium">
-                          <SquarePlus size={12} />
-                          No detections
-                        </div>
-                      )}
                     {/* Bbox overlay - editable bounding boxes (only for images, only after image loads) */}
                     {showBboxes && hasBboxes && isCurrentImageReady && (
                       <>
