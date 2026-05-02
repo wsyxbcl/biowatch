@@ -21,7 +21,8 @@ import {
   getSequenceAwareDailyActivitySQL,
   getBestMedia,
   getDeploymentsActivity,
-  getSourcesData
+  getSourcesData,
+  getOverviewStats
 } from '../../database/index.js'
 import { getPaginatedSequences } from './pagination.js'
 import {
@@ -144,6 +145,13 @@ async function run() {
       // last-model-used, active-run) over media/observations/model_outputs and
       // would otherwise block the renderer on large studies.
       return getSourcesData(dbPath)
+    }
+    case 'overview-stats': {
+      // Overview tab's KPI band — counts + derived range in two SQLite
+      // round-trips. Off the main thread because the underlying scans on
+      // observations / deployments / media are O(table size) and large
+      // studies show multi-hundred-ms latency.
+      return getOverviewStats(dbPath)
     }
     default:
       throw new Error(`Unknown worker task type: ${type}`)

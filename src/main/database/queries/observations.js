@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm'
 import log from 'electron-log'
 import { getStudyIdFromPath } from './utils.js'
 import { lifeStageSchema, sexSchema, behaviorSchema } from '../validators.js'
+import { normalizeScientificName } from '../../../shared/commonNames/normalize.js'
 
 /**
  * Update an observation's classification (species) with CamTrap DP compliant fields.
@@ -53,7 +54,10 @@ export async function updateObservationClassification(dbPath, observationID, upd
     //   3. Custom entry: scientificName + null/absent commonName -> save sci, clear common.
     // See docs/specs/2026-04-21-common-names-robustness-design.md for rationale.
     if (updates.scientificName !== undefined) {
-      const sci = updates.scientificName
+      // Canonicalize at the single-write chokepoint so custom-species input
+      // ("Vulpes Vulpes") doesn't reintroduce the mixed-case duplicates the
+      // importers were just changed to prevent.
+      const sci = normalizeScientificName(updates.scientificName)
       const sciIsCleared = sci === null || sci === ''
       if (sciIsCleared) {
         updateValues.scientificName = null

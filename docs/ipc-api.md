@@ -61,6 +61,33 @@ const { data, error } = await window.api.getSequences(studyId, { limit: 20 })
 | `getSpeciesDistribution(studyId)` | `species:get-distribution` | studyId    | `{ data: Distribution[] }` |
 | `getDistinctSpecies(studyId)`     | `species:get-distinct`     | studyId    | `{ data: string[] }`       |
 
+### Overview
+
+| Method                       | Channel              | Parameters | Returns                  |
+| ---------------------------- | -------------------- | ---------- | ------------------------ |
+| `getOverviewStats(studyId)`  | `overview:get-stats` | studyId    | `{ data: OverviewStats }` |
+
+`OverviewStats`:
+
+```ts
+{
+  speciesCount: number
+  threatenedCount: number
+  threatenedSpecies: Array<{ scientificName: string, iucn: string }>
+  cameraCount: number       // distinct COALESCE(cameraID, deploymentID)
+  locationCount: number     // distinct deployments.locationID
+  observationCount: number  // observations excluding 'blank'
+  cameraDays: number        // sum of deployment durations, days
+  mediaCount: number
+  derivedRange: {           // independently per side: override → observations
+    start: string | null    // → deployments → media → null
+    end:   string | null
+  }
+}
+```
+
+Runs in the sequences worker thread (off the main process). Threatened species are those whose bundled `speciesInfo.iucn` is in `{VU, EN, CR, EW, EX}`. The Span override lives in `metadata.startDate` / `metadata.endDate`; the Overview tab clears both via the `Reset to auto` link.
+
 ### Deployments
 
 | Method                                                         | Channel                         | Parameters                        | Returns                  |

@@ -168,6 +168,16 @@ src/
 │   ├── settings.jsx         # Settings pages
 │   ├── export.jsx           # Export UI
 │   ├── sources.jsx          # Sources tab (per-importFolder rollup, multi-source aware)
+│   ├── overview.jsx         # Editorial showcase tab (header, KPI band, captures, species)
+│   ├── overview/            # Overview-tab subcomponents
+│   │   ├── EditorialHeader.jsx       # Title + description + byline + map slot
+│   │   ├── KpiBand.jsx, KpiTile.jsx  # 5-tile stats band
+│   │   ├── ContributorByline.jsx, ContributorsModal.jsx
+│   │   ├── BestCapturesSection.jsx   # Best media carousel + Featured species fallback
+│   │   ├── CommonSpeciesFallback.jsx # Wikipedia thumbnails when no scored media
+│   │   ├── SpeciesDistribution.jsx   # Full-width species list with IUCN legend
+│   │   ├── SpanPicker.jsx            # Two-calendar date-range picker
+│   │   └── utils/formatStats.js      # KPI formatters
 │   ├── ui/                  # Reusable components
 │   └── hooks/               # Custom React hooks
 ├── preload/

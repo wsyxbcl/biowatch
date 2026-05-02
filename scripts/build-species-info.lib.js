@@ -1,20 +1,35 @@
 const RANK_KEYWORD = /\b(species|family|order|class|genus|subfamily|suborder|superfamily)\b/i
 
 /**
- * True if the dictionary key looks like a species or subspecies binomial.
- * Cheap pre-filter that runs before any network call. GBIF rank is the
- * authoritative filter — this just reduces wasted requests.
+ * True if the dictionary key is worth probing GBIF for. Cheap pre-filter that
+ * runs before any network call — the GBIF response is the authoritative one.
+ *
+ * Accepts both binomials (`panthera leo`) and single-token taxa (`anser`,
+ * `chiroptera`) so genus/family/order entries can pick up Wikipedia badges.
+ * Rejects entries that already carry a rank keyword (`anas species`,
+ * `accipitridae family`) — those are placeholders and won't resolve.
  */
 export function isSpeciesCandidate(name) {
   if (typeof name !== 'string') return false
   const trimmed = name.trim()
   if (!trimmed) return false
   if (RANK_KEYWORD.test(trimmed)) return false
-  const tokens = trimmed.split(/\s+/)
-  return tokens.length >= 2
+  return true
 }
 
-const ACCEPTED_RANKS = new Set(['SPECIES', 'SUBSPECIES'])
+// Higher-rank taxa (genus/family/order) usually have a Wikipedia page even
+// though IUCN only assesses species. We accept them so the builder still pulls
+// a blurb + image for entries like "Anser" or "Chiroptera" — it just gets a
+// null IUCN code for them, which the UI already handles.
+const ACCEPTED_RANKS = new Set([
+  'SPECIES',
+  'SUBSPECIES',
+  'GENUS',
+  'FAMILY',
+  'ORDER',
+  'CLASS',
+  'SUBFAMILY'
+])
 
 /**
  * Decide whether a GBIF /species/match response yields a usable usageKey.

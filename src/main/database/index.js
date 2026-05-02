@@ -250,5 +250,7 @@ export {
   getBestImagePerSpecies,
   // Sequences
   getMediaForSequencePagination,
-  hasTimestampedMedia
+  hasTimestampedMedia,
+  // Overview stats
+  getOverviewStats
 } from './queries/index.js'

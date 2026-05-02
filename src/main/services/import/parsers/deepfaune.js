@@ -13,6 +13,7 @@ import {
 } from '../../../database/index.js'
 import { eq } from 'drizzle-orm'
 import log from '../../logger.js'
+import { normalizeScientificName } from '../../../../shared/commonNames/normalize.js'
 import { getBiowatchDataPath } from '../../paths.js'
 
 /**
@@ -238,7 +239,7 @@ async function insertDeepfauneData(db, csvPath) {
             eventID: row.seqnum || null, // Use sequence number as eventID
             eventStart: timestamp.toISO(),
             eventEnd: timestamp.toISO(),
-            scientificName: row.prediction, // Use prediction as scientificName
+            scientificName: normalizeScientificName(row.prediction),
             observationType: null,
             commonName: row.prediction, // Use prediction as commonName too
             classificationProbability,

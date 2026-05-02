@@ -18,10 +18,10 @@ describe('isSpeciesCandidate', () => {
     assert.equal(isSpeciesCandidate('felis silvestris lybica'), true)
   })
 
-  test('rejects single-token entries (orders, classes, genera-only)', () => {
-    assert.equal(isSpeciesCandidate('accipitriformes'), false)
-    assert.equal(isSpeciesCandidate('madoqua'), false)
-    assert.equal(isSpeciesCandidate('aves'), false)
+  test('accepts single-token taxa (orders, classes, genera-only)', () => {
+    assert.equal(isSpeciesCandidate('accipitriformes'), true)
+    assert.equal(isSpeciesCandidate('madoqua'), true)
+    assert.equal(isSpeciesCandidate('aves'), true)
   })
 
   test('rejects entries with rank keywords', () => {
@@ -53,10 +53,15 @@ describe('parseGbifMatch', () => {
     assert.equal(r.accept, true)
   })
 
-  test('rejects GENUS / FAMILY / ORDER', () => {
-    assert.equal(parseGbifMatch({ usageKey: 1, rank: 'GENUS', matchType: 'EXACT' }).accept, false)
-    assert.equal(parseGbifMatch({ usageKey: 1, rank: 'FAMILY', matchType: 'EXACT' }).accept, false)
-    assert.equal(parseGbifMatch({ usageKey: 1, rank: 'ORDER', matchType: 'EXACT' }).accept, false)
+  test('accepts GENUS / FAMILY / ORDER (Wikipedia covers these even though IUCN does not)', () => {
+    assert.equal(parseGbifMatch({ usageKey: 1, rank: 'GENUS', matchType: 'EXACT' }).accept, true)
+    assert.equal(parseGbifMatch({ usageKey: 1, rank: 'FAMILY', matchType: 'EXACT' }).accept, true)
+    assert.equal(parseGbifMatch({ usageKey: 1, rank: 'ORDER', matchType: 'EXACT' }).accept, true)
+  })
+
+  test('still rejects non-taxon ranks like FORM and KINGDOM', () => {
+    assert.equal(parseGbifMatch({ usageKey: 1, rank: 'FORM', matchType: 'EXACT' }).accept, false)
+    assert.equal(parseGbifMatch({ usageKey: 1, rank: 'KINGDOM', matchType: 'EXACT' }).accept, false)
   })
 
   test('rejects matchType NONE', () => {
