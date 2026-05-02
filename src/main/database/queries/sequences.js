@@ -76,6 +76,18 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
     // Time of day filter (only applies to timestamped media)
     const hasTimeFilter = timeRange.start !== undefined && timeRange.end !== undefined
 
+    // Pick one observation's eventID for a media via correlated subquery —
+    // needed by sequence grouping when the dataset uses eventID-based
+    // grouping (sequenceGap === null). Cheap: indexed mediaID lookup +
+    // LIMIT 1. Returns NULL when the media has no observations (e.g.
+    // blanks).
+    const eventIDPicker = db
+      .select({ value: observations.eventID })
+      .from(observations)
+      .where(eq(observations.mediaID, media.mediaID))
+      .orderBy(observations.observationID)
+      .limit(1)
+
     // Select fields for all queries
     const selectFields = {
       mediaID: media.mediaID,
@@ -85,7 +97,7 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
       deploymentID: media.deploymentID,
       scientificName: sql`NULL`.as('scientificName'),
       fileMediatype: media.fileMediatype,
-      eventID: sql`NULL`.as('eventID'),
+      eventID: sql`(${eventIDPicker})`.as('eventID'),
       favorite: media.favorite
     }
 
