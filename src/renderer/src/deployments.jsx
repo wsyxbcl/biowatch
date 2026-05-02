@@ -988,11 +988,7 @@ export default function Deployments({ studyId }) {
   // doesn't match any deployment (study switch, deleted row, bad link).
   // Keeps the URL honest and avoids a lingering param across navigation.
   useEffect(() => {
-    if (
-      Array.isArray(deploymentsList) &&
-      searchParams.get('deploymentID') &&
-      !selectedLocation
-    ) {
+    if (Array.isArray(deploymentsList) && searchParams.get('deploymentID') && !selectedLocation) {
       setSearchParams(withDeploymentParam(searchParams, null), { replace: true })
     }
   }, [deploymentsList, selectedLocation, searchParams, setSearchParams])

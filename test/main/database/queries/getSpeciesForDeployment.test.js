@@ -102,7 +102,12 @@ async function seed() {
   await insertObservations(manager, [
     { observationID: 'o1', mediaID: 'd1-a', deploymentID: 'd1', scientificName: 'Vulpes vulpes' },
     { observationID: 'o2', mediaID: 'd1-b', deploymentID: 'd1', scientificName: 'Vulpes vulpes' },
-    { observationID: 'o3', mediaID: 'd1-c', deploymentID: 'd1', scientificName: 'Capreolus capreolus' },
+    {
+      observationID: 'o3',
+      mediaID: 'd1-c',
+      deploymentID: 'd1',
+      scientificName: 'Capreolus capreolus'
+    },
     { observationID: 'o4', mediaID: 'd1-a', deploymentID: 'd1', scientificName: '' },
     { observationID: 'o5', mediaID: 'd1-a', deploymentID: 'd1', scientificName: null },
     { observationID: 'o6', mediaID: 'd2-a', deploymentID: 'd2', scientificName: 'Sus scrofa' }
