@@ -1,6 +1,6 @@
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { Camera, Check, ChevronDown, ChevronRight, MapPin, Pencil, X } from 'lucide-react'
+import { Camera, ChevronDown, ChevronRight, MapPin, X } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ReactDOMServer from 'react-dom/server'
 import { LayersControl, MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet'
@@ -8,8 +8,12 @@ import MarkerClusterGroup from 'react-leaflet-cluster'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { useSearchParams } from 'react-router'
 import { useImportStatus } from '@renderer/hooks/import'
 import SkeletonDeploymentsList from './ui/SkeletonDeploymentsList'
+import { resolveSelectedDeployment, withDeploymentParam } from './deployments/urlState'
+import DeploymentDetailPane from './deployments/DeploymentDetailPane'
+import EditableLocationName from './deployments/EditableLocationName'
 
 // Fix the default marker icon issue in react-leaflet
 // This is needed because the CSS assets are not properly loaded
@@ -64,6 +68,24 @@ const markerStyles = `
   .custom-camera-icon {
     background: transparent !important;
     border: none !important;
+  }
+
+  /* Soft fade + slide-up when the detail pane mounts; symmetric fade-out
+     before unmount via [data-state="closing"]. Kept under 200ms so it
+     never gets in the way of rapid deployment switching. */
+  @keyframes detail-pane-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes detail-pane-out {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(8px); }
+  }
+  .detail-pane-anim[data-state="open"] {
+    animation: detail-pane-in 180ms ease-out;
+  }
+  .detail-pane-anim[data-state="closing"] {
+    animation: detail-pane-out 150ms ease-in forwards;
   }
 `
 
@@ -309,7 +331,7 @@ function LocationMap({
   }, [validLocations])
 
   return (
-    <div className="w-full h-full bg-white rounded border border-gray-200 relative">
+    <div className="w-full h-full bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden relative">
       <MapContainer
         {...(bounds
           ? { bounds: bounds, boundsOptions: { padding: [30, 30] } }
@@ -394,137 +416,6 @@ function LocationMap({
     </div>
   )
 }
-
-// Editable location name component with inline editing
-const EditableLocationName = memo(function EditableLocationName({
-  locationID,
-  locationName,
-  isSelected,
-  onRename
-}) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editValue, setEditValue] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
-  const inputRef = useRef(null)
-
-  const displayName = locationName || locationID || 'Unnamed Location'
-
-  const startEditing = useCallback(
-    (e) => {
-      e.stopPropagation()
-      setEditValue(displayName)
-      setIsEditing(true)
-    },
-    [displayName]
-  )
-
-  const cancelEditing = useCallback(() => {
-    setIsEditing(false)
-    setEditValue('')
-  }, [])
-
-  const saveEdit = useCallback(async () => {
-    const trimmed = editValue.trim()
-    // Cancel if empty or unchanged
-    if (!trimmed || trimmed === displayName) {
-      cancelEditing()
-      return
-    }
-
-    setIsSaving(true)
-    try {
-      await onRename(locationID, trimmed)
-      setIsEditing(false)
-    } catch (error) {
-      console.error('Error renaming location:', error)
-      // Keep edit mode open for retry
-    } finally {
-      setIsSaving(false)
-    }
-  }, [editValue, displayName, locationID, onRename, cancelEditing])
-
-  const handleKeyDown = useCallback(
-    (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        saveEdit()
-      } else if (e.key === 'Escape') {
-        e.preventDefault()
-        cancelEditing()
-      }
-    },
-    [saveEdit, cancelEditing]
-  )
-
-  const handleBlur = useCallback(() => {
-    if (!isSaving) {
-      saveEdit()
-    }
-  }, [isSaving, saveEdit])
-
-  // Focus and select input when entering edit mode
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus()
-      inputRef.current.select()
-    }
-  }, [isEditing])
-
-  if (isEditing) {
-    return (
-      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-        <input
-          ref={inputRef}
-          type="text"
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          maxLength={100}
-          disabled={isSaving}
-          className="text-sm border border-blue-400 rounded px-1.5 py-0.5 w-48 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
-        <button
-          onClick={saveEdit}
-          disabled={isSaving}
-          className="p-0.5 hover:bg-green-100 rounded text-green-600"
-          title="Save (Enter)"
-        >
-          <Check size={14} />
-        </button>
-        <button
-          onClick={cancelEditing}
-          disabled={isSaving}
-          className="p-0.5 hover:bg-red-100 rounded text-red-600"
-          title="Cancel (Esc)"
-        >
-          <X size={14} />
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="group flex items-center gap-1 min-w-0">
-      <span
-        onClick={startEditing}
-        className={`cursor-pointer text-sm truncate min-w-0 ${
-          isSelected ? 'font-semibold text-blue-700' : 'text-gray-700'
-        }`}
-        title={`${displayName} (click to rename)`}
-      >
-        {displayName}
-      </span>
-      <button
-        onClick={startEditing}
-        className="p-0.5 opacity-0 group-hover:opacity-100 hover:bg-gray-200 rounded text-gray-500 transition-opacity flex-shrink-0"
-        title="Rename"
-      >
-        <Pencil size={12} />
-      </button>
-    </div>
-  )
-})
 
 // Memoized deployment row component
 const DeploymentRow = memo(function DeploymentRow({
@@ -1061,7 +952,6 @@ function LocationsList({
 }
 
 export default function Deployments({ studyId }) {
-  const [selectedLocation, setSelectedLocation] = useState(null)
   const [isPlaceMode, setIsPlaceMode] = useState(false)
   const [groupToExpand, setGroupToExpand] = useState(null)
   // Bucketed period count, set by LocationsList from its measured timeline
@@ -1069,6 +959,7 @@ export default function Deployments({ studyId }) {
   const [periodCount, setPeriodCount] = useState(null)
   const queryClient = useQueryClient()
   const { importStatus } = useImportStatus(studyId)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   // Lightweight un-deduped query for the map — one marker per deployment so
   // MarkerClusterGroup correctly counts co-located deployments. The deduped
@@ -1084,6 +975,36 @@ export default function Deployments({ studyId }) {
     refetchInterval: () => (importStatus?.isRunning ? 5000 : false),
     enabled: !!studyId
   })
+
+  // Selected deployment is mirrored in ?deploymentID=… so deep links round-trip
+  // and back/forward navigation works. We resolve from the loaded deployments
+  // list so an invalid/stale id (deleted deployment, wrong study) collapses to
+  // null without throwing.
+  const selectedLocation = useMemo(
+    () => resolveSelectedDeployment(searchParams, deploymentsList),
+    [searchParams, deploymentsList]
+  )
+  // Once the deployments list has loaded, drop a stale ?deploymentID=… that
+  // doesn't match any deployment (study switch, deleted row, bad link).
+  // Keeps the URL honest and avoids a lingering param across navigation.
+  useEffect(() => {
+    if (Array.isArray(deploymentsList) && searchParams.get('deploymentID') && !selectedLocation) {
+      setSearchParams(withDeploymentParam(searchParams, null), { replace: true })
+    }
+  }, [deploymentsList, selectedLocation, searchParams, setSearchParams])
+  // Toggle-off when clicking the already-selected deployment: clearing the
+  // selection closes the media pane. Map markers reuse the same path, so
+  // clicking the active marker also deselects.
+  const setSelectedLocation = useCallback(
+    (location) => {
+      const nextID =
+        location && location.deploymentID === selectedLocation?.deploymentID
+          ? null
+          : (location?.deploymentID ?? null)
+      setSearchParams(withDeploymentParam(searchParams, nextID), { replace: true })
+    },
+    [searchParams, setSearchParams, selectedLocation]
+  )
 
   // Heavy per-deployment period-bucket query for the list timeline. Runs in
   // the sequences worker so the SUM(CASE) × N aggregate over observations
@@ -1200,12 +1121,15 @@ export default function Deployments({ studyId }) {
         console.warn('Please select a deployment first')
         return
       }
-      if (location) {
+      // Skip the toggle wrapper when the row is already selected — selecting
+      // it again would deselect (clear the URL param) and place mode would
+      // run with no anchor.
+      if (location && location.deploymentID !== selectedLocation?.deploymentID) {
         setSelectedLocation(location)
       }
       setIsPlaceMode(true)
     },
-    [selectedLocation]
+    [selectedLocation, setSelectedLocation]
   )
 
   const handleExitPlaceMode = useCallback(() => {
@@ -1275,47 +1199,110 @@ export default function Deployments({ studyId }) {
     [studyId, queryClient]
   )
 
+  // Detail-pane animation: keep the pane mounted for one fade-out cycle
+  // after selection clears so the user sees a soft exit. paneSnapshot is
+  // the deployment to render during that exit window.
+  const [paneSnapshot, setPaneSnapshot] = useState(null)
+  const [isPaneClosing, setIsPaneClosing] = useState(false)
+  useEffect(() => {
+    if (selectedLocation) {
+      setPaneSnapshot(selectedLocation)
+      setIsPaneClosing(false)
+    } else if (paneSnapshot) {
+      setIsPaneClosing(true)
+      const timer = setTimeout(() => {
+        setPaneSnapshot(null)
+        setIsPaneClosing(false)
+      }, 150)
+      return () => clearTimeout(timer)
+    }
+  }, [selectedLocation, paneSnapshot])
+
+  // Esc closes the media pane. The map's own Esc handler (for exiting place
+  // mode) runs alongside; we gate on !isPlaceMode so closing place mode
+  // doesn't also clear the selection.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape' && selectedLocation && !isPlaceMode) {
+        setSelectedLocation(null)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedLocation, isPlaceMode, setSelectedLocation])
+
   return (
     <div
       className={`flex flex-col px-4 h-full overflow-hidden ${isPlaceMode ? 'place-mode-active' : ''}`}
     >
-      <PanelGroup direction="vertical" autoSaveId="deployments-layout">
-        <Panel defaultSize={55} minSize={20} className="flex flex-col">
-          {deploymentsList && (
-            <LocationMap
-              locations={deploymentsList}
-              selectedLocation={selectedLocation}
-              setSelectedLocation={setSelectedLocation}
-              onNewLatitude={onNewLatitude}
-              onNewLongitude={onNewLongitude}
-              isPlaceMode={isPlaceMode}
-              onPlaceLocation={handlePlaceLocation}
-              onExitPlaceMode={handleExitPlaceMode}
-              onExpandGroup={handleExpandGroup}
-              studyId={studyId}
-            />
-          )}
+      <PanelGroup direction="vertical" autoSaveId="deployments-v2">
+        <Panel defaultSize={selectedLocation ? 38 : 100} minSize={20} className="flex flex-col">
+          <PanelGroup direction="horizontal" autoSaveId="deployments-v3-top">
+            <Panel defaultSize={62} minSize={20} className="flex flex-col">
+              {isActivityLoading ? (
+                <SkeletonDeploymentsList itemCount={6} />
+              ) : activity ? (
+                <LocationsList
+                  activity={activity}
+                  selectedLocation={selectedLocation}
+                  setSelectedLocation={setSelectedLocation}
+                  onNewLatitude={onNewLatitude}
+                  onNewLongitude={onNewLongitude}
+                  onEnterPlaceMode={handleEnterPlaceMode}
+                  onRenameLocation={onRenameLocation}
+                  isPlaceMode={isPlaceMode}
+                  groupToExpand={groupToExpand}
+                  onGroupExpanded={handleGroupExpanded}
+                  onPeriodCountChange={setPeriodCount}
+                />
+              ) : null}
+            </Panel>
+            <PanelResizeHandle className="w-1 mx-1.5 rounded-full bg-gray-100 hover:bg-gray-300 data-[resize-handle-state=drag]:bg-blue-300 cursor-col-resize transition-colors" />
+            <Panel defaultSize={38} minSize={20} className="flex flex-col">
+              {/* Cap the map at a comfortable max-height so on tall windows
+                  it doesn't stretch to the full panel — the list timeline
+                  can use the room productively, the map can't. */}
+              <div className="max-h-[500px] h-full">
+                {deploymentsList && (
+                  <LocationMap
+                    locations={deploymentsList}
+                    selectedLocation={selectedLocation}
+                    setSelectedLocation={setSelectedLocation}
+                    onNewLatitude={onNewLatitude}
+                    onNewLongitude={onNewLongitude}
+                    isPlaceMode={isPlaceMode}
+                    onPlaceLocation={handlePlaceLocation}
+                    onExitPlaceMode={handleExitPlaceMode}
+                    onExpandGroup={handleExpandGroup}
+                    studyId={studyId}
+                  />
+                )}
+              </div>
+            </Panel>
+          </PanelGroup>
         </Panel>
-        <PanelResizeHandle className="h-2 my-1 rounded bg-gray-200 hover:bg-blue-300 data-[resize-handle-state=drag]:bg-blue-400 cursor-row-resize transition-colors" />
-        <Panel defaultSize={45} minSize={20} className="flex flex-col">
-          {isActivityLoading ? (
-            <SkeletonDeploymentsList itemCount={6} />
-          ) : activity ? (
-            <LocationsList
-              activity={activity}
-              selectedLocation={selectedLocation}
-              setSelectedLocation={setSelectedLocation}
-              onNewLatitude={onNewLatitude}
-              onNewLongitude={onNewLongitude}
-              onEnterPlaceMode={handleEnterPlaceMode}
-              onRenameLocation={onRenameLocation}
-              isPlaceMode={isPlaceMode}
-              groupToExpand={groupToExpand}
-              onGroupExpanded={handleGroupExpanded}
-              onPeriodCountChange={setPeriodCount}
-            />
-          ) : null}
-        </Panel>
+        {paneSnapshot && (
+          <>
+            <PanelResizeHandle className="h-1 my-3 rounded-full bg-gray-100 hover:bg-gray-300 data-[resize-handle-state=drag]:bg-blue-300 cursor-row-resize transition-colors" />
+            <Panel defaultSize={62} minSize={20} className="flex flex-col">
+              {/* No `key` on the wrapper so deployment-to-deployment swaps
+                  don't re-trigger the enter animation. The inner pane uses
+                  its own `key={deploymentID}` for state isolation. */}
+              <div
+                data-state={isPaneClosing ? 'closing' : 'open'}
+                className="detail-pane-anim h-full flex flex-col min-h-0"
+              >
+                <DeploymentDetailPane
+                  key={paneSnapshot.deploymentID}
+                  studyId={studyId}
+                  deployment={paneSnapshot}
+                  onClose={() => setSelectedLocation(null)}
+                  onRenameLocation={onRenameLocation}
+                />
+              </div>
+            </Panel>
+          </>
+        )}
       </PanelGroup>
     </div>
   )

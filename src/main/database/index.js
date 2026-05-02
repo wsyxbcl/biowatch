@@ -216,6 +216,7 @@ export {
   getLocationsActivity,
   insertDeployments,
   getDeploymentsActivity,
+  getSpeciesForDeployment,
   // Species
   getSpeciesDistribution,
   getBlankMediaCount,

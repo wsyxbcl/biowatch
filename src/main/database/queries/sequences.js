@@ -40,10 +40,18 @@ import { BLANK_SENTINEL } from '../../../shared/constants.js'
  * @param {Array<string>} options.species - Species filter (optional)
  * @param {Object} options.dateRange - Date range filter (optional)
  * @param {Object} options.timeRange - Time of day range filter (optional)
+ * @param {string} [options.deploymentID] - If set, only media for this deploymentID
  * @returns {Promise<{ media: Array, hasMoreTimestamped: boolean, hasMoreNull: boolean }>}
  */
 export async function getMediaForSequencePagination(dbPath, options = {}) {
-  const { cursor = null, batchSize = 200, species = [], dateRange = {}, timeRange = {} } = options
+  const {
+    cursor = null,
+    batchSize = 200,
+    species = [],
+    dateRange = {},
+    timeRange = {},
+    deploymentID = null
+  } = options
 
   const startTime = Date.now()
   const phase = cursor?.phase || 'timestamped'
@@ -68,6 +76,18 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
     // Time of day filter (only applies to timestamped media)
     const hasTimeFilter = timeRange.start !== undefined && timeRange.end !== undefined
 
+    // Pick one observation's eventID for a media via correlated subquery —
+    // needed by sequence grouping when the dataset uses eventID-based
+    // grouping (sequenceGap === null). Cheap: indexed mediaID lookup +
+    // LIMIT 1. Returns NULL when the media has no observations (e.g.
+    // blanks).
+    const eventIDPicker = db
+      .select({ value: observations.eventID })
+      .from(observations)
+      .where(eq(observations.mediaID, media.mediaID))
+      .orderBy(observations.observationID)
+      .limit(1)
+
     // Select fields for all queries
     const selectFields = {
       mediaID: media.mediaID,
@@ -77,7 +97,7 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
       deploymentID: media.deploymentID,
       scientificName: sql`NULL`.as('scientificName'),
       fileMediatype: media.fileMediatype,
-      eventID: sql`NULL`.as('eventID'),
+      eventID: sql`(${eventIDPicker})`.as('eventID'),
       favorite: media.favorite
     }
 
@@ -102,6 +122,11 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
     // Phase 1: Timestamped media
     if (phase === 'timestamped') {
       const timestampedConditions = [isNotNull(media.timestamp)]
+
+      // Apply deployment filter (covers all species variants below via shared and(...))
+      if (deploymentID) {
+        timestampedConditions.push(eq(media.deploymentID, deploymentID))
+      }
 
       // Apply date range filter
       if (startDate && endDate) {
@@ -257,6 +282,9 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
       if (timestampedMedia.length < batchSize) {
         // We've exhausted timestamped media, check for null-timestamp media
         const nullConditions = [isNull(media.timestamp)]
+        if (deploymentID) {
+          nullConditions.push(eq(media.deploymentID, deploymentID))
+        }
 
         let nullCountResult
         if (species.length === 0) {
@@ -325,6 +353,11 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
     if (phase === 'null') {
       const offset = cursor?.offset || 0
       const nullConditions = [isNull(media.timestamp)]
+
+      // Apply deployment filter (covers all species variants below via shared and(...))
+      if (deploymentID) {
+        nullConditions.push(eq(media.deploymentID, deploymentID))
+      }
 
       let nullMedia = []
 
@@ -454,7 +487,7 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
  * @returns {Promise<boolean>}
  */
 export async function hasTimestampedMedia(dbPath, options = {}) {
-  const { species = [], dateRange = {}, timeRange = {} } = options
+  const { species = [], dateRange = {}, timeRange = {}, deploymentID = null } = options
 
   try {
     const studyId = getStudyIdFromPath(dbPath)
@@ -464,6 +497,10 @@ export async function hasTimestampedMedia(dbPath, options = {}) {
     const regularSpecies = species.filter((s) => s !== BLANK_SENTINEL)
 
     const conditions = [isNotNull(media.timestamp)]
+
+    if (deploymentID) {
+      conditions.push(eq(media.deploymentID, deploymentID))
+    }
 
     // Apply date range
     if (dateRange.start && dateRange.end) {

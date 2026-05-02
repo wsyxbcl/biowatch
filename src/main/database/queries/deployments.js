@@ -111,6 +111,45 @@ export async function getAllDeployments(dbPath) {
 }
 
 /**
+ * Distinct species observed at a single deployment, with media counts.
+ * Used by the species-filter popover in the Deployments tab so the picker
+ * only shows species actually present at the selected deployment.
+ *
+ * Not sequence-aware (counts are media, not sequences) — the popover only
+ * needs the species set; exact counts are a nice-to-have.
+ *
+ * @param {string} dbPath - Path to the SQLite database
+ * @param {string} deploymentID
+ * @returns {Promise<Array<{scientificName: string, count: number}>>}
+ */
+export async function getSpeciesForDeployment(dbPath, deploymentID) {
+  const startTime = Date.now()
+  try {
+    const studyId = getStudyIdFromPath(dbPath)
+    const db = await getDrizzleDb(studyId, dbPath, { readonly: true })
+
+    const rows = await db
+      .select({
+        scientificName: observations.scientificName,
+        count: sql`COUNT(DISTINCT ${observations.mediaID})`.as('count')
+      })
+      .from(observations)
+      .where(
+        sql`${observations.deploymentID} = ${deploymentID} AND ${observations.scientificName} IS NOT NULL AND ${observations.scientificName} != ''`
+      )
+      .groupBy(observations.scientificName)
+      .orderBy(desc(sql`count`))
+
+    const elapsedTime = Date.now() - startTime
+    log.info(`Retrieved ${rows.length} species for deployment ${deploymentID} in ${elapsedTime}ms`)
+    return rows.map((r) => ({ scientificName: r.scientificName, count: Number(r.count) }))
+  } catch (error) {
+    log.error(`Error querying species for deployment: ${error.message}`)
+    throw error
+  }
+}
+
+/**
  * Get activity data (observation counts) per location over time periods
  * @param {string} dbPath - Path to the SQLite database
  * @returns {Promise<Object>} - Activity data with periods and counts per location
