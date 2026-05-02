@@ -16,6 +16,7 @@
     "build:python-env-common": "cd python-environments/common && uv sync --extra dev",
     "dict:build": "node scripts/build-common-names-dict.js",
     "species-info:build": "node scripts/build-species-info.js",
+    "iucn-link-id:build": "node scripts/build-iucn-link-id.js",
     "build": "electron-vite build",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win --publish always",

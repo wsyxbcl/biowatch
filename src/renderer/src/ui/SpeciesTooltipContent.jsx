@@ -3,6 +3,7 @@ import { CameraOff, Loader2 } from 'lucide-react'
 import { useCommonName } from '../utils/commonNames'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
 import IucnBadge from './IucnBadge'
+import { IUCN_ACCENT_BORDER } from './iucnPalette'
 
 function toTitleCase(str) {
   return str.replace(/\b\w/g, (c) => c.toUpperCase())
@@ -49,6 +50,10 @@ export default function SpeciesTooltipContent({ imageData, studyId, size = 'md' 
   const sciName = imageData?.scientificName
   const common = useCommonName(sciName)
   const info = resolveSpeciesInfo(sciName)
+  const iucnUrl =
+    info?.iucnTaxonId && info?.iucnAssessmentId
+      ? `https://www.iucnredlist.org/species/${info.iucnTaxonId}/${info.iucnAssessmentId}`
+      : null
   const isLarge = size === 'lg'
   const cardWidth = isLarge ? 'w-[400px]' : 'w-[320px]'
   const imageHeight = isLarge ? 'h-[230px]' : 'h-[180px]'
@@ -132,6 +137,18 @@ export default function SpeciesTooltipContent({ imageData, studyId, size = 'md' 
           </p>
           <IucnBadge category={info?.iucn} />
         </div>
+
+        {iucnUrl && (
+          <a
+            href={iucnUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`block border-l-4 ${IUCN_ACCENT_BORDER[info.iucn] ?? 'border-gray-300'} pl-2 -ml-0.5 py-1 hover:bg-gray-100 rounded-r transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300`}
+          >
+            <p className={`${blurbClass} font-semibold text-gray-800`}>Why threatened?</p>
+            <p className={`${linkClass} text-blue-600`}>View IUCN Red List assessment ↗</p>
+          </a>
+        )}
 
         {info?.blurb && (
           <>
