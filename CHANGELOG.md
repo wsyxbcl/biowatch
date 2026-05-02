@@ -5,6 +5,39 @@ All notable changes to Biowatch will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.5] - 2026-05-02
+
+### Added
+
+- Deployments tab inline media workspace: selected deployment opens an inline `Gallery` pane below the list/map with `?deploymentID` URL state, `Esc` to close, and click-selected-row to toggle off; `sequences:get-paginated` gains an optional `deploymentID` filter
+- Species filter popover on the Deployments detail pane, scoped to species present at the deployment, showing common name + scientific + count with hover card on filter rows
+- Inline-edit deployment name from the detail pane header
+- IUCN Red List CTA on threatened-species hover with rationale text and accent-border palette; new IUCN link-id builder script and bundled IDs for 2k+ species
+- Hover card on study list rows in the sidebar showing stats, description, and contributors
+- Mouse-wheel scrolling on the Overview best captures and featured species carousels
+- Description sanitization for Wildlife Insights and Camtrap DP imports (strips DocBook tags via new `sanitizeDescription` helper)
+- Reusable `Gallery` extracted into a shared module with `DeploymentMediaGallery` wrapper and embedded mode (no controls / outer border)
+
+### Changed
+
+- Overview tab revamp: KPI tiles (Deployments, Observations, Media) navigate to their tabs and are center-aligned with bottom-anchored sub details and compact formatting (e.g. 1.1k camera-days); description column fills the column height and "Show more" opens a modal with inline edit; vertical resize handle and map grows with panel height; "Cameras" tile renamed to "Deployments"; best captures and featured species cards bumped to w-56/h-40
+- Overview tab max width capped at 1950px and aligned left on wide screens
+- Deployments tab: list moved left of the map; subtle fade+slide animation on detail-pane open/close; thin resize handles; map matches Overview's `rounded-xl` + `shadow-md` and is capped at 500px tall; detail-pane header padding aligned with list-row padding (`px-2`); `'— media'` suffix dropped; widened vertical-handle margin
+- Media modal: zoom control moved into the top toolbar
+- Species filter sorts non-species entries to the bottom; common names capitalized
+- Sequence grouping `eventID` included in the no-species select
+
+### Fixed
+
+- Overview: threatened-species popover stays open when clicking inside its hover-card tooltip; hover card skipped on best captures lacking a Wikipedia image and blurb; domestic species excluded from the Featured species fallback; Span and threatened popovers portaled so panel overflow no longer clips them; IUCN legend stays aligned with the NE badge and uses a 2-col grid on narrow widths
+- Media modal: "No detections" badge dropped from the copy
+- Media: `ImageModal` raised above Leaflet map controls
+- Deployments: selection preserved when entering place mode on the active row
+
+### Chore
+
+- Expand species dictionary and blurbs
+
 ## [1.8.4] - 2026-04-30
 
 ### Added
