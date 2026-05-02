@@ -966,6 +966,18 @@ export default function Deployments({ studyId }) {
     () => resolveSelectedDeployment(searchParams, deploymentsList),
     [searchParams, deploymentsList]
   )
+  // Once the deployments list has loaded, drop a stale ?deploymentID=… that
+  // doesn't match any deployment (study switch, deleted row, bad link).
+  // Keeps the URL honest and avoids a lingering param across navigation.
+  useEffect(() => {
+    if (
+      Array.isArray(deploymentsList) &&
+      searchParams.get('deploymentID') &&
+      !selectedLocation
+    ) {
+      setSearchParams(withDeploymentParam(searchParams, null), { replace: true })
+    }
+  }, [deploymentsList, selectedLocation, searchParams, setSearchParams])
   // Toggle-off when clicking the already-selected deployment: clearing the
   // selection closes the media pane. Map markers reuse the same path, so
   // clicking the active marker also deselects.
@@ -1095,12 +1107,15 @@ export default function Deployments({ studyId }) {
         console.warn('Please select a deployment first')
         return
       }
-      if (location) {
+      // Skip the toggle wrapper when the row is already selected — selecting
+      // it again would deselect (clear the URL param) and place mode would
+      // run with no anchor.
+      if (location && location.deploymentID !== selectedLocation?.deploymentID) {
         setSelectedLocation(location)
       }
       setIsPlaceMode(true)
     },
-    [selectedLocation]
+    [selectedLocation, setSelectedLocation]
   )
 
   const handleExitPlaceMode = useCallback(() => {
@@ -1238,6 +1253,7 @@ export default function Deployments({ studyId }) {
             <PanelResizeHandle className="h-1 my-3 rounded-full bg-gray-100 hover:bg-gray-300 data-[resize-handle-state=drag]:bg-blue-300 cursor-row-resize transition-colors" />
             <Panel defaultSize={62} minSize={20} className="flex flex-col">
               <DeploymentDetailPane
+                key={selectedLocation.deploymentID}
                 studyId={studyId}
                 deployment={selectedLocation}
                 onClose={() => setSelectedLocation(null)}
