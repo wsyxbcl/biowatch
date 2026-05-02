@@ -2082,7 +2082,8 @@ function Gallery({
   timeRange,
   includeNullTimestamps = false,
   speciesReady = false,
-  deploymentID = null
+  deploymentID = null,
+  embedded = false
 }) {
   const [imageErrors, setImageErrors] = useState(() => {
     const initial = {}
@@ -2447,17 +2448,26 @@ function Gallery({
         isVideoMedia={isVideoMedia}
       />
 
-      <div className="flex flex-col h-full bg-white rounded border border-gray-200 overflow-hidden">
-        {/* Collapsible Control Bar */}
-        <GalleryControls
-          showBboxes={showThumbnailBboxes}
-          onToggleBboxes={() => setShowThumbnailBboxes((prev) => !prev)}
-          hasBboxes={anyMediaHaveBboxes}
-          sequenceGap={sequenceGap}
-          onSequenceGapChange={setSequenceGap}
-          isExpanded={controlsExpanded}
-          onToggleExpanded={() => setControlsExpanded((prev) => !prev)}
-        />
+      <div
+        className={
+          embedded
+            ? 'flex flex-col h-full overflow-hidden'
+            : 'flex flex-col h-full bg-white rounded border border-gray-200 overflow-hidden'
+        }
+      >
+        {/* Collapsible Control Bar — hidden when embedded (e.g. inside the
+            Deployments tab's detail pane, which provides its own chrome). */}
+        {!embedded && (
+          <GalleryControls
+            showBboxes={showThumbnailBboxes}
+            onToggleBboxes={() => setShowThumbnailBboxes((prev) => !prev)}
+            hasBboxes={anyMediaHaveBboxes}
+            sequenceGap={sequenceGap}
+            onSequenceGapChange={setSequenceGap}
+            isExpanded={controlsExpanded}
+            onToggleExpanded={() => setControlsExpanded((prev) => !prev)}
+          />
+        )}
 
         {/* Grid */}
         <div

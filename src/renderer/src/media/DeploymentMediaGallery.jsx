@@ -18,6 +18,7 @@ export default function DeploymentMediaGallery({ deploymentID }) {
       includeNullTimestamps={true}
       speciesReady={true}
       deploymentID={deploymentID}
+      embedded={true}
     />
   )
 }
