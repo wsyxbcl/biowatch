@@ -1,6 +1,5 @@
 import { Filter, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import DeploymentMediaGallery from '../media/DeploymentMediaGallery'
 import EditableLocationName from './EditableLocationName'
@@ -13,7 +12,12 @@ import EditableLocationName from './EditableLocationName'
  * camera-days, species at location) slot in as siblings inside the
  * body.
  */
-export default function DeploymentDetailPane({ deployment, onClose, onRenameLocation }) {
+export default function DeploymentDetailPane({
+  studyId,
+  deployment,
+  onClose,
+  onRenameLocation
+}) {
   const [selectedSpecies, setSelectedSpecies] = useState([])
   // Reset filter when switching deployments — a different deployment may
   // not have the previously-picked species at all.
@@ -35,6 +39,8 @@ export default function DeploymentDetailPane({ deployment, onClose, onRenameLoca
         />
         <div className="flex items-center gap-1 flex-shrink-0">
           <SpeciesFilterButton
+            studyId={studyId}
+            deploymentID={deployment.deploymentID}
             selectedSpecies={selectedSpecies}
             onChange={setSelectedSpecies}
           />
@@ -59,12 +65,11 @@ export default function DeploymentDetailPane({ deployment, onClose, onRenameLoca
 }
 
 /**
- * Filter icon + popover with species pills. Pulls the study-wide species
- * distribution; selection toggles pills, which thread back into the
- * gallery's species filter.
+ * Filter icon + popover with species pills. Pulls the species distribution
+ * scoped to the current deployment; selection toggles pills, which thread
+ * back into the gallery's species filter.
  */
-function SpeciesFilterButton({ selectedSpecies, onChange }) {
-  const { id: studyId } = useParams()
+function SpeciesFilterButton({ studyId, deploymentID, selectedSpecies, onChange }) {
   const [isOpen, setIsOpen] = useState(false)
   const popoverRef = useRef(null)
   const buttonRef = useRef(null)
@@ -86,17 +91,16 @@ function SpeciesFilterButton({ selectedSpecies, onChange }) {
     return () => window.removeEventListener('mousedown', onDown)
   }, [isOpen])
 
-  // Study-wide species distribution. v1: pick from the full list, even if
-  // some species don't appear at this deployment — keeps the implementation
-  // small. We can scope this to deployment later if it feels cluttered.
+  // Species seen at this deployment, with media counts. Lazy-loaded on
+  // first popover open; cached per (studyId, deploymentID).
   const { data: speciesList = [] } = useQuery({
-    queryKey: ['sequenceAwareSpeciesDistribution', studyId],
+    queryKey: ['deploymentSpecies', studyId, deploymentID],
     queryFn: async () => {
-      const response = await window.api.getSequenceAwareSpeciesDistribution(studyId)
+      const response = await window.api.getDeploymentSpecies(studyId, deploymentID)
       if (response.error) throw new Error(response.error)
       return response.data
     },
-    enabled: isOpen && !!studyId,
+    enabled: isOpen && !!studyId && !!deploymentID,
     staleTime: Infinity
   })
 

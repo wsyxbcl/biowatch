@@ -17,7 +17,8 @@ export {
   getAllDeployments,
   getLocationsActivity,
   insertDeployments,
-  getDeploymentsActivity
+  getDeploymentsActivity,
+  getSpeciesForDeployment
 } from './deployments.js'
 
 // Species

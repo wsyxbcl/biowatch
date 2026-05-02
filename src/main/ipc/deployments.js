@@ -12,7 +12,8 @@ import {
   deployments,
   closeStudyDatabase,
   getDeploymentLocations,
-  getAllDeployments
+  getAllDeployments,
+  getSpeciesForDeployment
 } from '../database/index.js'
 import { runInWorker } from '../services/sequences/runInWorker.js'
 
@@ -55,6 +56,24 @@ export function registerDeploymentsIPCHandlers() {
       return { data: result }
     } catch (error) {
       log.error('Error getting all deployments:', error)
+      return { error: error.message }
+    }
+  })
+
+  // Distinct species at a single deployment, with media counts. Used by the
+  // species-filter popover in the Deployments tab.
+  ipcMain.handle('deployments:get-species', async (_, studyId, deploymentID) => {
+    try {
+      const dbPath = getStudyDatabasePath(app.getPath('userData'), studyId)
+      if (!dbPath || !existsSync(dbPath)) {
+        log.warn(`Database not found for study ID: ${studyId}`)
+        return { error: 'Database not found for this study' }
+      }
+
+      const result = await getSpeciesForDeployment(dbPath, deploymentID)
+      return { data: result }
+    } catch (error) {
+      log.error('Error getting species for deployment:', error)
       return { error: error.message }
     }
   })

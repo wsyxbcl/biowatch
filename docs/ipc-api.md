@@ -94,6 +94,7 @@ Runs in the sequences worker thread (off the main process). Threatened species a
 | -------------------------------------------------------------- | ------------------------------- | --------------------------------- | ------------------------ |
 | `getDeploymentLocations(studyId)`                              | `deployments:get-locations`     | studyId                           | `{ data: Deployment[] }` |
 | `getAllDeployments(studyId)`                                   | `deployments:get-all`           | studyId                           | `{ data: Deployment[] }` |
+| `getDeploymentSpecies(studyId, deploymentID)`                  | `deployments:get-species`       | studyId, deploymentID             | `{ data: { scientificName, count }[] }` |
 | `getDeploymentsActivity(studyId, periodCount?)`                | `deployments:get-activity`      | studyId, periodCount (optional)   | `{ data: Activity[] }`   |
 | `setDeploymentLatitude(studyId, deploymentID, latitude)`       | `deployments:set-latitude`      | studyId, deploymentID, latitude   | `{ success: boolean }`   |
 | `setDeploymentLongitude(studyId, deploymentID, longitude)`     | `deployments:set-longitude`     | studyId, deploymentID, longitude  | `{ success: boolean }`   |
