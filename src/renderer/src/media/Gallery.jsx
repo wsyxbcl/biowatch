@@ -2081,7 +2081,8 @@ function Gallery({
   dateRange,
   timeRange,
   includeNullTimestamps = false,
-  speciesReady = false
+  speciesReady = false,
+  deploymentID = null
 }) {
   const [imageErrors, setImageErrors] = useState(() => {
     const initial = {}
@@ -2175,6 +2176,7 @@ function Gallery({
       'sequences',
       id,
       sequenceGap,
+      deploymentID,
       JSON.stringify(species),
       dateRange[0]?.toISOString(),
       dateRange[1]?.toISOString(),
@@ -2190,7 +2192,8 @@ function Gallery({
         filters: {
           species,
           dateRange: dateRange[0] && dateRange[1] ? { start: dateRange[0], end: dateRange[1] } : {},
-          timeRange
+          timeRange,
+          deploymentID
         }
       })
       if (response.error) throw new Error(response.error)
