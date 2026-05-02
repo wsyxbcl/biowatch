@@ -1240,8 +1240,6 @@ export default function Deployments({ studyId }) {
               <DeploymentDetailPane
                 studyId={studyId}
                 deployment={selectedLocation}
-                isPlaceMode={isPlaceMode}
-                onEnterPlaceMode={handleEnterPlaceMode}
                 onClose={() => setSelectedLocation(null)}
                 onRenameLocation={onRenameLocation}
               />

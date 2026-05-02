@@ -1,4 +1,4 @@
-import { Check, Filter, MapPin, X } from 'lucide-react'
+import { Check, Filter, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import DeploymentMediaGallery from '../media/DeploymentMediaGallery'
@@ -16,8 +16,6 @@ import { resolveCommonName } from '../../../shared/commonNames/index.js'
 export default function DeploymentDetailPane({
   studyId,
   deployment,
-  isPlaceMode,
-  onEnterPlaceMode,
   onClose,
   onRenameLocation
 }) {
@@ -41,18 +39,6 @@ export default function DeploymentDetailPane({
           onRename={onRenameLocation}
         />
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button
-            onClick={() => onEnterPlaceMode(deployment)}
-            className={`p-1 rounded transition-colors ${
-              isPlaceMode
-                ? 'bg-blue-100 text-blue-600'
-                : 'text-gray-500 hover:bg-blue-100 hover:text-blue-600'
-            }`}
-            title={isPlaceMode ? 'Click on map to place' : 'Click on map to set location'}
-            aria-label="Set location on map"
-          >
-            <MapPin size={16} />
-          </button>
           <SpeciesFilterButton
             studyId={studyId}
             deploymentID={deployment.deploymentID}
