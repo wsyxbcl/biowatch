@@ -312,7 +312,7 @@ function LocationMap({
   }, [validLocations])
 
   return (
-    <div className="w-full h-full bg-white rounded border border-gray-200 relative">
+    <div className="w-full h-full bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden relative">
       <MapContainer
         {...(bounds
           ? { bounds: bounds, boundsOptions: { padding: [30, 30] } }
