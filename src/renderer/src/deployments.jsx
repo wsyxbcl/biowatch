@@ -8,8 +8,10 @@ import MarkerClusterGroup from 'react-leaflet-cluster'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { useSearchParams } from 'react-router'
 import { useImportStatus } from '@renderer/hooks/import'
 import SkeletonDeploymentsList from './ui/SkeletonDeploymentsList'
+import { resolveSelectedDeployment, withDeploymentParam } from './deployments/urlState'
 
 // Fix the default marker icon issue in react-leaflet
 // This is needed because the CSS assets are not properly loaded
@@ -1061,7 +1063,6 @@ function LocationsList({
 }
 
 export default function Deployments({ studyId }) {
-  const [selectedLocation, setSelectedLocation] = useState(null)
   const [isPlaceMode, setIsPlaceMode] = useState(false)
   const [groupToExpand, setGroupToExpand] = useState(null)
   // Bucketed period count, set by LocationsList from its measured timeline
@@ -1069,6 +1070,7 @@ export default function Deployments({ studyId }) {
   const [periodCount, setPeriodCount] = useState(null)
   const queryClient = useQueryClient()
   const { importStatus } = useImportStatus(studyId)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   // Lightweight un-deduped query for the map — one marker per deployment so
   // MarkerClusterGroup correctly counts co-located deployments. The deduped
@@ -1084,6 +1086,24 @@ export default function Deployments({ studyId }) {
     refetchInterval: () => (importStatus?.isRunning ? 5000 : false),
     enabled: !!studyId
   })
+
+  // Selected deployment is mirrored in ?deploymentID=… so deep links round-trip
+  // and back/forward navigation works. We resolve from the loaded deployments
+  // list so an invalid/stale id (deleted deployment, wrong study) collapses to
+  // null without throwing.
+  const selectedLocation = useMemo(
+    () => resolveSelectedDeployment(searchParams, deploymentsList),
+    [searchParams, deploymentsList]
+  )
+  const setSelectedLocation = useCallback(
+    (location) => {
+      setSearchParams(
+        withDeploymentParam(searchParams, location?.deploymentID ?? null),
+        { replace: true }
+      )
+    },
+    [searchParams, setSearchParams]
+  )
 
   // Heavy per-deployment period-bucket query for the list timeline. Runs in
   // the sequences worker so the SUM(CASE) × N aggregate over observations
