@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Children, cloneElement, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
 import * as HoverCard from '@radix-ui/react-hover-card'
@@ -8,6 +8,7 @@ import { useCommonName } from '../utils/commonNames'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
 import { isBlank, isDomestic, isHumanOrVehicle, isNonSpeciesLabel } from '../utils/speciesUtils'
 import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
+import { useHorizontalWheelScroll } from '../hooks/useHorizontalWheelScroll'
 
 const TOP_N = 8
 
@@ -81,6 +82,9 @@ function ScrollableStrip({ children }) {
   const containerRef = useRef(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
+  const [scrollSignal, setScrollSignal] = useState(0)
+
+  useHorizontalWheelScroll(containerRef)
 
   useEffect(() => {
     const container = containerRef.current
@@ -91,12 +95,17 @@ function ScrollableStrip({ children }) {
       setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 5)
     }
 
-    container.addEventListener('scroll', checkScroll)
+    const onScroll = () => {
+      checkScroll()
+      setScrollSignal((s) => s + 1)
+    }
+
+    container.addEventListener('scroll', onScroll)
     checkScroll()
     window.addEventListener('resize', checkScroll)
 
     return () => {
-      container.removeEventListener('scroll', checkScroll)
+      container.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', checkScroll)
     }
   }, [children])
@@ -143,19 +152,24 @@ function ScrollableStrip({ children }) {
         className="flex gap-3 overflow-x-auto scrollbar-hide py-3"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {children}
+        {Children.map(children, (child) => cloneElement(child, { scrollSignal }))}
       </div>
     </div>
   )
 }
 
-function SpeciesReferenceCard({ species, studyId, onClick }) {
+function SpeciesReferenceCard({ species, studyId, onClick, scrollSignal }) {
   const [imageError, setImageError] = useState(false)
+  const [hoverOpen, setHoverOpen] = useState(false)
   const commonName =
     useCommonName(species.scientificName) || species.scientificName || 'Unknown species'
 
+  useEffect(() => {
+    if (scrollSignal > 0) setHoverOpen(false)
+  }, [scrollSignal])
+
   return (
-    <HoverCard.Root openDelay={200} closeDelay={120}>
+    <HoverCard.Root open={hoverOpen} onOpenChange={setHoverOpen} openDelay={200} closeDelay={120}>
       <HoverCard.Trigger asChild>
         <button
           type="button"

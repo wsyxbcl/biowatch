@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, CameraOff, X, Heart, Play, Loader2 } from 'l
 import { useCommonName } from '../utils/commonNames'
 import SpeciesTooltipContent from './SpeciesTooltipContent'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
+import { useHorizontalWheelScroll } from '../hooks/useHorizontalWheelScroll'
 
 function toTitleCase(str) {
   return str.replace(/\b\w/g, (c) => c.toUpperCase())
@@ -564,10 +565,15 @@ function VideoViewerModal({
 /**
  * Individual media card for the carousel (supports both images and videos)
  */
-function MediaCard({ media, onClick, studyId }) {
+function MediaCard({ media, onClick, studyId, scrollSignal }) {
   const [imageError, setImageError] = useState(false)
   const [thumbnailUrl, setThumbnailUrl] = useState(null)
   const [isExtractingThumbnail, setIsExtractingThumbnail] = useState(false)
+  const [hoverOpen, setHoverOpen] = useState(false)
+
+  useEffect(() => {
+    if (scrollSignal > 0) setHoverOpen(false)
+  }, [scrollSignal])
 
   const isVideo = isVideoMedia(media)
 
@@ -695,7 +701,7 @@ function MediaCard({ media, onClick, studyId }) {
   if (!info?.imageUrl && !info?.blurb) return cardButton
 
   return (
-    <HoverCard.Root openDelay={200} closeDelay={120}>
+    <HoverCard.Root open={hoverOpen} onOpenChange={setHoverOpen} openDelay={200} closeDelay={120}>
       <HoverCard.Trigger asChild>{cardButton}</HoverCard.Trigger>
       <HoverCard.Portal>
         <HoverCard.Content
@@ -728,6 +734,7 @@ export default function BestMediaCarousel({ studyId, isRunning, renderEmpty }) {
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(null)
+  const [scrollSignal, setScrollSignal] = useState(0)
   const carouselRef = useRef(null)
   const queryClient = useQueryClient()
 
@@ -757,6 +764,8 @@ export default function BestMediaCarousel({ studyId, isRunning, renderEmpty }) {
     refetchInterval: isRunning ? 5000 : false // Poll every 5s during ML run
   })
 
+  useHorizontalWheelScroll(carouselRef)
+
   // Check scroll state when media changes or on resize
   useEffect(() => {
     if (!carouselRef.current) return
@@ -768,13 +777,18 @@ export default function BestMediaCarousel({ studyId, isRunning, renderEmpty }) {
       setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 5)
     }
 
+    const onScroll = () => {
+      checkScroll()
+      setScrollSignal((s) => s + 1)
+    }
+
     const container = carouselRef.current
-    container.addEventListener('scroll', checkScroll)
+    container.addEventListener('scroll', onScroll)
     checkScroll()
     window.addEventListener('resize', checkScroll)
 
     return () => {
-      container?.removeEventListener('scroll', checkScroll)
+      container?.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', checkScroll)
     }
   }, [bestMedia])
@@ -844,6 +858,7 @@ export default function BestMediaCarousel({ studyId, isRunning, renderEmpty }) {
               media={media}
               onClick={() => setSelectedIndex(index)}
               studyId={studyId}
+              scrollSignal={scrollSignal}
             />
           ))}
         </div>
