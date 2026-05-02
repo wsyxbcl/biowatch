@@ -4,6 +4,7 @@ import * as HoverCard from '@radix-ui/react-hover-card'
 import { ChevronLeft, ChevronRight, CameraOff, X, Heart, Play, Loader2 } from 'lucide-react'
 import { useCommonName } from '../utils/commonNames'
 import SpeciesTooltipContent from './SpeciesTooltipContent'
+import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
 
 function toTitleCase(str) {
   return str.replace(/\b\w/g, (c) => c.toUpperCase())
@@ -687,6 +688,11 @@ function MediaCard({ media, onClick, studyId }) {
 
   // No species attached → no hover card (e.g., misc captures)
   if (!media.scientificName) return cardButton
+
+  // No Wikipedia image and no blurb → skip the hover card; the name + IUCN badge
+  // alone aren't worth the popup (e.g., Impala/Roan in Nkhotakota).
+  const info = resolveSpeciesInfo(media.scientificName)
+  if (!info?.imageUrl && !info?.blurb) return cardButton
 
   return (
     <HoverCard.Root openDelay={200} closeDelay={120}>
