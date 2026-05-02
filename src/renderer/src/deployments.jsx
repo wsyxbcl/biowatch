@@ -1321,20 +1321,25 @@ export default function Deployments({ studyId }) {
         <Panel defaultSize={selectedLocation ? 38 : 100} minSize={20} className="flex flex-col">
           <PanelGroup direction="horizontal" autoSaveId="deployments-v2-top">
             <Panel defaultSize={38} minSize={20} className="flex flex-col">
-              {deploymentsList && (
-                <LocationMap
-                  locations={deploymentsList}
-                  selectedLocation={selectedLocation}
-                  setSelectedLocation={setSelectedLocation}
-                  onNewLatitude={onNewLatitude}
-                  onNewLongitude={onNewLongitude}
-                  isPlaceMode={isPlaceMode}
-                  onPlaceLocation={handlePlaceLocation}
-                  onExitPlaceMode={handleExitPlaceMode}
-                  onExpandGroup={handleExpandGroup}
-                  studyId={studyId}
-                />
-              )}
+              {/* Cap the map at a comfortable max-height so on tall windows
+                  it doesn't stretch to the full panel — the list timeline
+                  can use the room productively, the map can't. */}
+              <div className="max-h-[500px] h-full">
+                {deploymentsList && (
+                  <LocationMap
+                    locations={deploymentsList}
+                    selectedLocation={selectedLocation}
+                    setSelectedLocation={setSelectedLocation}
+                    onNewLatitude={onNewLatitude}
+                    onNewLongitude={onNewLongitude}
+                    isPlaceMode={isPlaceMode}
+                    onPlaceLocation={handlePlaceLocation}
+                    onExitPlaceMode={handleExitPlaceMode}
+                    onExpandGroup={handleExpandGroup}
+                    studyId={studyId}
+                  />
+                )}
+              </div>
             </Panel>
             <PanelResizeHandle className="w-1 mx-1.5 rounded-full bg-gray-100 hover:bg-gray-300 data-[resize-handle-state=drag]:bg-blue-300 cursor-col-resize transition-colors" />
             <Panel defaultSize={62} minSize={20} className="flex flex-col">
