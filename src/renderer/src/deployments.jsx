@@ -12,6 +12,7 @@ import { useSearchParams } from 'react-router'
 import { useImportStatus } from '@renderer/hooks/import'
 import SkeletonDeploymentsList from './ui/SkeletonDeploymentsList'
 import { resolveSelectedDeployment, withDeploymentParam } from './deployments/urlState'
+import DeploymentDetailPane from './deployments/DeploymentDetailPane'
 
 // Fix the default marker icon issue in react-leaflet
 // This is needed because the CSS assets are not properly loaded
@@ -1299,43 +1300,58 @@ export default function Deployments({ studyId }) {
     <div
       className={`flex flex-col px-4 h-full overflow-hidden ${isPlaceMode ? 'place-mode-active' : ''}`}
     >
-      <PanelGroup direction="vertical" autoSaveId="deployments-layout">
-        <Panel defaultSize={55} minSize={20} className="flex flex-col">
-          {deploymentsList && (
-            <LocationMap
-              locations={deploymentsList}
-              selectedLocation={selectedLocation}
-              setSelectedLocation={setSelectedLocation}
-              onNewLatitude={onNewLatitude}
-              onNewLongitude={onNewLongitude}
-              isPlaceMode={isPlaceMode}
-              onPlaceLocation={handlePlaceLocation}
-              onExitPlaceMode={handleExitPlaceMode}
-              onExpandGroup={handleExpandGroup}
-              studyId={studyId}
-            />
-          )}
+      <PanelGroup direction="vertical" autoSaveId="deployments-v2">
+        <Panel defaultSize={selectedLocation ? 38 : 100} minSize={20} className="flex flex-col">
+          <PanelGroup direction="horizontal" autoSaveId="deployments-v2-top">
+            <Panel defaultSize={38} minSize={20} className="flex flex-col">
+              {deploymentsList && (
+                <LocationMap
+                  locations={deploymentsList}
+                  selectedLocation={selectedLocation}
+                  setSelectedLocation={setSelectedLocation}
+                  onNewLatitude={onNewLatitude}
+                  onNewLongitude={onNewLongitude}
+                  isPlaceMode={isPlaceMode}
+                  onPlaceLocation={handlePlaceLocation}
+                  onExitPlaceMode={handleExitPlaceMode}
+                  onExpandGroup={handleExpandGroup}
+                  studyId={studyId}
+                />
+              )}
+            </Panel>
+            <PanelResizeHandle className="w-2 mx-1 rounded bg-gray-200 hover:bg-blue-300 data-[resize-handle-state=drag]:bg-blue-400 cursor-col-resize transition-colors" />
+            <Panel defaultSize={62} minSize={20} className="flex flex-col">
+              {isActivityLoading ? (
+                <SkeletonDeploymentsList itemCount={6} />
+              ) : activity ? (
+                <LocationsList
+                  activity={activity}
+                  selectedLocation={selectedLocation}
+                  setSelectedLocation={setSelectedLocation}
+                  onNewLatitude={onNewLatitude}
+                  onNewLongitude={onNewLongitude}
+                  onEnterPlaceMode={handleEnterPlaceMode}
+                  onRenameLocation={onRenameLocation}
+                  isPlaceMode={isPlaceMode}
+                  groupToExpand={groupToExpand}
+                  onGroupExpanded={handleGroupExpanded}
+                  onPeriodCountChange={setPeriodCount}
+                />
+              ) : null}
+            </Panel>
+          </PanelGroup>
         </Panel>
-        <PanelResizeHandle className="h-2 my-1 rounded bg-gray-200 hover:bg-blue-300 data-[resize-handle-state=drag]:bg-blue-400 cursor-row-resize transition-colors" />
-        <Panel defaultSize={45} minSize={20} className="flex flex-col">
-          {isActivityLoading ? (
-            <SkeletonDeploymentsList itemCount={6} />
-          ) : activity ? (
-            <LocationsList
-              activity={activity}
-              selectedLocation={selectedLocation}
-              setSelectedLocation={setSelectedLocation}
-              onNewLatitude={onNewLatitude}
-              onNewLongitude={onNewLongitude}
-              onEnterPlaceMode={handleEnterPlaceMode}
-              onRenameLocation={onRenameLocation}
-              isPlaceMode={isPlaceMode}
-              groupToExpand={groupToExpand}
-              onGroupExpanded={handleGroupExpanded}
-              onPeriodCountChange={setPeriodCount}
-            />
-          ) : null}
-        </Panel>
+        {selectedLocation && (
+          <>
+            <PanelResizeHandle className="h-2 my-1 rounded bg-gray-200 hover:bg-blue-300 data-[resize-handle-state=drag]:bg-blue-400 cursor-row-resize transition-colors" />
+            <Panel defaultSize={62} minSize={20} className="flex flex-col">
+              <DeploymentDetailPane
+                deployment={selectedLocation}
+                onClose={() => setSelectedLocation(null)}
+              />
+            </Panel>
+          </>
+        )}
       </PanelGroup>
     </div>
   )
