@@ -1004,64 +1004,9 @@ In the JSX, between the name+badge row (currently inside the footer `div`) and t
 
 `target="_blank"` is intentional — `setWindowOpenHandler` in `src/main/app/lifecycle.js:57-60` intercepts new-window requests and routes them through `shell.openExternal`. That's the same path used by the existing "Read on Wikipedia" link.
 
-- [ ] **Step 4: Demote the Wikipedia blurb when the CTA is present**
+- [ ] **Step 4: Leave the Wikipedia blurb rendering unchanged**
 
-Find the existing `{info?.blurb && (` block. Wrap its contents to apply a different style when `iucnUrl` is set. Replace:
-
-```jsx
-{info?.blurb && (
-  <>
-    <p
-      className={`${blurbClass} leading-snug ${
-        blurbExpanded ? 'max-h-48 overflow-y-auto pr-1' : 'line-clamp-5'
-      }`}
-    >
-      {info.blurb}
-    </p>
-    {info.blurb.length > BLURB_CLAMP_THRESHOLD && (
-      <button
-        type="button"
-        onClick={() => setBlurbExpanded((v) => !v)}
-        className={`${linkClass} text-blue-600 hover:underline`}
-      >
-        {blurbExpanded ? 'Show less' : 'Show more'}
-      </button>
-    )}
-  </>
-)}
-```
-
-with:
-
-```jsx
-{info?.blurb && (
-  <>
-    {iucnUrl && (
-      <p className={`${linkClass} uppercase tracking-wide text-gray-400 mt-1`}>About</p>
-    )}
-    <p
-      className={`${
-        iucnUrl
-          ? `${linkClass} text-gray-500 line-clamp-3`
-          : `${blurbClass} leading-snug ${blurbExpanded ? 'max-h-48 overflow-y-auto pr-1' : 'line-clamp-5'}`
-      }`}
-    >
-      {info.blurb}
-    </p>
-    {!iucnUrl && info.blurb.length > BLURB_CLAMP_THRESHOLD && (
-      <button
-        type="button"
-        onClick={() => setBlurbExpanded((v) => !v)}
-        className={`${linkClass} text-blue-600 hover:underline`}
-      >
-        {blurbExpanded ? 'Show less' : 'Show more'}
-      </button>
-    )}
-  </>
-)}
-```
-
-(When the CTA is present, the Wikipedia blurb is short and clamped to 3 lines; the "Show more" toggle is hidden because the user is being redirected to the IUCN page for the deep info.)
+No edit to the existing `{info?.blurb && (...)}` block. Both the IUCN CTA and the Wikipedia "About" text stay useful — the CTA explains *why threatened*, the Wikipedia blurb gives general species context. The user keeps the existing `Show more` / `Show less` toggle and "Read on Wikipedia" link exactly as they are today.
 
 - [ ] **Step 5: Update the `if (!imageSource && ...)` early-return to consider the new field**
 
@@ -1089,8 +1034,8 @@ git commit -m "feat(ui): show IUCN Red List CTA on threatened species hover
 Adds a 'Why threatened?' click-through above the Wikipedia blurb when
 the species is VU/EN/CR. The block opens the canonical IUCN species
 page in the user's default browser via the existing setWindowOpenHandler
-pipeline. The Wikipedia 'About' blurb is demoted (line-clamp-3, smaller,
-muted) when the CTA is present."
+pipeline. The Wikipedia 'About' blurb stays unchanged so users still
+get the general species context alongside the threat-status link."
 ```
 
 ---
@@ -1114,10 +1059,10 @@ Open any study that has detections of a species the team knows is VU/EN/CR (e.g.
 
 Hover the name of a VU/EN/CR row. Confirm:
 - [ ] Tooltip opens within ~200ms (existing behavior).
-- [ ] "Why threatened?" CTA block is visible **above** the Wikipedia "About" section.
+- [ ] "Why threatened?" CTA block is visible **above** the Wikipedia blurb.
 - [ ] Left-edge bar color matches the species' IUCN category (orange for VU, red for EN/CR).
 - [ ] "View IUCN Red List assessment ↗" link text shows below the heading.
-- [ ] Wikipedia "About" section is now smaller / muted, clamped to ~3 lines, no "Show more" button.
+- [ ] Wikipedia blurb still renders at full size with its "Show more" toggle and "Read on Wikipedia" link — unchanged from before.
 
 - [ ] **Step 4: Click the CTA**
 

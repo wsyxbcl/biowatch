@@ -93,8 +93,10 @@ When `iucnTaxonId` is present (which by construction means the species is VU/EN/
 │ ┃ View IUCN Red List            │     visually weighted call-to-action
 │ ┃ assessment ↗                  │     opens iucnredlist.org in browser
 │                                 │
-│ About                           │  ← Wikipedia blurb, demoted
-│ Sun bears are the smallest...   │     line-clamp-3, smaller, muted
+│ Sun bears are the smallest      │  ← Wikipedia blurb, unchanged
+│ bears, found in tropical        │     same line-clamp-5 + Show more
+│ forests of Southeast Asia...    │     toggle as today
+│ Show more                       │
 │ Read on Wikipedia ↗              │
 └────────────────────────────────┘
 ```
@@ -102,20 +104,16 @@ When `iucnTaxonId` is present (which by construction means the species is VU/EN/
 Specifics:
 
 - The "Why threatened?" block uses a left-edge color bar matching `IucnBadge`'s palette for the species' category (yellow VU, orange EN, red CR), and a slightly heavier text weight than the body to signal importance.
-- The block as a whole is the link target — clicking anywhere in it opens `https://www.iucnredlist.org/species/<iucnTaxonId>/<iucnAssessmentId>` in the user's default browser. Use Electron's `shell.openExternal` via the existing IPC pattern, not a raw target=_blank anchor (consistent with how the app handles other external links).
+- The block as a whole is the link target — clicking anywhere in it opens `https://www.iucnredlist.org/species/<iucnTaxonId>/<iucnAssessmentId>` in the user's default browser. Implemented as a regular `<a target="_blank" rel="noopener noreferrer">`; the existing `setWindowOpenHandler` in `src/main/app/lifecycle.js` routes external URLs through `shell.openExternal`, same as the existing "Read on Wikipedia" link.
 - Cursor `pointer`, hover state lightens the left-edge bar, focus-visible ring for keyboard users.
-- The Wikipedia "About" section is **demoted** when `iucnTaxonId` is present:
-  - Eyebrow label `About` (small, muted).
-  - More aggressive clamp (`line-clamp-3`).
-  - Slightly smaller / muted text.
-  - "Read on Wikipedia" link unchanged.
-- For LC/NT/DD/NE/EW/EX species (no `iucnTaxonId`): tooltip renders unchanged — Wikipedia stays full-size.
+- The Wikipedia "About" section is **unchanged** when `iucnTaxonId` is present — full body text, expand/collapse "Show more" toggle, "Read on Wikipedia" link all behave identically to today. Both the IUCN CTA and the Wikipedia blurb stay useful: the CTA explains *why threatened*, the Wikipedia blurb gives general species context.
+- For LC/NT/DD/NE/EW/EX species (no `iucnTaxonId`): tooltip renders identically to today — only the IUCN CTA is conditional; the rest of the layout doesn't depend on threat status.
 
 ### Acceptance criteria — Phase 1
 
 1. `data.json` contains `iucnTaxonId` and `iucnAssessmentId` for ≥260 of the 288 currently-threatened entries (target ~90%; direct binomial match alone gives 86%, alias map adds the rest). No other IUCN-sourced fields are added.
 2. Build script logs match-rate and unmatched names; running it twice in a row produces an identical `data.json`.
-3. Hover card on a known threatened species (Giant Panda, Sun Bear) shows the "Why threatened?" call-to-action above the Wikipedia "About" block.
+3. Hover card on a known threatened species (Giant Panda, Sun Bear) shows the "Why threatened?" call-to-action above the Wikipedia "About" block; the Wikipedia blurb itself is unchanged (same size, same expand/collapse toggle, same "Read on Wikipedia" link).
 4. Clicking the call-to-action opens the correct species page on `iucnredlist.org` in the default browser.
 5. Hover card on a Least-Concern species (e.g. Eastern Spinebill) is visually identical to current behavior.
 6. No rationale prose, summaries, or any other IUCN text fields appear in the repo or the bundled app.
