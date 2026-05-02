@@ -2469,10 +2469,14 @@ function Gallery({
           />
         )}
 
-        {/* Grid */}
+        {/* Grid — drop horizontal padding when embedded so the first
+            image cell aligns with the panel's left edge (matches the map
+            in the Deployments tab). */}
         <div
           ref={gridContainerRef}
-          className="flex flex-wrap gap-[12px] flex-1 overflow-auto p-3 content-start"
+          className={`flex flex-wrap gap-[12px] flex-1 overflow-auto content-start ${
+            embedded ? 'py-3' : 'p-3'
+          }`}
         >
           {/* Sequences are returned pre-grouped from server, including null-timestamp items as individual sequences */}
           {allNavigableItems.map((sequence) => {
