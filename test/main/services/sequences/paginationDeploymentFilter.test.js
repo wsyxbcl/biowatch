@@ -97,9 +97,7 @@ describe('getPaginatedSequences — filters.deploymentID', () => {
       filters: { deploymentID: 'd1' }
     })
 
-    const allMediaIDs = result.sequences
-      .flatMap((seq) => seq.items)
-      .map((item) => item.mediaID)
+    const allMediaIDs = result.sequences.flatMap((seq) => seq.items).map((item) => item.mediaID)
     assert.deepEqual(allMediaIDs.sort(), ['d1-a'])
   })
 
@@ -113,9 +111,7 @@ describe('getPaginatedSequences — filters.deploymentID', () => {
       filters: {}
     })
 
-    const allMediaIDs = result.sequences
-      .flatMap((seq) => seq.items)
-      .map((item) => item.mediaID)
+    const allMediaIDs = result.sequences.flatMap((seq) => seq.items).map((item) => item.mediaID)
     assert.deepEqual(allMediaIDs.sort(), ['d1-a', 'd2-a'])
   })
 })

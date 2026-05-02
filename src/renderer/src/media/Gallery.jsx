@@ -48,7 +48,10 @@ import {
 } from '../utils/bboxCoordinates'
 import { useZoomPan } from '../hooks/useZoomPan'
 import { useImagePrefetch } from '../hooks/useImagePrefetch'
-import { getSpeciesCountsFromBboxes, getSpeciesCountsFromSequence } from '../utils/speciesFromBboxes'
+import {
+  getSpeciesCountsFromBboxes,
+  getSpeciesCountsFromSequence
+} from '../utils/speciesFromBboxes'
 import { SpeciesCountLabel } from '../ui/SpeciesLabel'
 import { formatGridTimestamp } from '../utils/formatTimestamp'
 import { useSequenceGap } from '../hooks/useSequenceGap'
@@ -2539,7 +2542,6 @@ function Gallery({
     </>
   )
 }
-
 
 export { ImageModal }
 export default Gallery

@@ -15,12 +15,7 @@ import { resolveCommonName } from '../../../shared/commonNames/index.js'
  * camera-days, species at location) slot in as siblings inside the
  * body.
  */
-export default function DeploymentDetailPane({
-  studyId,
-  deployment,
-  onClose,
-  onRenameLocation
-}) {
+export default function DeploymentDetailPane({ studyId, deployment, onClose, onRenameLocation }) {
   const [selectedSpecies, setSelectedSpecies] = useState([])
   // Reset filter when switching deployments — a different deployment may
   // not have the previously-picked species at all.
@@ -58,10 +53,7 @@ export default function DeploymentDetailPane({
         </div>
       </div>
       <div className="flex-1 min-h-0 overflow-hidden">
-        <DeploymentMediaGallery
-          deploymentID={deployment.deploymentID}
-          species={selectedSpecies}
-        />
+        <DeploymentMediaGallery deploymentID={deployment.deploymentID} species={selectedSpecies} />
       </div>
     </div>
   )
@@ -188,12 +180,7 @@ function SpeciesFilterRow({ studyId, scientificName, count, isSelected, onToggle
 
   return (
     <li>
-      <HoverCard.Root
-        open={hoverOpen}
-        onOpenChange={setHoverOpen}
-        openDelay={250}
-        closeDelay={120}
-      >
+      <HoverCard.Root open={hoverOpen} onOpenChange={setHoverOpen} openDelay={250} closeDelay={120}>
         <HoverCard.Trigger asChild>
           <button
             onClick={onToggle}
@@ -210,7 +197,7 @@ function SpeciesFilterRow({ studyId, scientificName, count, isSelected, onToggle
             </span>
             <span className="flex-1 min-w-0">
               <span
-                className={`block text-sm truncate ${
+                className={`block text-sm truncate ${commonName ? 'capitalize' : ''} ${
                   isSelected ? 'text-blue-900 font-medium' : 'text-gray-800'
                 }`}
               >

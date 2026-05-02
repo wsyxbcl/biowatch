@@ -974,7 +974,7 @@ export default function Deployments({ studyId }) {
       const nextID =
         location && location.deploymentID === selectedLocation?.deploymentID
           ? null
-          : location?.deploymentID ?? null
+          : (location?.deploymentID ?? null)
       setSearchParams(withDeploymentParam(searchParams, nextID), { replace: true })
     },
     [searchParams, setSearchParams, selectedLocation]

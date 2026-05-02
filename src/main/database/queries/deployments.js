@@ -141,9 +141,7 @@ export async function getSpeciesForDeployment(dbPath, deploymentID) {
       .orderBy(desc(sql`count`))
 
     const elapsedTime = Date.now() - startTime
-    log.info(
-      `Retrieved ${rows.length} species for deployment ${deploymentID} in ${elapsedTime}ms`
-    )
+    log.info(`Retrieved ${rows.length} species for deployment ${deploymentID} in ${elapsedTime}ms`)
     return rows.map((r) => ({ scientificName: r.scientificName, count: Number(r.count) }))
   } catch (error) {
     log.error(`Error querying species for deployment: ${error.message}`)
