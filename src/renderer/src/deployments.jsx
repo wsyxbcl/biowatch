@@ -69,6 +69,24 @@ const markerStyles = `
     background: transparent !important;
     border: none !important;
   }
+
+  /* Soft fade + slide-up when the detail pane mounts; symmetric fade-out
+     before unmount via [data-state="closing"]. Kept under 200ms so it
+     never gets in the way of rapid deployment switching. */
+  @keyframes detail-pane-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes detail-pane-out {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(8px); }
+  }
+  .detail-pane-anim[data-state="open"] {
+    animation: detail-pane-in 180ms ease-out;
+  }
+  .detail-pane-anim[data-state="closing"] {
+    animation: detail-pane-out 150ms ease-in forwards;
+  }
 `
 
 // Add the style to the document head
@@ -1185,6 +1203,25 @@ export default function Deployments({ studyId }) {
     [studyId, queryClient]
   )
 
+  // Detail-pane animation: keep the pane mounted for one fade-out cycle
+  // after selection clears so the user sees a soft exit. paneSnapshot is
+  // the deployment to render during that exit window.
+  const [paneSnapshot, setPaneSnapshot] = useState(null)
+  const [isPaneClosing, setIsPaneClosing] = useState(false)
+  useEffect(() => {
+    if (selectedLocation) {
+      setPaneSnapshot(selectedLocation)
+      setIsPaneClosing(false)
+    } else if (paneSnapshot) {
+      setIsPaneClosing(true)
+      const timer = setTimeout(() => {
+        setPaneSnapshot(null)
+        setIsPaneClosing(false)
+      }, 150)
+      return () => clearTimeout(timer)
+    }
+  }, [selectedLocation, paneSnapshot])
+
   // Esc closes the media pane. The map's own Esc handler (for exiting place
   // mode) runs alongside; we gate on !isPlaceMode so closing place mode
   // doesn't also clear the selection.
@@ -1248,17 +1285,25 @@ export default function Deployments({ studyId }) {
             </Panel>
           </PanelGroup>
         </Panel>
-        {selectedLocation && (
+        {paneSnapshot && (
           <>
             <PanelResizeHandle className="h-1 my-3 rounded-full bg-gray-100 hover:bg-gray-300 data-[resize-handle-state=drag]:bg-blue-300 cursor-row-resize transition-colors" />
             <Panel defaultSize={62} minSize={20} className="flex flex-col">
-              <DeploymentDetailPane
-                key={selectedLocation.deploymentID}
-                studyId={studyId}
-                deployment={selectedLocation}
-                onClose={() => setSelectedLocation(null)}
-                onRenameLocation={onRenameLocation}
-              />
+              {/* No `key` on the wrapper so deployment-to-deployment swaps
+                  don't re-trigger the enter animation. The inner pane uses
+                  its own `key={deploymentID}` for state isolation. */}
+              <div
+                data-state={isPaneClosing ? 'closing' : 'open'}
+                className="detail-pane-anim h-full flex flex-col min-h-0"
+              >
+                <DeploymentDetailPane
+                  key={paneSnapshot.deploymentID}
+                  studyId={studyId}
+                  deployment={paneSnapshot}
+                  onClose={() => setSelectedLocation(null)}
+                  onRenameLocation={onRenameLocation}
+                />
+              </div>
             </Panel>
           </>
         )}
