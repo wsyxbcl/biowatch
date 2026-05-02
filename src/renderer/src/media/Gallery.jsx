@@ -1134,6 +1134,65 @@ function ImageModal({
                 <Info size={18} />
               </button>
 
+              {!isVideoMedia(media) && !isDrawMode && (
+                <>
+                  {!isZoomed ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        zoomIn()
+                      }}
+                      className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                      aria-label="Zoom in"
+                      title="Zoom in (+)"
+                    >
+                      <ZoomIn size={18} />
+                    </button>
+                  ) : (
+                    <div className="flex items-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          zoomOut()
+                        }}
+                        disabled={zoomTransform.scale <= 1}
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Zoom out"
+                        title="Zoom out (-)"
+                      >
+                        <ZoomOut size={18} />
+                      </button>
+                      <span className="text-xs text-gray-600 font-medium min-w-[2.75rem] text-center tabular-nums">
+                        {Math.round(zoomTransform.scale * 100)}%
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          zoomIn()
+                        }}
+                        disabled={zoomTransform.scale >= 5}
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Zoom in"
+                        title="Zoom in (+)"
+                      >
+                        <ZoomIn size={18} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          resetZoom()
+                        }}
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                        aria-label="Reset zoom"
+                        title="Reset zoom (0)"
+                      >
+                        <RotateCcw size={16} />
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
               <div className="w-px h-5 bg-gray-200 mx-1" />
 
               <button
@@ -1387,49 +1446,6 @@ function ImageModal({
                       />
                     )}
                   </div>
-
-                  {/* Zoom controls - positioned at top center, outside the transformed container */}
-                  {!isDrawMode && (
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-black/70 rounded-full px-3 py-1.5 shadow-lg">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          zoomOut()
-                        }}
-                        className="p-1 text-white hover:text-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={zoomTransform.scale <= 1}
-                        title="Zoom out (-)"
-                      >
-                        <ZoomOut size={18} />
-                      </button>
-                      <span className="text-white text-sm font-medium min-w-[3rem] text-center">
-                        {Math.round(zoomTransform.scale * 100)}%
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          zoomIn()
-                        }}
-                        className="p-1 text-white hover:text-blue-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={zoomTransform.scale >= 5}
-                        title="Zoom in (+)"
-                      >
-                        <ZoomIn size={18} />
-                      </button>
-                      {isZoomed && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            resetZoom()
-                          }}
-                          className="p-1 text-white hover:text-blue-300 transition-colors ml-1"
-                          title="Reset zoom (0 or Esc)"
-                        >
-                          <RotateCcw size={16} />
-                        </button>
-                      )}
-                    </div>
-                  )}
                 </>
               )}
             </div>
