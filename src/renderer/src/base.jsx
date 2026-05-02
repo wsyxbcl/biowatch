@@ -8,6 +8,7 @@ import Import from './import'
 import Study from './study'
 import SettingsPage from './settings'
 import DeleteStudyModal from './DeleteStudyModal'
+import StudyHoverCard from './ui/StudyHoverCard'
 import { useEffect, useState, useRef } from 'react'
 
 // Create a client outside the component to avoid recreation
@@ -99,6 +100,10 @@ function AppContent() {
 
   const [showSkeleton, setShowSkeleton] = useState(true)
   const skeletonShownAt = useRef(Date.now())
+
+  // Bumped on every sidebar scroll — child hover cards watch this and close
+  // so the card doesn't drift while its anchor row scrolls.
+  const [scrollSignal, setScrollSignal] = useState(0)
 
   const { data: studies = [], isLoading } = useQuery({
     queryKey: ['studies'],
@@ -361,6 +366,7 @@ function AppContent() {
         <div
           className="flex-1 overflow-y-auto scrollbar-hide"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          onScroll={() => setScrollSignal((s) => s + 1)}
         >
           {showSkeleton && (
             <div className="p-2 space-y-1">
@@ -398,43 +404,53 @@ function AppContent() {
               </div>
             )}
           <div data-testid="studies-list" className="p-2">
-            {filteredStudies.map((study) => (
-              <div
-                key={study.id}
-                data-testid={`study-item-${study.id}`}
-                onContextMenu={(e) => handleContextMenu(e, study)}
-              >
-                {renamingStudyId === study.id ? (
-                  <input
-                    ref={renameInputRef}
-                    type="text"
-                    value={renameValue}
-                    onChange={(e) => setRenameValue(e.target.value)}
-                    onKeyDown={handleRenameKeyDown}
-                    onBlur={saveRename}
-                    className="w-full px-3 py-2.5 rounded-lg text-sm border border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-1"
+            {filteredStudies.map((study) => {
+              const isCurrentStudy = location.pathname.includes(`/study/${study.id}`)
+              const showHoverCard =
+                renamingStudyId !== study.id && !isCurrentStudy && contextMenu === null
+              const navLink = (
+                <NavLink
+                  to={`/study/${study.id}`}
+                  className={({ isActive }) =>
+                    `w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-all group mb-1 ${
+                      isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                    }`
+                  }
+                >
+                  <span className="flex-1 text-left truncate">{study.name}</span>
+                  <ChevronRight
+                    className={`h-4 w-4 flex-shrink-0 transition-opacity ${
+                      isCurrentStudy ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+                    }`}
                   />
-                ) : (
-                  <NavLink
-                    to={`/study/${study.id}`}
-                    className={({ isActive }) =>
-                      `w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-all group mb-1 ${
-                        isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
-                      }`
-                    }
-                  >
-                    <span className="flex-1 text-left truncate">{study.name}</span>
-                    <ChevronRight
-                      className={`h-4 w-4 flex-shrink-0 transition-opacity ${
-                        location.pathname.includes(`/study/${study.id}`)
-                          ? 'opacity-100'
-                          : 'opacity-0 group-hover:opacity-50'
-                      }`}
+                </NavLink>
+              )
+              return (
+                <div
+                  key={study.id}
+                  data-testid={`study-item-${study.id}`}
+                  onContextMenu={(e) => handleContextMenu(e, study)}
+                >
+                  {renamingStudyId === study.id ? (
+                    <input
+                      ref={renameInputRef}
+                      type="text"
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onKeyDown={handleRenameKeyDown}
+                      onBlur={saveRename}
+                      className="w-full px-3 py-2.5 rounded-lg text-sm border border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-1"
                     />
-                  </NavLink>
-                )}
-              </div>
-            ))}
+                  ) : showHoverCard ? (
+                    <StudyHoverCard study={study} scrollSignal={scrollSignal}>
+                      {navLink}
+                    </StudyHoverCard>
+                  ) : (
+                    navLink
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
 
