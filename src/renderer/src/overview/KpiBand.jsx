@@ -210,6 +210,11 @@ function ThreatenedSpeciesPopover({ studyId, species, onClose, ignoreOutsideClic
     const onMouseDown = (e) => {
       if (containerRef.current && containerRef.current.contains(e.target)) return
       if (ignoreOutsideClickRef?.current && ignoreOutsideClickRef.current.contains(e.target)) return
+      // Ignore clicks inside any Radix portal-rendered content (e.g. the
+      // species hover-card tooltip that pops out from a row in this list).
+      // Without this, clicking a link inside the tooltip is treated as
+      // outside the popover and closes the whole stack.
+      if (e.target.closest('[data-radix-popper-content-wrapper]')) return
       onClose()
     }
     const onKey = (e) => {
