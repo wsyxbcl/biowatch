@@ -248,7 +248,7 @@ export default function Overview({ data, studyId, studyName }) {
   const error = speciesError?.message || deploymentsError?.message || null
 
   return (
-    <div className="flex flex-col px-6 h-full overflow-x-hidden">
+    <div className="flex flex-col px-6 h-full overflow-x-hidden max-w-[1950px]">
       <PanelGroup direction="vertical" autoSaveId="overview-layout">
         <Panel defaultSize={50} minSize={20} className="flex flex-col">
           <div className="flex flex-col gap-6 h-full pt-4 pb-2 pr-1">
