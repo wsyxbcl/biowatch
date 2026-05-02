@@ -1,7 +1,7 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { parseRedlistRow } from '../../scripts/build-iucn-link-id.lib.js'
+import { parseRedlistRow, pickLatestPerTaxon } from '../../scripts/build-iucn-link-id.lib.js'
 
 describe('parseRedlistRow', () => {
   test('extracts IDs from a Vulnerable row', () => {
@@ -82,5 +82,34 @@ describe('parseRedlistRow', () => {
       yearPublished: '2016'
     }
     assert.equal(parseRedlistRow(row).name, 'ailuropoda melanoleuca')
+  })
+})
+
+describe('pickLatestPerTaxon', () => {
+  test('keeps the entry with the highest year per name', () => {
+    const rows = [
+      { name: 'panthera tigris', taxonId: 15955, assessmentId: 1, year: 2015 },
+      { name: 'panthera tigris', taxonId: 15955, assessmentId: 2, year: 2022 },
+      { name: 'panthera tigris', taxonId: 15955, assessmentId: 3, year: 2018 }
+    ]
+    const out = pickLatestPerTaxon(rows)
+    assert.equal(out.size, 1)
+    assert.equal(out.get('panthera tigris').assessmentId, 2)
+    assert.equal(out.get('panthera tigris').year, 2022)
+  })
+
+  test('returns a map keyed by name', () => {
+    const rows = [
+      { name: 'panthera tigris', taxonId: 1, assessmentId: 1, year: 2022 },
+      { name: 'helarctos malayanus', taxonId: 2, assessmentId: 2, year: 2017 }
+    ]
+    const out = pickLatestPerTaxon(rows)
+    assert.equal(out.size, 2)
+    assert.ok(out.has('panthera tigris'))
+    assert.ok(out.has('helarctos malayanus'))
+  })
+
+  test('handles empty input', () => {
+    assert.equal(pickLatestPerTaxon([]).size, 0)
   })
 })
