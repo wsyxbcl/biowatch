@@ -14,10 +14,13 @@ export default function DeploymentDetailPane({ deployment, onClose, onRenameLoca
     <div className="flex flex-col h-full bg-white border-t border-gray-200 min-h-0">
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 flex-shrink-0 gap-2">
         <div className="flex items-center gap-2 min-w-0">
+          {/* isSelected=false keeps the header in the same neutral gray as
+              the rest of the pane chrome — the blue "selected" treatment is
+              for the list rows where it's a state indicator. */}
           <EditableLocationName
             locationID={deployment.locationID || deployment.deploymentID}
             locationName={deployment.locationName}
-            isSelected={true}
+            isSelected={false}
             onRename={onRenameLocation}
           />
           <span className="text-sm text-gray-400 flex-shrink-0">— media</span>
