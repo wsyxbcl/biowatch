@@ -16,12 +16,11 @@ import { resolveCommonName } from '../../../shared/commonNames/index.js'
  * body.
  */
 export default function DeploymentDetailPane({ studyId, deployment, onClose, onRenameLocation }) {
+  // The pane is remounted via `key={deploymentID}` whenever the selection
+  // changes, so plain useState([]) initializes correctly per deployment —
+  // no useEffect reset, and Gallery's useInfiniteQuery only fires once per
+  // switch instead of fetching with the stale selection first.
   const [selectedSpecies, setSelectedSpecies] = useState([])
-  // Reset filter when switching deployments — a different deployment may
-  // not have the previously-picked species at all.
-  useEffect(() => {
-    setSelectedSpecies([])
-  }, [deployment.deploymentID])
 
   return (
     <div className="flex flex-col h-full bg-white min-h-0">

@@ -2543,5 +2543,4 @@ function Gallery({
   )
 }
 
-export { ImageModal }
 export default Gallery
