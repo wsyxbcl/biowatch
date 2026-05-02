@@ -190,14 +190,16 @@ export default function SpeciesDistribution({ studyId, speciesData, taxonomicDat
 
 function IucnLegend() {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-gray-100 text-[0.7rem] text-gray-500">
-      <span>IUCN status:</span>
-      <LegendItem code="NE" label="Not Evaluated" />
-      <LegendItem code="LC" label="Least Concern" />
-      <LegendItem code="NT" label="Near Threatened" />
-      <LegendItem code="VU" label="Vulnerable" />
-      <LegendItem code="EN" label="Endangered" />
-      <LegendItem code="CR" label="Critically Endangered" />
+    <div className="mt-3 pt-3 border-t border-gray-100 text-[0.7rem] text-gray-500">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 md:flex md:flex-wrap md:items-center">
+        <span className="col-span-2 md:col-auto">IUCN status:</span>
+        <LegendItem code="NE" label="Not Evaluated" />
+        <LegendItem code="LC" label="Least Concern" />
+        <LegendItem code="NT" label="Near Threatened" />
+        <LegendItem code="VU" label="Vulnerable" />
+        <LegendItem code="EN" label="Endangered" />
+        <LegendItem code="CR" label="Critically Endangered" />
+      </div>
     </div>
   )
 }
