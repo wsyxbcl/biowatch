@@ -50,6 +50,12 @@ dataset/
 }
 ```
 
+> **Note on storage:** When the `description` field reaches Biowatch's database
+> (`studies.description`), it has been passed through `sanitizeDescription`
+> (see `src/main/services/import/sanitizeDescription.js`) — DocBook/HTML inline
+> tags are stripped, `<ulink>` URLs are inlined as `text (url)`, and common
+> HTML entities are decoded.
+
 ### deployments.csv
 
 | Column | Type | Description |

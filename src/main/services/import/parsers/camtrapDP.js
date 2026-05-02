@@ -13,6 +13,7 @@ import {
 import log from '../../logger.js'
 import { getBiowatchDataPath } from '../../paths.js'
 import { normalizeScientificName } from '../../../../shared/commonNames/normalize.js'
+import { sanitizeDescription } from '../sanitizeDescription.js'
 
 /**
  * Import CamTrapDP dataset from a directory into a SQLite database
@@ -190,7 +191,7 @@ export async function importCamTrapDatasetWithPath(
       id,
       name: options.nameOverride || data.name || null,
       title: data.title || null,
-      description: data.description || null,
+      description: sanitizeDescription(data.description),
       created: new Date().toISOString(),
       importerName: 'camtrap/datapackage',
       contributors: data.contributors || null,

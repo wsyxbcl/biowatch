@@ -83,6 +83,15 @@ const filesToProcess = [
 ]
 ```
 
+**Description sanitization.** Camtrap DP packages generated from GBIF/EML
+metadata frequently contain DocBook inline markup (`<emphasis>`, `<para>`,
+`<ulink url="…"><citetitle>…</citetitle></ulink>`, etc.) in the `description`
+field. On import the description passes through
+`src/main/services/import/sanitizeDescription.js`, which strips tags, decodes
+common HTML entities, and rewrites `<ulink>` as `text (url)` so URLs survive
+in the plain-text value stored in `studies.description`. The same helper is
+applied to the Wildlife Insights `description` field as a no-op safety net.
+
 ## Wildlife Insights Import
 
 **Format detection:** Looks for `projects.csv` in directory.

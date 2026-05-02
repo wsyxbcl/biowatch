@@ -13,6 +13,7 @@ import {
 import log from '../../logger.js'
 import { getBiowatchDataPath } from '../../paths.js'
 import { DEFAULT_SEQUENCE_GAP } from '../../../../shared/constants.js'
+import { sanitizeDescription } from '../sanitizeDescription.js'
 import { normalizeScientificName } from '../../../../shared/commonNames/normalize.js'
 
 /**
@@ -132,7 +133,7 @@ export async function importWildlifeDatasetWithPath(directoryPath, biowatchDataP
     id,
     name: data.name || path.basename(directoryPath),
     title: null,
-    description: data.data?.description || null,
+    description: sanitizeDescription(data.data?.description),
     created: new Date().toISOString(),
     importerName: 'wildlife/folder',
     contributors: data.data?.contributors || null,
