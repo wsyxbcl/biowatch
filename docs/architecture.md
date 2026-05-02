@@ -161,8 +161,14 @@ src/
 │   ├── base.jsx             # App root, routing, layout
 │   ├── import.jsx           # Data import page
 │   ├── study.jsx            # Study overview/selection
-│   ├── deployments.jsx      # Map view
-│   ├── media.jsx            # Media browser
+│   ├── deployments.jsx      # Map + deployment list + inline media pane on selection
+│   ├── deployments/         # Deployments-tab subcomponents
+│   │   ├── DeploymentDetailPane.jsx  # Bottom pane mounted when a deployment is selected
+│   │   └── urlState.js               # ?deploymentID=… URL state helpers
+│   ├── media.jsx            # Media tab outer shell (filters, timeline, radar)
+│   ├── media/               # Media subcomponents shared with the Deployments tab
+│   │   ├── Gallery.jsx               # Sequence grid + ImageModal + bbox editor
+│   │   └── DeploymentMediaGallery.jsx # Deployment-scoped wrapper around Gallery
 │   ├── activity.jsx         # Temporal analysis
 │   ├── models.jsx           # ML model manager UI
 │   ├── settings.jsx         # Settings pages
@@ -342,6 +348,12 @@ function getStudyPath(userDataPath, studyId) {
 | `src/main/ipc/index.js`                                | Registers all IPC handlers                            |
 | `src/preload/index.js`                                 | IPC bridge, exposes `window.api`                      |
 | `src/renderer/src/base.jsx`                            | React app root, routing                               |
+| `src/renderer/src/deployments.jsx`                     | Deployments tab — map + list + inline media pane      |
+| `src/renderer/src/deployments/DeploymentDetailPane.jsx`| Bottom pane (header + close) mounted on selection     |
+| `src/renderer/src/deployments/urlState.js`             | `?deploymentID=…` URL state helpers                   |
+| `src/renderer/src/media.jsx`                           | Media tab — filters, timeline, daily-activity radar   |
+| `src/renderer/src/media/Gallery.jsx`                   | Shared sequence grid + ImageModal + bbox editor       |
+| `src/renderer/src/media/DeploymentMediaGallery.jsx`    | Deployment-scoped wrapper around Gallery              |
 | `src/main/database/models.js`                          | Drizzle table definitions                             |
 | `src/main/database/validators.js`                      | Zod validation schemas                                |
 | `src/main/database/manager.js`                         | Database connection pooling                           |
