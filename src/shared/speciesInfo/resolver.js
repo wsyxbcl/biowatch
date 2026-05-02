@@ -18,6 +18,6 @@ export function makeResolver(map) {
  * Pure, synchronous, no network. Returns `null` on miss or invalid input.
  *
  * @param {string|null|undefined} scientificName
- * @returns {{ iucn?: string, blurb?: string, imageUrl?: string, wikipediaUrl?: string } | null}
+ * @returns {{ iucn?: string, blurb?: string, imageUrl?: string, wikipediaUrl?: string, iucnTaxonId?: number, iucnAssessmentId?: number } | null}
  */
 export const resolveSpeciesInfo = makeResolver(data)
