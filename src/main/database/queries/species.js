@@ -63,10 +63,15 @@ export async function getSpeciesDistribution(dbPath) {
 }
 
 /**
- * Get count of blank media (media with no observations) from the database
- * Counts media with no linked observations via mediaID foreign key.
+ * Get count of "blank" media — media that has no observation naming a real
+ * species and no vehicle observation. Covers:
+ *   - media with zero observation rows
+ *   - media whose only observations are blank/unclassified/unknown-typed
+ *     (Camtrap DP exporters often attach such rows instead of leaving the
+ *     media observation-less)
+ * Vehicle media is NOT counted as blank — see getVehicleMediaCount.
  * @param {string} dbPath - Path to the SQLite database
- * @returns {Promise<number>} - Count of media files with no observations
+ * @returns {Promise<number>} - Count of blank media
  */
 export async function getBlankMediaCount(dbPath) {
   const startTime = Date.now()
@@ -76,16 +81,25 @@ export async function getBlankMediaCount(dbPath) {
     const studyId = getStudyIdFromPath(dbPath)
     const db = await getDrizzleDb(studyId, dbPath, { readonly: true })
 
-    // Count media with no linked observations
-    const matchingObservations = db
+    // Subquery: returns 1 if the media has any "real" observation —
+    // animal/human (scientificName populated) or vehicle.
+    const realObservations = db
       .select({ one: sql`1` })
       .from(observations)
-      .where(eq(observations.mediaID, media.mediaID))
+      .where(
+        and(
+          eq(observations.mediaID, media.mediaID),
+          or(
+            and(isNotNull(observations.scientificName), ne(observations.scientificName, '')),
+            eq(observations.observationType, 'vehicle')
+          )
+        )
+      )
 
     const result = await db
       .select({ count: count().as('count') })
       .from(media)
-      .where(notExists(matchingObservations))
+      .where(notExists(realObservations))
       .get()
 
     const blankCount = result?.count || 0
