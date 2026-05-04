@@ -164,6 +164,12 @@ src/
 │   ├── deployments.jsx      # Map + deployment list + inline media pane on selection
 │   ├── deployments/         # Deployments-tab subcomponents
 │   │   ├── DeploymentDetailPane.jsx  # Bottom pane mounted when a deployment is selected
+│   │   ├── SectionHeader.jsx         # Always-expanded section header for co-located deployments
+│   │   ├── Sparkline.jsx             # Activity sparkline renderer (bars/line/heatmap)
+│   │   ├── SparklineToggle.jsx       # Sparkline mode toggle in timeline header
+│   │   ├── LocationPopover.jsx       # Lat/lon editing popover in detail pane header
+│   │   ├── coordinateParser.js       # Pure parser for "lat, lon" paste field
+│   │   ├── groupDeployments.js       # Pure helper grouping deployments by location
 │   │   └── urlState.js               # ?deploymentID=… URL state helpers
 │   ├── media.jsx            # Media tab outer shell (filters, timeline, radar)
 │   ├── media/               # Media subcomponents shared with the Deployments tab
@@ -186,6 +192,7 @@ src/
 │   │   └── utils/formatStats.js      # KPI formatters
 │   ├── ui/                  # Reusable components
 │   └── hooks/               # Custom React hooks
+│       └── useSparklineMode.js # Sparkline display mode state (bars/line/heatmap)
 ├── preload/
 │   └── index.js             # IPC bridge API
 └── shared/
