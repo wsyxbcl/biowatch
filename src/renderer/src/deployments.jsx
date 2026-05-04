@@ -1,6 +1,6 @@
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { Camera, ChevronDown, ChevronRight, MapPin, X } from 'lucide-react'
+import { Camera, MapPin, X } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ReactDOMServer from 'react-dom/server'
 import { LayersControl, MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet'
@@ -15,6 +15,7 @@ import { resolveSelectedDeployment, withDeploymentParam } from './deployments/ur
 import DeploymentDetailPane from './deployments/DeploymentDetailPane'
 import EditableLocationName from './deployments/EditableLocationName'
 import { groupDeploymentsByLocation } from './deployments/groupDeployments'
+import Sparkline from './deployments/Sparkline'
 
 // Fix the default marker icon issue in react-leaflet
 // This is needed because the CSS assets are not properly loaded
@@ -422,216 +423,48 @@ function LocationMap({
 const DeploymentRow = memo(function DeploymentRow({
   location,
   isSelected,
-  isPlaceMode,
   onSelect,
-  onNewLatitude,
-  onNewLongitude,
-  onEnterPlaceMode,
   onRenameLocation,
-  percentile90Count
+  sparklineMode,
+  percentile90Count,
+  indented = false
 }) {
-  const handleLatitudeChange = useCallback(
-    (e) => onNewLatitude(location.deploymentID, e.target.value),
-    [location.deploymentID, onNewLatitude]
-  )
-
-  const handleLongitudeChange = useCallback(
-    (e) => onNewLongitude(location.deploymentID, e.target.value),
-    [location.deploymentID, onNewLongitude]
-  )
-
-  const handlePlaceClick = useCallback(
-    (e) => {
-      e.stopPropagation()
-      onEnterPlaceMode(location)
-    },
-    [location, onEnterPlaceMode]
-  )
-
   const handleRowClick = useCallback(() => onSelect(location), [location, onSelect])
+  const total = (location.periods || []).reduce((sum, p) => sum + (p.count || 0), 0)
 
   return (
     <div
       id={location.deploymentID}
       title={location.deploymentStart}
       onClick={handleRowClick}
-      className={`flex gap-4 items-center py-4 first:pt-2 hover:bg-gray-50 cursor-pointer px-2 border-b border-gray-200 transition-all duration-200 ${
+      className={`flex gap-3 items-center px-3 h-10 hover:bg-gray-50 cursor-pointer border-b border-gray-100 transition-colors ${
+        indented ? 'pl-9 bg-[#fcfcfd]' : ''
+      } ${
         isSelected
-          ? 'bg-blue-50 border-l-4 border-l-blue-500 pl-3'
+          ? `bg-blue-50 border-l-4 border-l-blue-500 ${indented ? 'pl-8' : 'pl-2'}`
           : 'border-l-4 border-l-transparent'
       }`}
     >
-      <div className="flex flex-col gap-2">
-        <div className="w-62">
-          <EditableLocationName
-            locationID={location.locationID}
-            locationName={location.locationName}
-            isSelected={isSelected}
-            onRename={onRenameLocation}
-          />
-        </div>
-        <div className="flex gap-2 items-center">
-          <input
-            type="number"
-            step={0.00001}
-            min={-90}
-            max={90}
-            title="Latitude"
-            value={location.latitude ?? ''}
-            onChange={handleLatitudeChange}
-            placeholder="Lat"
-            className="max-w-20 text-xs border border-zinc-950/10 rounded px-2 py-1"
-            name="Latitude"
-          />
-          <input
-            step={0.00001}
-            min="-180"
-            max="180"
-            type="number"
-            title="Longitude"
-            value={location.longitude ?? ''}
-            onChange={handleLongitudeChange}
-            placeholder="Lng"
-            className="max-w-20 text-xs border border-zinc-950/10 rounded px-2 py-1"
-            name="longitude"
-          />
-          <button
-            onClick={handlePlaceClick}
-            className={`p-1.5 rounded transition-colors ${
-              isSelected && isPlaceMode
-                ? 'bg-blue-100 text-blue-600'
-                : 'hover:bg-blue-100 text-gray-500 hover:text-blue-600'
-            }`}
-            title={
-              isSelected && isPlaceMode ? 'Click on map to place' : 'Click on map to set location'
-            }
-          >
-            <MapPin size={16} />
-          </button>
-        </div>
-      </div>
-      <div className="flex gap-2 flex-1">
-        {location.periods.map((period) => (
-          <div
-            key={period.start}
-            title={`${period.count} observations`}
-            className="flex items-center justify-center h-[25px] flex-1 min-w-0"
-          >
-            <div
-              className="rounded-full bg-[#77b7ff] aspect-square max-w-[25px]"
-              style={{
-                width:
-                  period.count > 0
-                    ? `${Math.min((period.count / percentile90Count) * 100, 100)}%`
-                    : '0%',
-                minWidth: period.count > 0 ? '4px' : '0px'
-              }}
-            ></div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-})
-
-// Memoized location group header component for multi-deployment locations
-const LocationGroupHeader = memo(function LocationGroupHeader({
-  group,
-  isExpanded,
-  onToggle,
-  percentile90Count,
-  isSelected,
-  onRenameLocation
-}) {
-  const handleClick = useCallback(() => {
-    onToggle(group.locationID)
-  }, [group.locationID, onToggle])
-
-  return (
-    <div
-      onClick={handleClick}
-      className={`flex gap-4 items-center py-4 hover:bg-gray-50 cursor-pointer px-2 border-b border-gray-200 transition-all duration-200 ${
-        isSelected
-          ? 'bg-blue-50 border-l-4 border-l-blue-500 pl-1'
-          : 'border-l-4 border-l-transparent'
-      }`}
-    >
-      <div className="flex-shrink-0 w-5">
-        {isExpanded ? (
-          <ChevronDown size={18} className="text-gray-500" />
-        ) : (
-          <ChevronRight size={18} className="text-gray-500" />
-        )}
+      <div className="w-[200px] min-w-0">
+        <EditableLocationName
+          locationID={location.locationID}
+          locationName={location.locationName}
+          isSelected={isSelected}
+          onRename={onRenameLocation}
+        />
       </div>
 
-      <div className="flex flex-col gap-1 w-56">
-        <div className="flex items-center gap-2">
-          <EditableLocationName
-            locationID={group.locationID}
-            locationName={group.locationName}
-            isSelected={isSelected}
-            onRename={onRenameLocation}
-          />
-          <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">
-            {group.deployments.length}
-          </span>
-        </div>
-        {group.latitude && group.longitude && (
-          <span className="text-xs text-gray-400">
-            {Number(group.latitude).toFixed(4)}, {Number(group.longitude).toFixed(4)}
-          </span>
-        )}
+      <div className="flex-1 min-w-0">
+        <Sparkline
+          periods={location.periods}
+          mode={sparklineMode}
+          percentile90Count={percentile90Count}
+        />
       </div>
 
-      <div className="flex gap-2 flex-1">
-        {group.aggregatedPeriods.map((period) => (
-          <div
-            key={period.start}
-            title={`${period.count} observations (aggregated)`}
-            className="flex items-center justify-center h-[25px] flex-1 min-w-0"
-          >
-            <div
-              className="rounded-full bg-[#77b7ff] aspect-square max-w-[25px]"
-              style={{
-                width:
-                  period.count > 0
-                    ? `${Math.min((period.count / percentile90Count) * 100, 100)}%`
-                    : '0%',
-                minWidth: period.count > 0 ? '4px' : '0px'
-              }}
-            />
-          </div>
-        ))}
+      <div className="flex-shrink-0 w-16 text-right text-xs text-gray-500 tabular-nums">
+        {total.toLocaleString()}
       </div>
-    </div>
-  )
-})
-
-// Wrapper for deployment rows within a group (indented)
-const GroupedDeploymentRow = memo(function GroupedDeploymentRow({
-  location,
-  isSelected,
-  isPlaceMode,
-  onSelect,
-  onNewLatitude,
-  onNewLongitude,
-  onEnterPlaceMode,
-  onRenameLocation,
-  percentile90Count
-}) {
-  return (
-    <div className="ml-6">
-      <DeploymentRow
-        location={location}
-        isSelected={isSelected}
-        isPlaceMode={isPlaceMode}
-        onSelect={onSelect}
-        onNewLatitude={onNewLatitude}
-        onNewLongitude={onNewLongitude}
-        onEnterPlaceMode={onEnterPlaceMode}
-        onRenameLocation={onRenameLocation}
-        percentile90Count={percentile90Count}
-      />
     </div>
   )
 })
@@ -649,7 +482,6 @@ const getDateMarkers = (startDate, endDate, count = 5) => {
 const formatDateShort = (date) => {
   return date.toLocaleDateString('en-US', { year: '2-digit', month: 'short' })
 }
-
 
 function LocationsList({
   activity,
