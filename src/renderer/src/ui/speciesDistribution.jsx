@@ -9,7 +9,7 @@ import {
   VEHICLE_SENTINEL
 } from '../utils/speciesUtils'
 import SpeciesTooltipContent from './SpeciesTooltipContent'
-import { useCommonName } from '../utils/commonNames'
+import { buildScientificToCommonMap, useCommonName } from '../utils/commonNames'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
 
 function SpeciesRow({
@@ -172,17 +172,10 @@ function SpeciesDistribution({
   }, [bestImagesData])
 
   // Map of scientific names -> authoritative vernacular names from CamtrapDP imports.
-  const scientificToCommonMap = useMemo(() => {
-    const map = {}
-    if (taxonomicData && Array.isArray(taxonomicData)) {
-      taxonomicData.forEach((taxon) => {
-        if (taxon.scientificName && taxon?.vernacularNames?.eng) {
-          map[taxon.scientificName] = taxon.vernacularNames.eng
-        }
-      })
-    }
-    return map
-  }, [taxonomicData])
+  const scientificToCommonMap = useMemo(
+    () => buildScientificToCommonMap(taxonomicData),
+    [taxonomicData]
+  )
 
   // Handle toggling species selection when clicking on the dot
   const handleSpeciesToggle = (species) => {

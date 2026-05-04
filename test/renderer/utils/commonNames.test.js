@@ -2,7 +2,9 @@ import { test, describe, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   fetchGbifCommonName,
-  _clearGbifCache
+  _clearGbifCache,
+  getMapDisplayName,
+  buildScientificToCommonMap
 } from '../../../src/renderer/src/utils/commonNames.js'
 
 // Mock global fetch on each test.
@@ -79,5 +81,69 @@ describe('fetchGbifCommonName', () => {
     assert.equal(a, null)
     assert.equal(b, null)
     assert.equal(fetchCalls.length, 1)
+  })
+})
+
+describe('getMapDisplayName', () => {
+  test('prefers study-imported vernacular over the dictionary', () => {
+    // `vulpes vulpes` resolves to "red fox" via the shipped dictionary, but
+    // the study's own vernacular should win.
+    const result = getMapDisplayName('Vulpes vulpes', { 'Vulpes vulpes': 'European Red Fox' })
+    assert.equal(result, 'European Red Fox')
+  })
+
+  test('falls through to the shipped dictionary when no study match', () => {
+    const result = getMapDisplayName('Vulpes vulpes', {})
+    assert.equal(result, 'red fox')
+  })
+
+  test('handles undefined scientificToCommon (callers may omit it)', () => {
+    const result = getMapDisplayName('Vulpes vulpes', undefined)
+    assert.equal(result, 'red fox')
+  })
+
+  test('returns null when no name is known and nothing is in the map', () => {
+    const result = getMapDisplayName('Genus speciesthatdoesnotexist', {})
+    assert.equal(result, null)
+  })
+
+  test('returns null for null/empty scientific names', () => {
+    assert.equal(getMapDisplayName(null, { foo: 'bar' }), null)
+    assert.equal(getMapDisplayName('', { foo: 'bar' }), null)
+    assert.equal(getMapDisplayName(undefined, { foo: 'bar' }), null)
+  })
+})
+
+describe('buildScientificToCommonMap', () => {
+  test('returns an empty object for null/undefined input', () => {
+    assert.deepEqual(buildScientificToCommonMap(null), {})
+    assert.deepEqual(buildScientificToCommonMap(undefined), {})
+  })
+
+  test('returns an empty object for non-array input', () => {
+    assert.deepEqual(buildScientificToCommonMap({}), {})
+    assert.deepEqual(buildScientificToCommonMap('not an array'), {})
+  })
+
+  test('maps scientificName to vernacularNames.eng', () => {
+    const result = buildScientificToCommonMap([
+      { scientificName: 'Vulpes vulpes', vernacularNames: { eng: 'Red Fox' } },
+      { scientificName: 'Sus scrofa', vernacularNames: { eng: 'Wild Boar' } }
+    ])
+    assert.deepEqual(result, {
+      'Vulpes vulpes': 'Red Fox',
+      'Sus scrofa': 'Wild Boar'
+    })
+  })
+
+  test('skips taxa missing scientificName or vernacularNames.eng', () => {
+    const result = buildScientificToCommonMap([
+      { scientificName: 'Vulpes vulpes', vernacularNames: { eng: 'Red Fox' } },
+      { vernacularNames: { eng: 'Orphan' } }, // no scientificName
+      { scientificName: 'Sus scrofa' }, // no vernacularNames
+      { scientificName: 'Felis catus', vernacularNames: { fra: 'Chat' } }, // no eng
+      null // defensive: ignore null entries
+    ])
+    assert.deepEqual(result, { 'Vulpes vulpes': 'Red Fox' })
   })
 })

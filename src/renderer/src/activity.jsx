@@ -13,7 +13,7 @@ import PlaceholderMap from './ui/PlaceholderMap'
 import SpeciesDistribution from './ui/speciesDistribution'
 import TimelineChart from './ui/timeseries'
 import { useImportStatus } from './hooks/import'
-import { getMapDisplayName } from './utils/commonNames'
+import { buildScientificToCommonMap, getMapDisplayName } from './utils/commonNames'
 import { getTopNonHumanSpecies } from './utils/speciesUtils'
 import { useSequenceGap } from './hooks/useSequenceGap'
 
@@ -488,19 +488,12 @@ export default function Activity({ studyData, studyId }) {
 
   // scientificName -> English vernacular name from CamtrapDP imports.
   // Used by the map's marker tooltips and bottom-right legend so they can
-  // show common names alongside (or instead of) scientific names. Mirrors
-  // the same map built in speciesDistribution.jsx.
-  const scientificToCommon = useMemo(() => {
-    const map = {}
-    if (taxonomicData && Array.isArray(taxonomicData)) {
-      taxonomicData.forEach((taxon) => {
-        if (taxon.scientificName && taxon?.vernacularNames?.eng) {
-          map[taxon.scientificName] = taxon.vernacularNames.eng
-        }
-      })
-    }
-    return map
-  }, [taxonomicData])
+  // show common names alongside (or instead of) scientific names. Same
+  // helper feeds the species sidebar, so the two surfaces stay in sync.
+  const scientificToCommon = useMemo(
+    () => buildScientificToCommonMap(taxonomicData),
+    [taxonomicData]
+  )
 
   // Fetch sequence-aware species distribution data
   // sequenceGap in queryKey ensures refetch when slider changes (backend fetches from metadata)
