@@ -184,7 +184,6 @@ export default function LocationPopover({ deployment, onCommitLatLon, onEnterPla
               />
             </label>
           </div>
-
         </div>
       )}
     </div>
