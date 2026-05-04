@@ -97,7 +97,7 @@ const EditableLocationName = memo(function EditableLocationName({
           maxLength={100}
           disabled={isSaving}
           title="Enter saves, Esc cancels"
-          className="text-sm border border-blue-400 rounded px-1.5 py-0.5 w-full max-w-[180px] focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="text-sm text-gray-700 bg-transparent border-b-2 border-blue-500 focus:outline-none w-full max-w-[180px] py-0.5"
         />
       </div>
     )
