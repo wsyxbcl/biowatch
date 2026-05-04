@@ -108,6 +108,21 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
       favorite: media.favorite
     }
 
+    // Vehicle arm: same shape as selectFields but tags rows with the
+    // VEHICLE_SENTINEL so renderers can label them "Vehicle" instead of
+    // falling back to "Blank" (the default for null scientificName).
+    const selectFieldsVehicle = {
+      mediaID: media.mediaID,
+      filePath: media.filePath,
+      fileName: media.fileName,
+      timestamp: media.timestamp,
+      deploymentID: media.deploymentID,
+      scientificName: sql`${VEHICLE_SENTINEL}`.as('scientificName'),
+      fileMediatype: media.fileMediatype,
+      eventID: sql`(${eventIDPicker})`.as('eventID'),
+      favorite: media.favorite
+    }
+
     const selectFieldsWithObs = {
       mediaID: media.mediaID,
       filePath: media.filePath,
@@ -173,7 +188,7 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
 
     const buildVehicleArm = (extraConds) =>
       db
-        .selectDistinct(selectFields)
+        .selectDistinct(selectFieldsVehicle)
         .from(media)
         .where(and(...extraConds, exists(vehicleObservations)))
 
