@@ -2,15 +2,18 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { MapPin } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { LayersControl, MapContainer, Marker, TileLayer, useMap } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import { useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import CircularTimeFilter, { DailyActivityRadar } from './ui/clock'
+import MarkerHoverCard from './ui/MarkerHoverCard'
 import PlaceholderMap from './ui/PlaceholderMap'
 import SpeciesDistribution from './ui/speciesDistribution'
 import TimelineChart from './ui/timeseries'
 import { useImportStatus } from './hooks/import'
+import { getMapDisplayName } from './utils/commonNames'
 import { getTopNonHumanSpecies } from './utils/speciesUtils'
 import { useSequenceGap } from './hooks/useSequenceGap'
 
@@ -71,7 +74,8 @@ const SpeciesMap = ({
   selectedSpecies,
   palette,
   geoKey,
-  studyId
+  studyId,
+  scientificToCommon
 }) => {
   // Persist map layer selection per study
   const mapLayerKey = `mapLayer:${studyId}`
@@ -176,37 +180,20 @@ const SpeciesMap = ({
     })
   }
 
-  // Create tooltip content for species counts
-  const createTooltipContent = (counts) => {
-    const entries = Object.entries(counts)
-      .filter(([species]) => selectedSpecies.some((s) => s.scientificName === species))
-      .sort((a, b) => b[1] - a[1])
-
-    const total = entries.reduce((sum, [, count]) => sum + count, 0)
-
-    const rows = entries
-      .map(([species, count]) => {
-        const index = selectedSpecies.findIndex((s) => s.scientificName === species)
-        const color = palette[index % palette.length]
-        return `
-      <div style="display: flex; align-items: center; gap: 8px; padding: 2px 0;">
-        <span style="width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background-color: ${color};"></span>
-        <span style="font-size: 12px; font-style: italic; flex: 1;">${species}</span>
-        <span style="font-size: 11px; color: #6b7280;">${count}</span>
-      </div>
-    `
-      })
-      .join('')
-
-    return `
-    <div style="padding: 8px; min-width: 160px;">
-      <div style="font-size: 11px; font-weight: 500; color: #6b7280; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">
-        ${total} observation${total !== 1 ? 's' : ''}
-      </div>
-      ${rows}
-    </div>
-  `
-  }
+  // Render the React MarkerHoverCard to an HTML string. Leaflet's tooltip API
+  // takes raw HTML, so we serialize the JSX once per call. Using a React
+  // component (instead of a template-string builder) keeps the markup
+  // testable, properly indented, and shared between per-marker and
+  // per-cluster tooltips below.
+  const createTooltipContent = (counts) =>
+    renderToStaticMarkup(
+      <MarkerHoverCard
+        counts={counts}
+        selectedSpecies={selectedSpecies}
+        palette={palette}
+        scientificToCommon={scientificToCommon}
+      />
+    )
 
   // PieChartMarker component with tooltip binding
   function PieChartMarker({ point, icon }) {
@@ -219,8 +206,14 @@ const SpeciesMap = ({
       const tooltipHtml = createTooltipContent(point.counts)
       marker.unbindTooltip()
       marker.bindTooltip(tooltipHtml, {
-        direction: 'top',
-        offset: [0, -10],
+        // 'auto' resolves to 'right' or 'left' depending on whether the
+        // marker is left or right of map center, so the card sits BESIDE
+        // the pie chart rather than above it. The CSS rule
+        // `.leaflet-tooltip-{right,left}.species-map-tooltip` adds a
+        // horizontal gap so the card doesn't overlap the marker.
+        direction: 'auto',
+        offset: [0, 0],
+        opacity: 1,
         className: 'species-map-tooltip'
       })
 
@@ -403,12 +396,14 @@ const SpeciesMap = ({
                   Object.entries(combinedCounts).filter(([, count]) => count > 0)
                 )
 
-                // Bind tooltip to cluster
+                // Bind tooltip to cluster. Same beside-the-pie behavior as
+                // individual markers — see the per-marker bindTooltip above.
                 const tooltipHtml = createTooltipContent(filteredCounts)
                 cluster.unbindTooltip()
                 cluster.bindTooltip(tooltipHtml, {
-                  direction: 'top',
-                  offset: [0, -10],
+                  direction: 'auto',
+                  offset: [0, 0],
+                  opacity: 1,
                   className: 'species-map-tooltip'
                 })
 
@@ -423,16 +418,29 @@ const SpeciesMap = ({
         </LayersControl.Overlay>
 
         {/* Add a legend */}
-        <div className="absolute bottom-5 right-5 bg-white p-2 rounded shadow-md z-[1000]">
-          {selectedSpecies.map((species, index) => (
-            <div key={index} className="flex items-center space-x-2 space-y-1">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: palette[index % palette.length] }}
-              ></div>
-              <span className="text-xs">{species.scientificName}</span>
-            </div>
-          ))}
+        <div className="absolute bottom-5 right-5 bg-white p-2 rounded shadow-md z-[1000] flex flex-col gap-2">
+          {selectedSpecies.map((species, index) => {
+            const common = getMapDisplayName(species.scientificName, scientificToCommon)
+            const showSci = common && common !== species.scientificName
+            return (
+              <div key={index} className="flex items-start gap-2">
+                <div
+                  className="w-3 h-3 rounded-full mt-0.5 flex-shrink-0"
+                  style={{ backgroundColor: palette[index % palette.length] }}
+                ></div>
+                <div className="flex flex-col min-w-0 leading-tight">
+                  <span className={`text-xs ${common ? 'capitalize' : 'italic'}`}>
+                    {common || species.scientificName}
+                  </span>
+                  {showSci && (
+                    <span className="text-[10px] text-gray-500 italic">
+                      {species.scientificName}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </LayersControl>
       <LayerChangeHandler onLayerChange={setSelectedLayer} />
@@ -477,6 +485,22 @@ export default function Activity({ studyData, studyId }) {
 
   // Get taxonomic data from studyData
   const taxonomicData = studyData?.taxonomic || null
+
+  // scientificName -> English vernacular name from CamtrapDP imports.
+  // Used by the map's marker tooltips and bottom-right legend so they can
+  // show common names alongside (or instead of) scientific names. Mirrors
+  // the same map built in speciesDistribution.jsx.
+  const scientificToCommon = useMemo(() => {
+    const map = {}
+    if (taxonomicData && Array.isArray(taxonomicData)) {
+      taxonomicData.forEach((taxon) => {
+        if (taxon.scientificName && taxon?.vernacularNames?.eng) {
+          map[taxon.scientificName] = taxon.vernacularNames.eng
+        }
+      })
+    }
+    return map
+  }, [taxonomicData])
 
   // Fetch sequence-aware species distribution data
   // sequenceGap in queryKey ensures refetch when slider changes (backend fetches from metadata)
@@ -699,6 +723,7 @@ export default function Activity({ studyData, studyId }) {
                     palette={palette}
                     studyId={actualStudyId}
                     geoKey={geoKey}
+                    scientificToCommon={scientificToCommon}
                   />
                 )}
               {heatmapStatus === 'noData' && !isHeatmapLoading && (

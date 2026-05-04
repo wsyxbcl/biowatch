@@ -1,6 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
 import { resolveCommonName, pickEnglishCommonName } from '../../../shared/commonNames/index.js'
 
+/**
+ * Synchronous version of the common-name cascade for contexts that can't run
+ * hooks (e.g. renderToStaticMarkup): study-imported vernacular →
+ * shipped dictionary → null. Skips the GBIF async tier.
+ *
+ * @param {string | null | undefined} scientificName
+ * @param {Record<string, string> | undefined} scientificToCommon
+ * @returns {string | null}
+ */
+export function getMapDisplayName(scientificName, scientificToCommon) {
+  if (!scientificName) return null
+  return scientificToCommon?.[scientificName] || resolveCommonName(scientificName) || null
+}
+
 // In-memory cache + fetcher live inside a closure — the cache isn't reachable
 // from outside the IIFE, only the exported functions are. Avoids module-level
 // mutable state bleeding through the import surface.
