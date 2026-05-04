@@ -27,7 +27,7 @@ export default function KpiTile({ icon, label, value, sub, subAccent, onEdit, on
     <Tag
       type={interactive ? 'button' : undefined}
       onClick={interactive ? action : undefined}
-      className={`group relative w-full bg-white border border-gray-200 rounded-lg px-3.5 py-3.5 text-left transition-shadow flex flex-col ${
+      className={`group relative w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 @7xl:px-3.5 @7xl:py-3.5 text-left transition-shadow flex flex-col ${
         interactive
           ? 'cursor-pointer hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300'
           : ''
@@ -41,14 +41,14 @@ export default function KpiTile({ icon, label, value, sub, subAccent, onEdit, on
         />
       )}
 
-      <div className="flex items-center justify-center gap-1.5 mb-1.5 text-blue-600">
+      <div className="flex items-center justify-center gap-1.5 mb-1 @7xl:mb-1.5 text-blue-600">
         {icon}
         <span className="text-[0.65rem] font-semibold tracking-wide text-gray-500 uppercase">
           {label}
         </span>
       </div>
 
-      <div className="text-2xl font-bold text-gray-900 tabular-nums leading-none text-center">
+      <div className="text-xl @7xl:text-2xl font-bold text-gray-900 tabular-nums leading-none text-center">
         {value}
       </div>
 
@@ -57,7 +57,7 @@ export default function KpiTile({ icon, label, value, sub, subAccent, onEdit, on
           its siblings — the grid stretches all tiles to the tallest, and
           mt-auto keeps the visual baselines matching. */}
       {sub && (
-        <div className="mt-auto pt-2 text-[0.7rem] text-gray-500 text-center">
+        <div className="mt-auto pt-1.5 @7xl:pt-2 text-[0.7rem] text-gray-500 text-center">
           {subAccent && <span className="text-blue-700 font-semibold">{subAccent}</span>}
           {subAccent && ' '}
           {sub}
