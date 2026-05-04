@@ -2,10 +2,22 @@
  * Deployment-related database queries
  */
 
-import { getDrizzleDb, deployments, observations } from '../index.js'
-import { eq, desc, sql } from 'drizzle-orm'
+import { getDrizzleDb, deployments, media, observations } from '../index.js'
+import {
+  and,
+  count,
+  countDistinct,
+  desc,
+  eq,
+  isNotNull,
+  ne,
+  notExists,
+  or,
+  sql
+} from 'drizzle-orm'
 import log from 'electron-log'
 import { getStudyIdFromPath } from './utils.js'
+import { BLANK_SENTINEL, VEHICLE_SENTINEL } from '../../../shared/constants.js'
 
 /**
  * Get one deployment row per unique (latitude, longitude) — intended for
@@ -140,13 +152,91 @@ export async function getSpeciesForDeployment(dbPath, deploymentID) {
       .groupBy(observations.scientificName)
       .orderBy(desc(sql`count`))
 
+    const speciesRows = rows.map((r) => ({
+      scientificName: r.scientificName,
+      count: Number(r.count)
+    }))
+
+    const [blankCount, vehicleCount] = await Promise.all([
+      getBlankMediaCountForDeployment(dbPath, deploymentID),
+      getVehicleMediaCountForDeployment(dbPath, deploymentID)
+    ])
+
+    const result = [...speciesRows]
+    if (blankCount > 0) {
+      result.push({ scientificName: BLANK_SENTINEL, count: blankCount })
+    }
+    if (vehicleCount > 0) {
+      result.push({ scientificName: VEHICLE_SENTINEL, count: vehicleCount })
+    }
+
     const elapsedTime = Date.now() - startTime
-    log.info(`Retrieved ${rows.length} species for deployment ${deploymentID} in ${elapsedTime}ms`)
-    return rows.map((r) => ({ scientificName: r.scientificName, count: Number(r.count) }))
+    log.info(
+      `Retrieved ${result.length} species for deployment ${deploymentID} in ${elapsedTime}ms`
+    )
+    return result
   } catch (error) {
     log.error(`Error querying species for deployment: ${error.message}`)
     throw error
   }
+}
+
+/**
+ * Count blank media at a single deployment, using the new "blank media"
+ * definition (no animal/human observation with a species name AND no
+ * vehicle observation). Mirrors getBlankMediaCount but scoped to one
+ * deployment.
+ *
+ * @param {string} dbPath - Path to the SQLite database
+ * @param {string} deploymentID
+ * @returns {Promise<number>}
+ */
+export async function getBlankMediaCountForDeployment(dbPath, deploymentID) {
+  const studyId = getStudyIdFromPath(dbPath)
+  const db = await getDrizzleDb(studyId, dbPath, { readonly: true })
+
+  const realObservations = db
+    .select({ one: sql`1` })
+    .from(observations)
+    .where(
+      and(
+        eq(observations.mediaID, media.mediaID),
+        or(
+          and(isNotNull(observations.scientificName), ne(observations.scientificName, '')),
+          eq(observations.observationType, 'vehicle')
+        )
+      )
+    )
+
+  const result = await db
+    .select({ count: count().as('count') })
+    .from(media)
+    .where(and(eq(media.deploymentID, deploymentID), notExists(realObservations)))
+    .get()
+
+  return Number(result?.count || 0)
+}
+
+/**
+ * Count media with at least one vehicle observation at a single deployment.
+ *
+ * @param {string} dbPath - Path to the SQLite database
+ * @param {string} deploymentID
+ * @returns {Promise<number>}
+ */
+export async function getVehicleMediaCountForDeployment(dbPath, deploymentID) {
+  const studyId = getStudyIdFromPath(dbPath)
+  const db = await getDrizzleDb(studyId, dbPath, { readonly: true })
+
+  const result = await db
+    .select({ count: countDistinct(observations.mediaID).as('count') })
+    .from(observations)
+    .where(
+      and(eq(observations.deploymentID, deploymentID), eq(observations.observationType, 'vehicle'))
+    )
+    .get()
+
+  return Number(result?.count || 0)
 }
 
 /**
