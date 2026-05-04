@@ -55,12 +55,16 @@ export default function ObservationRow({
   // Prefer the dictionary's curated common name over whatever the importer
   // dropped in observations.commonName (LILA stores the snake_case category
   // there, e.g. "yellow_baboon"). Falls through to the DB value, then to the
-  // scientific name.
+  // scientific name. Empty-species rows fall back to a label keyed by
+  // observationType: "Vehicle" for vehicle, "Blank" for everything else
+  // (blank/unclassified/unknown/null).
+  const isPseudoSpecies = !observation.scientificName && !observation.commonName
+  const pseudoLabel = observation.observationType === 'vehicle' ? 'Vehicle' : 'Blank'
   const displayName =
     resolveCommonName(observation.scientificName) ||
     observation.commonName ||
     observation.scientificName ||
-    (observation.observationType === 'blank' ? 'Blank' : '—')
+    pseudoLabel
 
   const confidence =
     observation.classificationProbability != null && !isHuman
@@ -110,7 +114,7 @@ export default function ObservationRow({
 
         <span
           className={`text-sm flex-1 min-w-0 truncate ${
-            observation.observationType === 'blank'
+            isPseudoSpecies
               ? 'italic text-gray-400'
               : 'text-[#030213] font-medium capitalize'
           }`}
