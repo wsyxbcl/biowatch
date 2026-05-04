@@ -167,11 +167,14 @@ top-to-bottom:
 2. **Two number inputs** — `Latitude` and `Longitude`, with proper
    labels above each input. `step="0.00001"`, `min/max` for the valid
    ranges. Editing either input updates the combined field.
-3. **Place on map** primary button. On click: closes the popover and
-   sets `isPlaceMode = true` for the existing place-mode flow.
-4. **Clear** button (right-aligned, muted). On click: clears both
-   inputs, posts `null` lat/lon to the existing `setDeploymentLatitude`
-   / `setDeploymentLongitude` IPC handlers.
+3. **Place on map** primary button (top-right of the popover, next to
+   the "Location" heading). On click: closes the popover and sets
+   `isPlaceMode = true` for the existing place-mode flow.
+
+A "Clear" button was scoped out — see *Future work*. The IPC's
+`setDeploymentLatitude` / `setDeploymentLongitude` handlers
+`parseFloat(null) → NaN` rather than persist `NULL`, so a clean clear
+requires null-guard fixes that are out of scope here.
 
 Closes on Esc, click-outside, or successful "Place on map" engagement.
 Any input change auto-saves on blur (same debounce-style as today's
