@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import * as HoverCard from '@radix-ui/react-hover-card'
 import DeploymentMediaGallery from '../media/DeploymentMediaGallery'
 import EditableLocationName from './EditableLocationName'
+import LocationPopover from './LocationPopover'
 import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
 import { resolveCommonName } from '../../../shared/commonNames/index.js'
 import { isBlank, isVehicle } from '../utils/speciesUtils'
@@ -16,7 +17,14 @@ import { isBlank, isVehicle } from '../utils/speciesUtils'
  * camera-days, species at location) slot in as siblings inside the
  * body.
  */
-export default function DeploymentDetailPane({ studyId, deployment, onClose, onRenameLocation }) {
+export default function DeploymentDetailPane({
+  studyId,
+  deployment,
+  onClose,
+  onRenameLocation,
+  onCommitLatLon,
+  onEnterPlaceMode
+}) {
   // The pane is remounted via `key={deploymentID}` whenever the selection
   // changes, so plain useState([]) initializes correctly per deployment —
   // no useEffect reset, and Gallery's useInfiniteQuery only fires once per
@@ -36,6 +44,11 @@ export default function DeploymentDetailPane({ studyId, deployment, onClose, onR
           onRename={onRenameLocation}
         />
         <div className="flex items-center gap-1 flex-shrink-0">
+          <LocationPopover
+            deployment={deployment}
+            onCommitLatLon={onCommitLatLon}
+            onEnterPlaceMode={onEnterPlaceMode}
+          />
           <SpeciesFilterButton
             studyId={studyId}
             deploymentID={deployment.deploymentID}

@@ -1,0 +1,57 @@
+/**
+ * Sum per-bucket observation counts across multiple deployments at the
+ * same location. Different deployments are different temporal samples,
+ * so summing is correct here (distinct from the within-sequence
+ * bbox-count rule, which uses max-per-frame).
+ */
+const aggregatePeriods = (deployments) => {
+  if (deployments.length === 0) return []
+  return deployments[0].periods.map((period, i) => ({
+    start: period.start,
+    end: period.end,
+    count: deployments.reduce((sum, d) => sum + (d.periods[i]?.count || 0), 0)
+  }))
+}
+
+/**
+ * Group deployments by locationID and return one alphabetically-sorted
+ * sequence interleaving multi-deploy groups with singletons. Each entry
+ * has isSingleDeployment for the renderer to switch between section
+ * header + children vs flat row.
+ */
+export function groupDeploymentsByLocation(deployments) {
+  if (!deployments || deployments.length === 0) return []
+
+  const groups = new Map()
+
+  deployments.forEach((deployment) => {
+    const key = deployment.locationID || deployment.deploymentID
+    if (!groups.has(key)) {
+      groups.set(key, {
+        locationID: deployment.locationID || deployment.deploymentID,
+        locationName: deployment.locationName,
+        latitude: deployment.latitude,
+        longitude: deployment.longitude,
+        deployments: []
+      })
+    }
+    groups.get(key).deployments.push(deployment)
+  })
+
+  // Within each group, most recent deployment first.
+  groups.forEach((group) => {
+    group.deployments.sort((a, b) => new Date(b.deploymentStart) - new Date(a.deploymentStart))
+  })
+
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      aggregatedPeriods: aggregatePeriods(group.deployments),
+      isSingleDeployment: group.deployments.length === 1
+    }))
+    .sort((a, b) => {
+      const aName = a.locationName || a.locationID || ''
+      const bName = b.locationName || b.locationID || ''
+      return aName.localeCompare(bName)
+    })
+}

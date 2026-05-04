@@ -1,4 +1,4 @@
-import { Check, Pencil, X } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 
 /**
@@ -86,7 +86,7 @@ const EditableLocationName = memo(function EditableLocationName({
 
   if (isEditing) {
     return (
-      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      <div onClick={(e) => e.stopPropagation()}>
         <input
           ref={inputRef}
           type="text"
@@ -96,24 +96,9 @@ const EditableLocationName = memo(function EditableLocationName({
           onBlur={handleBlur}
           maxLength={100}
           disabled={isSaving}
-          className="text-sm border border-blue-400 rounded px-1.5 py-0.5 w-48 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          title="Enter saves, Esc cancels"
+          className="text-sm text-gray-700 bg-transparent border-b-2 border-blue-500 focus:outline-none w-full max-w-[180px] py-0.5"
         />
-        <button
-          onClick={saveEdit}
-          disabled={isSaving}
-          className="p-0.5 hover:bg-green-100 rounded text-green-600"
-          title="Save (Enter)"
-        >
-          <Check size={14} />
-        </button>
-        <button
-          onClick={cancelEditing}
-          disabled={isSaving}
-          className="p-0.5 hover:bg-red-100 rounded text-red-600"
-          title="Cancel (Esc)"
-        >
-          <X size={14} />
-        </button>
       </div>
     )
   }
