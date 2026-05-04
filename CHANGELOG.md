@@ -5,6 +5,42 @@ All notable changes to Biowatch will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.6] - 2026-05-04
+
+### Added
+
+- Deployments tab list revamp: compact 40px rows (lat/lon dropped from row), location-based grouping with always-expanded `SectionHeader` (click flies map to group bounds), interleaved alphabetical sort, and a per-deployment `Sparkline` (bars / line / heatmap) toggled via `SparklineToggle` with localStorage persistence
+- `LocationPopover` for inline lat/lon editing on the Deployments detail pane, with a coordinate paste parser and a top-right "Place on map" affordance
+- Deployments timeline hover crosshair showing the date range under the cursor, plus a floating observation-count pill anchored to the cursor for the selected row
+- Activity tab: common names rendered alongside scientific names on the map, with a React hovercard
+- `Vehicle` pseudo-species entry in the species filter (Library + Deployments) alongside `Blank`, with a new `VEHICLE_SENTINEL` constant + `isVehicle` helper and a `getVehicleMediaCount` query/IPC
+- Mouse-wheel chevron centering on the Overview carousels (vertical-center on the image)
+
+### Changed
+
+- Overview tab: all sections fit at default viewport, tightened for small screens
+- Scientific-name display normalized to ICZN binomial form across the UI
+- Empty-species observations labeled `Blank` / `Vehicle` (instead of `—`); `getBlankMediaCount` redefined as "media without animal/vehicle observations"; gallery labels vehicle media as `Vehicle`; annotation rail labels `Vehicle` via `observationType` on `media-bboxes`
+- Deployments detail pane: name editor is underline-only with auto-save on blur/Enter (check/cancel icons dropped); name column tightened from 200px to 140px to free sparkline width; row hover deepened to gray-100/200 for heatmap contrast
+- `groupDeploymentsByLocation` extracted into a util; `scientific→common` map builder extracted into a shared util
+
+### Fixed
+
+- Sequences: deterministic dedup, `VEHICLE_SENTINEL` handling, and `EXISTS` probe for blank/vehicle classification
+- Sequences: tiebreak by `fileName` instead of `filePath` for stable ordering
+- `media-bboxes`: include `observationType` so the annotation rail can label vehicles correctly
+- Gallery: vehicle media labeled `Vehicle` instead of `Blank`
+
+### Performance
+
+- `observationType` index added; blank-media query now uses a covering index
+- `getBlankMediaCount` runs in the sequences worker
+
+### Chore
+
+- Drop redundant `observationType != 'blank'` proxy filter in queries
+- Document blank/vehicle pseudo-species semantics; document new deployments components in architecture overview
+
 ## [1.8.5] - 2026-05-02
 
 ### Added
