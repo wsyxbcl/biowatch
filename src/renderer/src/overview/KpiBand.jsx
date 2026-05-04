@@ -125,7 +125,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
   }
 
   return (
-    <div className="grid grid-cols-5 gap-2.5">
+    <div className="grid grid-cols-5 gap-2 @7xl:gap-2.5">
       <div className="flex" ref={speciesTriggerRef}>
         <KpiTile
           icon={<PawPrint size={ICON_SIZE} />}

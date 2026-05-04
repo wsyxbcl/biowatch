@@ -217,9 +217,36 @@ function DeploymentMap({ deployments, studyId }) {
 // Overview — the editorial showcase tab.
 // ──────────────────────────────────────────────────────────────────────────
 
+// Pixels the bottom panel needs to keep visible: BestCaptures band
+// (~220px) + species header + 3 rows (~108px) + tightened IUCN legend +
+// vertical padding/gaps. Used to compute a dynamic `minSize` % on the
+// bottom panel so the resizer can never crush the species list below
+// 3 visible rows.
+const BOTTOM_MIN_PX = 440
+
 export default function Overview({ data, studyId, studyName }) {
   const { importStatus } = useImportStatus(studyId)
   const { sequenceGap } = useSequenceGap(studyId)
+
+  const containerRef = useRef(null)
+  const [bottomMinPercent, setBottomMinPercent] = useState(40)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const compute = () => {
+      const h = el.clientHeight
+      if (h <= 0) return
+      // Cap at 65 so the user can still grow the top section meaningfully.
+      // Floor at 30 so very tall windows don't pin the resizer too high.
+      const pct = Math.min(65, Math.max(30, Math.ceil((BOTTOM_MIN_PX / h) * 100)))
+      setBottomMinPercent(pct)
+    }
+    compute()
+    const ro = new ResizeObserver(compute)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   const { data: deploymentsData, error: deploymentsError } = useQuery({
     queryKey: ['deploymentLocations', studyId],
@@ -248,33 +275,44 @@ export default function Overview({ data, studyId, studyName }) {
   const error = speciesError?.message || deploymentsError?.message || null
 
   return (
-    <div className="flex flex-col px-6 h-full overflow-x-hidden max-w-[1950px]">
+    <div
+      ref={containerRef}
+      className="@container flex flex-col px-6 h-full overflow-x-hidden max-w-[1950px]"
+    >
       <PanelGroup direction="vertical" autoSaveId="overview-layout">
-        <Panel defaultSize={50} minSize={20} className="flex flex-col">
-          <div className="flex flex-col gap-6 h-full pt-4 pb-2 pr-1">
-            <EditorialHeader
-              studyId={studyId}
-              studyName={studyName}
-              studyData={data}
-              mapSlot={
-                <DeploymentMap key={studyId} deployments={deploymentsData} studyId={studyId} />
-              }
-            />
-            <KpiBand studyId={studyId} studyData={data} isImporting={importStatus?.isRunning} />
+        <Panel defaultSize={50} minSize={30} className="flex flex-col">
+          <div className="flex flex-col gap-4 h-full pt-4 pb-2 pr-1 min-h-0">
+            <div className="flex-1 min-h-0">
+              <EditorialHeader
+                studyId={studyId}
+                studyName={studyName}
+                studyData={data}
+                mapSlot={
+                  <DeploymentMap key={studyId} deployments={deploymentsData} studyId={studyId} />
+                }
+              />
+            </div>
+            <div className="flex-shrink-0">
+              <KpiBand studyId={studyId} studyData={data} isImporting={importStatus?.isRunning} />
+            </div>
           </div>
         </Panel>
 
         <PanelResizeHandle className="h-1 my-1.5 rounded-full bg-gray-100 hover:bg-gray-300 data-[resize-handle-state=drag]:bg-blue-300 cursor-row-resize transition-colors" />
 
-        <Panel defaultSize={50} minSize={20} className="flex flex-col">
-          <div className="flex flex-col gap-6 overflow-y-auto pt-2 pb-4 pr-1">
-            <BestCapturesSection studyId={studyId} isRunning={importStatus?.isRunning} />
-            <SpeciesDistribution
-              studyId={studyId}
-              speciesData={speciesData}
-              taxonomicData={data?.taxonomic || null}
-            />
-            {error && <div className="text-red-500 text-sm">Error: {error}</div>}
+        <Panel defaultSize={50} minSize={bottomMinPercent} className="flex flex-col">
+          <div className="flex flex-col gap-4 h-full pt-2 pb-1 pr-1 min-h-0">
+            <div className="flex-shrink-0">
+              <BestCapturesSection studyId={studyId} isRunning={importStatus?.isRunning} />
+            </div>
+            <div className="flex-1 min-h-0">
+              <SpeciesDistribution
+                studyId={studyId}
+                speciesData={speciesData}
+                taxonomicData={data?.taxonomic || null}
+              />
+            </div>
+            {error && <div className="text-red-500 text-sm flex-shrink-0">Error: {error}</div>}
           </div>
         </Panel>
       </PanelGroup>

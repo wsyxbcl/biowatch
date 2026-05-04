@@ -148,8 +148,8 @@ export default function SpeciesDistribution({ studyId, speciesData, taxonomicDat
   }
 
   return (
-    <section className="flex flex-col min-h-0">
-      <h3 className="text-[0.7rem] uppercase tracking-wider text-gray-500 font-semibold mb-3">
+    <section className="flex flex-col h-full min-h-0">
+      <h3 className="text-[0.7rem] uppercase tracking-wider text-gray-500 font-semibold mb-3 flex-shrink-0">
         Species distribution
       </h3>
 
@@ -164,7 +164,10 @@ export default function SpeciesDistribution({ studyId, speciesData, taxonomicDat
         </div>
       ) : (
         <>
-          <div className="overflow-y-auto overflow-x-hidden pr-3" onScroll={handleScroll}>
+          <div
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-3"
+            onScroll={handleScroll}
+          >
             {sortedSpecies.map((species) => {
               const storedCommonName = scientificToCommonMap[species.scientificName] || null
               return (
@@ -190,9 +193,9 @@ export default function SpeciesDistribution({ studyId, speciesData, taxonomicDat
 
 function IucnLegend() {
   return (
-    <div className="mt-3 pt-3 border-t border-gray-100 text-[0.7rem] text-gray-500 flex items-start gap-x-4">
-      <span className="flex-shrink-0 leading-5">IUCN status:</span>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+    <div className="mt-2 pt-3 border-t border-gray-100 text-[0.7rem] text-gray-500 flex items-start gap-x-3 flex-shrink-0">
+      <span className="flex-shrink-0 leading-4">IUCN:</span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 leading-4">
         <LegendItem code="NE" label="Not Evaluated" />
         <LegendItem code="LC" label="Least Concern" />
         <LegendItem code="NT" label="Near Threatened" />
