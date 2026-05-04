@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import * as HoverCard from '@radix-ui/react-hover-card'
-import { sortSpeciesHumansLast, isBlank, BLANK_SENTINEL } from '../utils/speciesUtils'
+import {
+  sortSpeciesHumansLast,
+  isBlank,
+  isVehicle,
+  BLANK_SENTINEL,
+  VEHICLE_SENTINEL
+} from '../utils/speciesUtils'
 import SpeciesTooltipContent from './SpeciesTooltipContent'
 import { useCommonName } from '../utils/commonNames'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
@@ -10,6 +16,7 @@ function SpeciesRow({
   species,
   index,
   isBlankEntry,
+  isVehicleEntry,
   storedCommonName,
   selectedSpecies,
   palette,
@@ -19,6 +26,7 @@ function SpeciesRow({
   onToggle,
   scrollSignal
 }) {
+  const isPseudoEntry = isBlankEntry || isVehicleEntry
   const [hoverOpen, setHoverOpen] = useState(false)
   // Close any open card when the parent list scrolls — Radix HoverCard tracks
   // its trigger, so without this the card "rides along" with the row, which
@@ -26,21 +34,27 @@ function SpeciesRow({
   useEffect(() => {
     if (scrollSignal > 0) setHoverOpen(false)
   }, [scrollSignal])
-  // Hook must be called unconditionally — pass null for blank entries so it short-circuits.
-  const resolved = useCommonName(isBlankEntry ? null : species.scientificName, { storedCommonName })
-  const displayName = isBlankEntry ? 'Blank' : resolved || species.scientificName
+  // Hook must be called unconditionally — pass null for pseudo-species entries so it short-circuits.
+  const resolved = useCommonName(isPseudoEntry ? null : species.scientificName, {
+    storedCommonName
+  })
+  const displayName = isBlankEntry
+    ? 'Blank'
+    : isVehicleEntry
+      ? 'Vehicle'
+      : resolved || species.scientificName
 
   const isSelected = selectedSpecies.some((s) => s.scientificName === species.scientificName)
   const colorIndex = selectedSpecies.findIndex((s) => s.scientificName === species.scientificName)
   const color = colorIndex >= 0 ? palette[colorIndex % palette.length] : '#ccc'
 
   const showScientificInItalic =
-    !isBlankEntry && species.scientificName && displayName !== species.scientificName
+    !isPseudoEntry && species.scientificName && displayName !== species.scientificName
   // resolveSpeciesInfo is still used to surface a Wikipedia thumbnail when the
   // study has no best-media image. The inline IUCN badge is intentionally NOT
   // rendered on the media/activity sidebars — only inside the hover card.
-  const info = isBlankEntry ? null : resolveSpeciesInfo(species.scientificName)
-  const studyImage = isBlankEntry ? null : speciesImageMap[species.scientificName]
+  const info = isPseudoEntry ? null : resolveSpeciesInfo(species.scientificName)
+  const studyImage = isPseudoEntry ? null : speciesImageMap[species.scientificName]
   const tooltipImageData =
     studyImage || (info?.imageUrl ? { scientificName: species.scientificName } : null)
   const enableTooltip = studyId && !!tooltipImageData
@@ -57,7 +71,7 @@ function SpeciesRow({
             style={{ backgroundColor: isSelected ? color : null }}
           ></div>
           <span
-            className={`text-sm truncate ${isBlankEntry ? 'text-gray-500 italic' : 'capitalize'}`}
+            className={`text-sm truncate ${isPseudoEntry ? 'text-gray-500 italic' : 'capitalize'}`}
           >
             {displayName}
             {showScientificInItalic && (
@@ -117,15 +131,20 @@ function SpeciesDistribution({
   onSpeciesChange,
   palette,
   blankCount = 0,
+  vehicleCount = 0,
   studyId = null
 }) {
-  // Combine species data with blank entry if blankCount > 0
+  // Append pseudo-species rows (Blank, Vehicle) when their counts are > 0.
   const displayData = useMemo(() => {
-    if (blankCount > 0) {
-      return [...data, { scientificName: BLANK_SENTINEL, count: blankCount }]
+    let result = data
+    if (vehicleCount > 0) {
+      result = [...result, { scientificName: VEHICLE_SENTINEL, count: vehicleCount }]
     }
-    return data
-  }, [data, blankCount])
+    if (blankCount > 0) {
+      result = [...result, { scientificName: BLANK_SENTINEL, count: blankCount }]
+    }
+    return result
+  }, [data, blankCount, vehicleCount])
 
   const totalCount = displayData.reduce((sum, item) => sum + item.count, 0)
 
@@ -194,7 +213,8 @@ function SpeciesDistribution({
     return <div className="text-gray-500">No species data available</div>
   }
 
-  const speciesCount = blankCount > 0 ? displayData.length - 1 : displayData.length
+  const pseudoEntries = (blankCount > 0 ? 1 : 0) + (vehicleCount > 0 ? 1 : 0)
+  const speciesCount = displayData.length - pseudoEntries
 
   return (
     <div className="w-full h-full bg-white rounded border border-gray-200 flex flex-col overflow-hidden">
@@ -207,7 +227,9 @@ function SpeciesDistribution({
         <div>
           {sortSpeciesHumansLast(displayData).map((species, index) => {
             const isBlankEntry = isBlank(species.scientificName)
-            const storedCommonName = isBlankEntry
+            const isVehicleEntry = isVehicle(species.scientificName)
+            const isPseudo = isBlankEntry || isVehicleEntry
+            const storedCommonName = isPseudo
               ? null
               : scientificToCommonMap[species.scientificName] || null
             return (
@@ -216,6 +238,7 @@ function SpeciesDistribution({
                 species={species}
                 index={index}
                 isBlankEntry={isBlankEntry}
+                isVehicleEntry={isVehicleEntry}
                 scrollSignal={scrollSignal}
                 storedCommonName={storedCommonName}
                 selectedSpecies={selectedSpecies}

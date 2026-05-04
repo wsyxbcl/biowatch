@@ -32,6 +32,7 @@ export function useImportStatus(id, interval = 1000) {
           queryClient.invalidateQueries({ queryKey: ['sequenceAwareDailyActivity', id] })
           queryClient.invalidateQueries({ queryKey: ['sequenceAwareHeatmap', id] })
           queryClient.invalidateQueries({ queryKey: ['blankMediaCount', id] })
+          queryClient.invalidateQueries({ queryKey: ['vehicleMediaCount', id] })
           queryClient.invalidateQueries({ queryKey: ['distinctSpecies', id] })
           queryClient.invalidateQueries({ queryKey: ['sequences', id] })
         }

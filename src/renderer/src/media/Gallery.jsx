@@ -469,6 +469,7 @@ function ImageModal({
       queryClient.invalidateQueries({ queryKey: ['sequenceAwareDailyActivity', studyId] })
       queryClient.invalidateQueries({ queryKey: ['sequenceAwareHeatmap', studyId] })
       queryClient.invalidateQueries({ queryKey: ['blankMediaCount', studyId] })
+      queryClient.invalidateQueries({ queryKey: ['vehicleMediaCount', studyId] })
       queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
 
       setShowDatePicker(false)
@@ -582,6 +583,7 @@ function ImageModal({
       queryClient.invalidateQueries({ queryKey: ['sequenceAwareDailyActivity', studyId] })
       queryClient.invalidateQueries({ queryKey: ['sequenceAwareHeatmap', studyId] })
       queryClient.invalidateQueries({ queryKey: ['blankMediaCount', studyId] })
+      queryClient.invalidateQueries({ queryKey: ['vehicleMediaCount', studyId] })
       queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
     }
   })
@@ -705,6 +707,7 @@ function ImageModal({
       queryClient.invalidateQueries({ queryKey: ['sequenceAwareDailyActivity', studyId] })
       queryClient.invalidateQueries({ queryKey: ['sequenceAwareHeatmap', studyId] })
       queryClient.invalidateQueries({ queryKey: ['blankMediaCount', studyId] })
+      queryClient.invalidateQueries({ queryKey: ['vehicleMediaCount', studyId] })
       queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
     }
   })
@@ -736,6 +739,7 @@ function ImageModal({
       queryClient.invalidateQueries({ queryKey: ['sequenceAwareDailyActivity', studyId] })
       queryClient.invalidateQueries({ queryKey: ['sequenceAwareHeatmap', studyId] })
       queryClient.invalidateQueries({ queryKey: ['blankMediaCount', studyId] })
+      queryClient.invalidateQueries({ queryKey: ['vehicleMediaCount', studyId] })
       queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
       // Exit draw mode and select the new observation
       setIsDrawMode(false)

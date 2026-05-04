@@ -23,7 +23,7 @@ import {
 import { union } from 'drizzle-orm/sqlite-core'
 import log from '../../services/logger.js'
 import { getStudyIdFromPath } from './utils.js'
-import { BLANK_SENTINEL } from '../../../shared/constants.js'
+import { BLANK_SENTINEL, VEHICLE_SENTINEL } from '../../../shared/constants.js'
 
 /**
  * Get media for sequence pagination with cursor support.
@@ -61,9 +61,14 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
     const studyId = getStudyIdFromPath(dbPath)
     const db = await getDrizzleDb(studyId, dbPath)
 
-    // Check if requesting blanks (media without observations)
+    // Check if requesting pseudo-species buckets. "Blank" now means "media
+    // without any animal/human/vehicle observation" (covers zero-obs media
+    // AND media whose only observations are blank/unclassified/unknown-typed
+    // empty-species rows). "Vehicle" is media with at least one
+    // observationType='vehicle' observation.
     const requestingBlanks = species.includes(BLANK_SENTINEL)
-    const regularSpecies = species.filter((s) => s !== BLANK_SENTINEL)
+    const requestingVehicle = species.includes(VEHICLE_SENTINEL)
+    const regularSpecies = species.filter((s) => s !== BLANK_SENTINEL && s !== VEHICLE_SENTINEL)
 
     // Date range filter (only applies to timestamped phase)
     let startDate, endDate
@@ -101,6 +106,21 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
       favorite: media.favorite
     }
 
+    // Vehicle arm: same shape as selectFields but tags rows with the
+    // VEHICLE_SENTINEL so renderers can label them "Vehicle" instead of
+    // falling back to "Blank" (the default for null scientificName).
+    const selectFieldsVehicle = {
+      mediaID: media.mediaID,
+      filePath: media.filePath,
+      fileName: media.fileName,
+      timestamp: media.timestamp,
+      deploymentID: media.deploymentID,
+      scientificName: sql`${VEHICLE_SENTINEL}`.as('scientificName'),
+      fileMediatype: media.fileMediatype,
+      eventID: sql`(${eventIDPicker})`.as('eventID'),
+      favorite: media.favorite
+    }
+
     const selectFieldsWithObs = {
       mediaID: media.mediaID,
       filePath: media.filePath,
@@ -113,11 +133,107 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
       favorite: media.favorite
     }
 
-    // Correlated subquery for blank detection
-    const matchingObservations = db
+    // Correlated subquery: returns 1 when the media has any "real"
+    // observation (animal/human with a species name, OR vehicle). The
+    // `notExists(realObservations)` pattern below identifies blank media.
+    const realObservations = db
       .select({ one: sql`1` })
       .from(observations)
-      .where(eq(observations.mediaID, media.mediaID))
+      .where(
+        and(
+          eq(observations.mediaID, media.mediaID),
+          or(
+            and(isNotNull(observations.scientificName), ne(observations.scientificName, '')),
+            eq(observations.observationType, 'vehicle')
+          )
+        )
+      )
+
+    // Correlated subquery: returns 1 when the media has any vehicle
+    // observation. Used by the Vehicle pseudo-species filter.
+    const vehicleObservations = db
+      .select({ one: sql`1` })
+      .from(observations)
+      .where(
+        and(eq(observations.mediaID, media.mediaID), eq(observations.observationType, 'vehicle'))
+      )
+
+    // Arm-builders for the union pattern. Used when a request mixes regular
+    // species with the Blank/Vehicle pseudo-species. Each arm produces rows
+    // shaped to match `selectFields` so they can be unioned together.
+    // Pure regular-species requests (no Blank/Vehicle) take the optimized
+    // semi-join path below instead — the union path doesn't get the same
+    // index short-circuit.
+    const buildSpeciesArm = (extraConds) =>
+      db
+        .selectDistinct(selectFieldsWithObs)
+        .from(media)
+        .innerJoin(observations, eq(media.mediaID, observations.mediaID))
+        .where(
+          and(
+            ...extraConds,
+            isNotNull(observations.scientificName),
+            ne(observations.scientificName, ''),
+            inArray(observations.scientificName, regularSpecies)
+          )
+        )
+
+    const buildBlankArm = (extraConds) =>
+      db
+        .selectDistinct(selectFields)
+        .from(media)
+        .where(and(...extraConds, notExists(realObservations)))
+
+    const buildVehicleArm = (extraConds) =>
+      db
+        .selectDistinct(selectFieldsVehicle)
+        .from(media)
+        .where(and(...extraConds, exists(vehicleObservations)))
+
+    // Returns an array of arm queries for the requested filter combination.
+    // Caller is responsible for unioning + ordering + limiting.
+    const collectArms = (extraConds) => {
+      const arms = []
+      if (regularSpecies.length > 0) arms.push(buildSpeciesArm(extraConds))
+      if (requestingBlanks) arms.push(buildBlankArm(extraConds))
+      if (requestingVehicle) arms.push(buildVehicleArm(extraConds))
+      return arms
+    }
+
+    // Drizzle's union dedups on full-row equality, but the species arm
+    // emits selectFieldsWithObs (real scientificName) while blank/vehicle
+    // arms emit selectFields (NULL or VEHICLE_SENTINEL) — so a media that
+    // matches both arms produces two non-equal rows. We dedup by mediaID
+    // post-fetch with an explicit priority so the species-arm row wins
+    // over the vehicle-arm row when both exist for the same media (giving
+    // the gallery card a real species label, not "Vehicle").
+    //
+    // SQLite UNION + ORDER BY does NOT guarantee per-arm ordering, so a
+    // first-seen-wins dedup based on row order is implementation-defined.
+    // Hence the explicit priority below.
+    const armPriority = (row) => {
+      if (row.scientificName === VEHICLE_SENTINEL) return 1
+      if (row.scientificName == null) return 2 // blank arm — NULL scientificName
+      return 0 // species arm — real scientificName wins
+    }
+    const dedupByMediaID = (rows) => {
+      const byID = new Map()
+      for (const r of rows) {
+        const existing = byID.get(r.mediaID)
+        if (!existing || armPriority(r) < armPriority(existing)) {
+          byID.set(r.mediaID, r)
+        }
+      }
+      return [...byID.values()]
+    }
+
+    // Oversample factor for the union path: when 2+ arms are active a
+    // single media can produce N rows in the raw fetch, eating LIMIT
+    // slots before JS-side dedup runs. Oversampling by `arms.length` is
+    // the worst-case bound — every media in the page has the maximum
+    // possible duplicate count. Single-arm calls (the common case)
+    // skip oversampling entirely.
+    const oversampleFactor = (armsLen) => Math.max(1, armsLen)
 
     // Phase 1: Timestamped media
     if (phase === 'timestamped') {
@@ -176,37 +292,18 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
           .where(and(...timestampedConditions))
           .orderBy(sql`${media.timestamp} DESC, ${media.mediaID} DESC`)
           .limit(batchSize)
-      } else if (requestingBlanks && regularSpecies.length === 0) {
-        // Only blanks
-        timestampedMedia = await db
-          .selectDistinct(selectFields)
-          .from(media)
-          .where(and(...timestampedConditions, notExists(matchingObservations)))
-          .orderBy(sql`${media.timestamp} DESC, ${media.mediaID} DESC`)
-          .limit(batchSize)
-      } else if (requestingBlanks && regularSpecies.length > 0) {
-        // Mixed: species + blanks
-        const speciesQuery = db
-          .selectDistinct(selectFieldsWithObs)
-          .from(media)
-          .innerJoin(observations, eq(media.mediaID, observations.mediaID))
-          .where(
-            and(
-              ...timestampedConditions,
-              isNotNull(observations.scientificName),
-              ne(observations.scientificName, ''),
-              inArray(observations.scientificName, regularSpecies)
-            )
-          )
-
-        const blankQuery = db
-          .selectDistinct(selectFields)
-          .from(media)
-          .where(and(...timestampedConditions, notExists(matchingObservations)))
-
-        timestampedMedia = await union(speciesQuery, blankQuery)
-          .orderBy(sql`timestamp DESC, mediaID DESC`)
-          .limit(batchSize)
+      } else if (requestingBlanks || requestingVehicle) {
+        // Mix of regular species + Blank/Vehicle pseudo-species, or
+        // pure pseudo-species request. Union the appropriate arms.
+        const arms = collectArms(timestampedConditions)
+        const unioned = arms.length === 1 ? arms[0] : union(...arms)
+        // Oversample to absorb cross-arm duplicates (a media matching both
+        // the species and vehicle arms shows up twice in the raw union).
+        // Without this, dedup undercounts the page and hasMoreTimestamped
+        // can falsely report exhaustion.
+        const fetchLimit = batchSize * oversampleFactor(arms.length)
+        const raw = await unioned.orderBy(sql`timestamp DESC, mediaID DESC`).limit(fetchLimit)
+        timestampedMedia = dedupByMediaID(raw).slice(0, batchSize)
       } else {
         // Regular species query — rewritten as a semi-join (EXISTS).
         //
@@ -292,33 +389,15 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
             .select({ count: sql`COUNT(DISTINCT ${media.mediaID})`.as('count') })
             .from(media)
             .where(and(...nullConditions))
-        } else if (requestingBlanks && regularSpecies.length === 0) {
-          nullCountResult = await db
-            .select({ count: sql`COUNT(DISTINCT ${media.mediaID})`.as('count') })
-            .from(media)
-            .where(and(...nullConditions, notExists(matchingObservations)))
-        } else if (requestingBlanks && regularSpecies.length > 0) {
-          // For mixed case, need to count both species and blanks
-          const speciesCount = db
-            .select({ mediaID: media.mediaID })
-            .from(media)
-            .innerJoin(observations, eq(media.mediaID, observations.mediaID))
-            .where(
-              and(
-                ...nullConditions,
-                isNotNull(observations.scientificName),
-                ne(observations.scientificName, ''),
-                inArray(observations.scientificName, regularSpecies)
-              )
-            )
-
-          const blankCount = db
-            .select({ mediaID: media.mediaID })
-            .from(media)
-            .where(and(...nullConditions, notExists(matchingObservations)))
-
-          const combined = await union(speciesCount, blankCount)
-          nullCountResult = [{ count: combined.length }]
+        } else if (requestingBlanks || requestingVehicle) {
+          // hasMoreNull only needs "any match?" so probe each arm with
+          // LIMIT 1 instead of materializing the full union (which would
+          // pull millions of null-timestamp rows on image-only studies
+          // like 1378cb43 just to take .length).
+          const arms = collectArms(nullConditions)
+          const probes = await Promise.all(arms.map((arm) => arm.limit(1)))
+          const anyMatch = probes.some((rows) => rows.length > 0)
+          nullCountResult = [{ count: anyMatch ? 1 : 0 }]
         } else {
           nullCountResult = await db
             .select({ count: sql`COUNT(DISTINCT ${media.mediaID})`.as('count') })
@@ -369,37 +448,15 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
           .orderBy(sql`${media.mediaID} DESC`)
           .limit(batchSize)
           .offset(offset)
-      } else if (requestingBlanks && regularSpecies.length === 0) {
-        nullMedia = await db
-          .selectDistinct(selectFields)
-          .from(media)
-          .where(and(...nullConditions, notExists(matchingObservations)))
-          .orderBy(sql`${media.mediaID} DESC`)
-          .limit(batchSize)
-          .offset(offset)
-      } else if (requestingBlanks && regularSpecies.length > 0) {
-        const speciesQuery = db
-          .selectDistinct(selectFieldsWithObs)
-          .from(media)
-          .innerJoin(observations, eq(media.mediaID, observations.mediaID))
-          .where(
-            and(
-              ...nullConditions,
-              isNotNull(observations.scientificName),
-              ne(observations.scientificName, ''),
-              inArray(observations.scientificName, regularSpecies)
-            )
-          )
-
-        const blankQuery = db
-          .selectDistinct(selectFields)
-          .from(media)
-          .where(and(...nullConditions, notExists(matchingObservations)))
-
-        nullMedia = await union(speciesQuery, blankQuery)
+      } else if (requestingBlanks || requestingVehicle) {
+        const arms = collectArms(nullConditions)
+        const unioned = arms.length === 1 ? arms[0] : union(...arms)
+        const fetchLimit = batchSize * oversampleFactor(arms.length)
+        const raw = await unioned
           .orderBy(sql`mediaID DESC`)
-          .limit(batchSize)
+          .limit(fetchLimit)
           .offset(offset)
+        nullMedia = dedupByMediaID(raw).slice(0, batchSize)
       } else {
         // Regular species query — semi-join rewrite (see timestamped phase
         // for rationale and expected speedup).
@@ -494,7 +551,8 @@ export async function hasTimestampedMedia(dbPath, options = {}) {
     const db = await getDrizzleDb(studyId, dbPath)
 
     const requestingBlanks = species.includes(BLANK_SENTINEL)
-    const regularSpecies = species.filter((s) => s !== BLANK_SENTINEL)
+    const requestingVehicle = species.includes(VEHICLE_SENTINEL)
+    const regularSpecies = species.filter((s) => s !== BLANK_SENTINEL && s !== VEHICLE_SENTINEL)
 
     const conditions = [isNotNull(media.timestamp)]
 
@@ -530,68 +588,78 @@ export async function hasTimestampedMedia(dbPath, options = {}) {
       }
     }
 
-    // Correlated subquery for blank detection
-    const matchingObservations = db
+    // Correlated subquery: returns 1 when the media has any "real"
+    // observation (animal/human with a species name, OR vehicle).
+    const realObservations = db
       .select({ one: sql`1` })
       .from(observations)
-      .where(eq(observations.mediaID, media.mediaID))
+      .where(
+        and(
+          eq(observations.mediaID, media.mediaID),
+          or(
+            and(isNotNull(observations.scientificName), ne(observations.scientificName, '')),
+            eq(observations.observationType, 'vehicle')
+          )
+        )
+      )
 
-    let result
+    // Correlated subquery: returns 1 when the media has any vehicle observation.
+    const vehicleObservations = db
+      .select({ one: sql`1` })
+      .from(observations)
+      .where(
+        and(eq(observations.mediaID, media.mediaID), eq(observations.observationType, 'vehicle'))
+      )
+
+    // Existence check per arm. Short-circuit: any arm hit → true.
+    const speciesArmExists = async () =>
+      (
+        await db
+          .select({ exists: sql`1` })
+          .from(media)
+          .innerJoin(observations, eq(media.mediaID, observations.mediaID))
+          .where(
+            and(
+              ...conditions,
+              isNotNull(observations.scientificName),
+              ne(observations.scientificName, ''),
+              inArray(observations.scientificName, regularSpecies)
+            )
+          )
+          .limit(1)
+      ).length > 0
+
+    const blankArmExists = async () =>
+      (
+        await db
+          .select({ exists: sql`1` })
+          .from(media)
+          .where(and(...conditions, notExists(realObservations)))
+          .limit(1)
+      ).length > 0
+
+    const vehicleArmExists = async () =>
+      (
+        await db
+          .select({ exists: sql`1` })
+          .from(media)
+          .where(and(...conditions, exists(vehicleObservations)))
+          .limit(1)
+      ).length > 0
 
     if (species.length === 0) {
-      result = await db
+      const result = await db
         .select({ exists: sql`1` })
         .from(media)
         .where(and(...conditions))
         .limit(1)
-    } else if (requestingBlanks && regularSpecies.length === 0) {
-      result = await db
-        .select({ exists: sql`1` })
-        .from(media)
-        .where(and(...conditions, notExists(matchingObservations)))
-        .limit(1)
-    } else if (requestingBlanks && regularSpecies.length > 0) {
-      // Check for either species match or blank
-      const speciesResult = await db
-        .select({ exists: sql`1` })
-        .from(media)
-        .innerJoin(observations, eq(media.mediaID, observations.mediaID))
-        .where(
-          and(
-            ...conditions,
-            isNotNull(observations.scientificName),
-            ne(observations.scientificName, ''),
-            inArray(observations.scientificName, regularSpecies)
-          )
-        )
-        .limit(1)
-
-      if (speciesResult.length > 0) {
-        return true
-      }
-
-      result = await db
-        .select({ exists: sql`1` })
-        .from(media)
-        .where(and(...conditions, notExists(matchingObservations)))
-        .limit(1)
-    } else {
-      result = await db
-        .select({ exists: sql`1` })
-        .from(media)
-        .innerJoin(observations, eq(media.mediaID, observations.mediaID))
-        .where(
-          and(
-            ...conditions,
-            isNotNull(observations.scientificName),
-            ne(observations.scientificName, ''),
-            inArray(observations.scientificName, regularSpecies)
-          )
-        )
-        .limit(1)
+      return result.length > 0
     }
 
-    return result.length > 0
+    if (regularSpecies.length > 0 && (await speciesArmExists())) return true
+    if (requestingBlanks && (await blankArmExists())) return true
+    if (requestingVehicle && (await vehicleArmExists())) return true
+    return false
   } catch (error) {
     log.error(`[Sequences] Error checking for timestamped media: ${error.message}`)
     throw error

@@ -88,6 +88,7 @@ export async function getMediaBboxes(dbPath, mediaID, includeWithoutBbox = false
       .select({
         observationID: observations.observationID,
         scientificName: observations.scientificName,
+        observationType: observations.observationType,
         commonName: observations.commonName,
         classificationProbability: observations.classificationProbability,
         detectionConfidence: observations.detectionConfidence,
@@ -141,6 +142,7 @@ export async function getMediaBboxesBatch(dbPath, mediaIDs) {
         mediaID: observations.mediaID,
         observationID: observations.observationID,
         scientificName: observations.scientificName,
+        observationType: observations.observationType,
         commonName: observations.commonName,
         classificationProbability: observations.classificationProbability,
         detectionConfidence: observations.detectionConfidence,

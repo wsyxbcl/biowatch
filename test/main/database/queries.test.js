@@ -403,13 +403,16 @@ describe('Database Query Functions Tests', () => {
   })
 
   describe('getBlankMediaCount', () => {
-    test('should return 0 for mediaID-based dataset with no blanks', async () => {
-      // Standard test data has all media linked to observations via mediaID
+    test('counts media with empty-species observations as blank', async () => {
+      // createTestData attaches a null-scientificName "Empty" observation
+      // to media004 — under the new contract that media is blank because
+      // no observation names a real species (or vehicle). All other
+      // media in the fixture have animal observations and are not blank.
       await createTestData(testDbPath)
 
       const result = await getBlankMediaCount(testDbPath)
 
-      assert.equal(result, 0, 'Should return 0 when all media have observations')
+      assert.equal(result, 1, 'media004 (null-species observation) is blank')
     })
 
     test('should return correct blank count for mediaID-based dataset with blanks', async () => {

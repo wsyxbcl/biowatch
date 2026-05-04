@@ -387,6 +387,7 @@ export async function insertObservations(manager, observationsData) {
             eventStart: observation.eventStart ? observation.eventStart.toISO() : null,
             eventEnd: observation.eventEnd ? observation.eventEnd.toISO() : null,
             scientificName: observation.scientificName,
+            observationType: observation.observationType,
             commonName: observation.commonName,
             classificationProbability:
               observation.classificationProbability !== undefined

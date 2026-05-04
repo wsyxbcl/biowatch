@@ -48,7 +48,8 @@ export async function getOverviewStats(dbPath) {
            (SELECT COUNT(DISTINCT COALESCE(cameraID, deploymentID)) FROM deployments) AS cameraCount,
            (SELECT COUNT(DISTINCT locationID) FROM deployments WHERE locationID IS NOT NULL) AS locationCount,
            (SELECT COUNT(*) FROM observations
-              WHERE (observationType IS NULL OR observationType != 'blank')) AS observationCount,
+              WHERE (scientificName IS NOT NULL AND scientificName != '')
+                 OR observationType = 'vehicle') AS observationCount,
            (SELECT COALESCE(SUM(julianday(deploymentEnd) - julianday(deploymentStart)), 0)
               FROM deployments
               WHERE deploymentStart IS NOT NULL

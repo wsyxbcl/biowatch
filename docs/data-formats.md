@@ -93,8 +93,8 @@ dataset/
 | `eventStart` | datetime | Event start time |
 | `eventEnd` | datetime | Event end time |
 | `observationLevel` | string | Always `media` |
-| `observationType` | string | `animal`, `human`, `vehicle`, `blank`, `unknown`, `unclassified` |
-| `scientificName` | string | Latin species name |
+| `observationType` | string | `animal`, `human`, `vehicle`, `blank`, `unknown`, `unclassified` (see "Empty-species observations" below) |
+| `scientificName` | string | Latin species name (null/empty for `vehicle`/`blank`/`unknown`/`unclassified` rows) |
 | `count` | integer | Number of individuals (min: 1, null if unknown) |
 | `lifeStage` | string | `adult`, `subadult`, `juvenile` |
 | `sex` | string | `male`, `female` |
@@ -113,6 +113,26 @@ dataset/
 - Export: `src/main/services/export/exporter.js`
 - Validation schemas: `src/main/services/export/schemas.js`
 - Sanitization: `src/main/services/export/sanitizers.js`
+
+### Empty-species observations
+
+Camtrap DP exporters typically attach an observation row with an empty
+`scientificName` to media that has no detected species, using
+`observationType` to indicate why. The values `blank`, `unclassified`,
+`unknown`, and `vehicle` all carry no species name.
+
+The importer preserves these rows verbatim. Downstream:
+- `blank`/`unclassified`/`unknown`-typed empty-species rows roll up into
+  the **Blank** pseudo-species in the species filter.
+- `vehicle`-typed rows roll up into the **Vehicle** pseudo-species.
+- The annotation rail labels the row by its `observationType` ("Blank" or
+  "Vehicle") instead of falling back to a dash.
+
+This unifies handling across studies whose exporters left blank media
+observation-less (zero-obs media — older convention) and studies whose
+exporters wrote a `blank`-typed row instead. See
+`docs/specs/2026-05-04-empty-species-observations-design.md` for the
+complete rationale and per-study verification.
 
 ### Export Validation
 

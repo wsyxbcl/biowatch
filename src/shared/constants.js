@@ -10,6 +10,14 @@
 export const BLANK_SENTINEL = '__blank__f47ac10b-58cc-4372-a567-0e02b2c3d479__'
 
 /**
+ * Sentinel value used to represent vehicle observations as a pseudo-species.
+ * Vehicle observations always have empty `scientificName` per the Camtrap DP
+ * convention; this sentinel lets the UI's species-filter pipeline treat
+ * Vehicle as a single filterable bucket alongside Blank.
+ */
+export const VEHICLE_SENTINEL = '__vehicle__a8c3e9b2-7d4f-4e1a-9b2c-3d4e5f6a7b8c__'
+
+/**
  * Default sequence gap in seconds.
  * Used when no user preference is set.
  */
