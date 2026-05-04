@@ -13,7 +13,7 @@ import {
   getMetadata,
   getStudyIdFromPath
 } from '../../database/index.js'
-import { eq, and, isNotNull, ne, or, isNull, asc, inArray } from 'drizzle-orm'
+import { eq, and, isNotNull, ne, isNull, asc, inArray } from 'drizzle-orm'
 import { downloadFileWithRetry } from '../download.ts'
 import crypto from 'crypto'
 import { observationSchema, mediaSchema, deploymentSchema, datapackageSchema } from './schemas.js'

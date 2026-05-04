@@ -114,9 +114,7 @@ export default function ObservationRow({
 
         <span
           className={`text-sm flex-1 min-w-0 truncate ${
-            isPseudoSpecies
-              ? 'italic text-gray-400'
-              : 'text-[#030213] font-medium capitalize'
+            isPseudoSpecies ? 'italic text-gray-400' : 'text-[#030213] font-medium capitalize'
           }`}
         >
           {displayName}

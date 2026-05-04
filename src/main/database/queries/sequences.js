@@ -68,9 +68,7 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
     // observationType='vehicle' observation.
     const requestingBlanks = species.includes(BLANK_SENTINEL)
     const requestingVehicle = species.includes(VEHICLE_SENTINEL)
-    const regularSpecies = species.filter(
-      (s) => s !== BLANK_SENTINEL && s !== VEHICLE_SENTINEL
-    )
+    const regularSpecies = species.filter((s) => s !== BLANK_SENTINEL && s !== VEHICLE_SENTINEL)
 
     // Date range filter (only applies to timestamped phase)
     let startDate, endDate
@@ -282,9 +280,7 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
         // pure pseudo-species request. Union the appropriate arms.
         const arms = collectArms(timestampedConditions)
         const unioned = arms.length === 1 ? arms[0] : union(...arms)
-        const raw = await unioned
-          .orderBy(sql`timestamp DESC, mediaID DESC`)
-          .limit(batchSize)
+        const raw = await unioned.orderBy(sql`timestamp DESC, mediaID DESC`).limit(batchSize)
         timestampedMedia = dedupByMediaID(raw)
       } else {
         // Regular species query — rewritten as a semi-join (EXISTS).
@@ -430,7 +426,10 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
       } else if (requestingBlanks || requestingVehicle) {
         const arms = collectArms(nullConditions)
         const unioned = arms.length === 1 ? arms[0] : union(...arms)
-        const raw = await unioned.orderBy(sql`mediaID DESC`).limit(batchSize).offset(offset)
+        const raw = await unioned
+          .orderBy(sql`mediaID DESC`)
+          .limit(batchSize)
+          .offset(offset)
         nullMedia = dedupByMediaID(raw)
       } else {
         // Regular species query — semi-join rewrite (see timestamped phase
@@ -527,9 +526,7 @@ export async function hasTimestampedMedia(dbPath, options = {}) {
 
     const requestingBlanks = species.includes(BLANK_SENTINEL)
     const requestingVehicle = species.includes(VEHICLE_SENTINEL)
-    const regularSpecies = species.filter(
-      (s) => s !== BLANK_SENTINEL && s !== VEHICLE_SENTINEL
-    )
+    const regularSpecies = species.filter((s) => s !== BLANK_SENTINEL && s !== VEHICLE_SENTINEL)
 
     const conditions = [isNotNull(media.timestamp)]
 
