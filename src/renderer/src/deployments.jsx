@@ -501,6 +501,18 @@ const formatDateShort = (date) => {
   return date.toLocaleDateString('en-US', { year: '2-digit', month: 'short' })
 }
 
+const ONE_DAY_MS = 86_400_000
+
+// Format a bucket's [start, end) as a readable range. End is exclusive in
+// the period data; display as inclusive by subtracting one day.
+const formatBucketRange = (startStr, endStr) => {
+  const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const start = new Date(startStr)
+  const end = new Date(new Date(endStr).getTime() - ONE_DAY_MS)
+  if (end < start) return fmt(start)
+  return start.toDateString() === end.toDateString() ? fmt(start) : `${fmt(start)} – ${fmt(end)}`
+}
+
 function LocationsList({
   studyId,
   activity,
@@ -512,19 +524,51 @@ function LocationsList({
 }) {
   const parentRef = useRef(null)
   const timelineRef = useRef(null)
-  const [timelineWidth, setTimelineWidth] = useState(0)
+  const containerRef = useRef(null)
+  // A zero-height invisible mirror of a row's sparkline column. The header's
+  // timelineRef can't be used to bound the crosshair because the header's
+  // right gutter (count col + sparkline-mode toggle) is wider than a row's
+  // (count col only), so timelineRef ends ~60px before the row's sparkline.
+  const sparklineRulerRef = useRef(null)
+  const [metrics, setMetrics] = useState({ timelineWidth: 0, sparklineLeft: 0, sparklineWidth: 0 })
+  const [hoverX, setHoverX] = useState(null)
   const [sparklineMode, setSparklineMode] = useSparklineMode(studyId)
 
   useEffect(() => {
-    const node = timelineRef.current
-    if (!node) return
-    const ro = new ResizeObserver(([entry]) => {
-      setTimelineWidth(entry.contentRect.width)
-    })
-    ro.observe(node)
+    const tNode = timelineRef.current
+    const cNode = containerRef.current
+    const sNode = sparklineRulerRef.current
+    if (!tNode || !cNode || !sNode) return
+    const update = () => {
+      const t = tNode.getBoundingClientRect()
+      const c = cNode.getBoundingClientRect()
+      const s = sNode.getBoundingClientRect()
+      setMetrics({
+        timelineWidth: t.width,
+        sparklineLeft: s.left - c.left,
+        sparklineWidth: s.width
+      })
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(tNode)
+    ro.observe(cNode)
+    ro.observe(sNode)
     return () => ro.disconnect()
   }, [])
 
+  // Track hover at the list level instead of per-row, so scrolling between
+  // rows doesn't cause mouseLeave→mouseMove flicker.
+  const handleListMouseMove = (event) => {
+    const sNode = sparklineRulerRef.current
+    if (!sNode) return
+    const rect = sNode.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    setHoverX(x >= 0 && x <= rect.width ? x : null)
+  }
+  const handleListMouseLeave = () => setHoverX(null)
+
+  const { timelineWidth, sparklineLeft, sparklineWidth } = metrics
   const dateCount = timelineWidth ? Math.max(2, Math.min(15, Math.round(timelineWidth / 150))) : 5
   const periodCount = timelineWidth ? Math.max(10, Math.round(timelineWidth / 30 / 10) * 10) : 20
 
@@ -602,9 +646,26 @@ function LocationsList({
     )
   }
 
+  // All deployments share the same bucket grid (computed from the study-wide
+  // date range and periodCount), so any one row's periods works as the source.
+  const periodsForBuckets = activity.deployments?.[0]?.periods
+  let hoverBucket = null
+  if (hoverX != null && periodsForBuckets?.length && sparklineWidth) {
+    const i = Math.floor((hoverX / sparklineWidth) * periodsForBuckets.length)
+    hoverBucket = periodsForBuckets[Math.max(0, Math.min(periodsForBuckets.length - 1, i))]
+  }
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-      <header className="bg-white z-10 py-2 border-b border-gray-300 flex items-stretch">
+    <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden min-h-0">
+      <header className="relative bg-white z-10 py-2 border-b border-gray-300 flex items-stretch">
+        {hoverX != null && hoverBucket && (
+          <div
+            className="absolute top-0 -translate-x-1/2 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 text-[11px] text-gray-700 whitespace-nowrap shadow-sm pointer-events-none z-20"
+            style={{ left: `${sparklineLeft + hoverX}px` }}
+          >
+            {formatBucketRange(hoverBucket.start, hoverBucket.end)}
+          </div>
+        )}
         {/* Date markers stretch across the activity column. The 212px
             left gutter matches the row's name column + leading padding;
             the 16px right gutter matches the count column; toggle on
@@ -624,7 +685,21 @@ function LocationsList({
         </div>
       </header>
 
-      <div ref={parentRef} className="flex-1 overflow-auto min-h-0">
+      <div
+        ref={parentRef}
+        className="flex-1 overflow-auto min-h-0"
+        onMouseMove={handleListMouseMove}
+        onMouseLeave={handleListMouseLeave}
+      >
+        {/* Zero-height ruler mirroring a row's column layout. Its middle
+            child has the same bounds as a row's sparkline div, giving the
+            crosshair an accurate reference (auto-tracks scrollbar width
+            and any future row-layout changes). */}
+        <div aria-hidden="true" className="flex gap-3 px-3 h-0 overflow-hidden pointer-events-none">
+          <div className="w-[140px] flex-shrink-0" />
+          <div ref={sparklineRulerRef} className="flex-1 min-w-0" />
+          <div className="w-16 flex-shrink-0" />
+        </div>
         <div
           style={{
             height: `${rowVirtualizer.getTotalSize()}px`,
@@ -632,6 +707,13 @@ function LocationsList({
             position: 'relative'
           }}
         >
+          {/* pointer-events-none so the line never intercepts row clicks */}
+          {hoverX != null && (
+            <div
+              className="absolute top-0 bottom-0 w-px bg-gray-400/50 pointer-events-none z-10"
+              style={{ left: `${sparklineLeft + hoverX}px` }}
+            />
+          )}
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const item = virtualItems[virtualRow.index]
             const isSelectedDeployment = (deployment) =>
