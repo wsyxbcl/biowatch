@@ -158,7 +158,7 @@ Species observations linked to media.
 | `eventStart` | TEXT | | Event start (ISO 8601) |
 | `eventEnd` | TEXT | | Event end (ISO 8601) |
 | `scientificName` | TEXT | | Latin species name |
-| `observationType` | TEXT | | `animal`, `blank`, etc. |
+| `observationType` | TEXT | | One of `animal`, `human`, `vehicle`, `blank`, `unknown`, `unclassified` (Camtrap DP enum). See "Pseudo-species and blank media" below. |
 | `commonName` | TEXT | | Common name |
 | `classificationProbability` | REAL | | Classification probability (0-1) |
 | `count` | INTEGER | | Number of individuals |
@@ -204,6 +204,33 @@ export const observations = sqliteTable('observations', {
   classificationTimestamp: text('classificationTimestamp')
 })
 ```
+
+#### Pseudo-species and blank media
+
+The Camtrap DP `observationType` enum carries six values: `animal`, `human`,
+`vehicle`, `blank`, `unknown`, `unclassified`. Of these, only `animal` and
+`human` rows ever populate `scientificName` — the other four are
+"empty-species" rows.
+
+To present these consistently in the UI we group them into two pseudo-species
+buckets, addressed via sentinel strings defined in `src/shared/constants.js`:
+
+- **`BLANK_SENTINEL`** — represents *blank media*: media that has no
+  observation naming a real species and no vehicle observation. Covers
+  media with zero observation rows AND media whose only observations are
+  `blank`/`unclassified`/`unknown`-typed empty-species rows. Computed by
+  `getBlankMediaCount` (`src/main/database/queries/species.js`) via
+  `notExists(realObservations)`.
+- **`VEHICLE_SENTINEL`** — represents *vehicle media*: media with at least
+  one `observationType='vehicle'` observation. Computed by
+  `getVehicleMediaCount`. Vehicle media is **not** counted as blank.
+
+Both sentinels appear in the Library and Deployments species filters and
+flow through `getMediaForSequencePagination` as filterable buckets. The
+`scientificName` filter `IS NOT NULL AND != ''` is preferred over the
+older `observationType != 'blank'` proxy when restricting to "real
+species" rows — the proxy lets `unclassified`/`unknown` empty-species rows
+through, which pollutes species distributions.
 
 ---
 

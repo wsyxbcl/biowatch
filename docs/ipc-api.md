@@ -60,6 +60,8 @@ const { data, error } = await window.api.getSequences(studyId, { limit: 20 })
 | --------------------------------- | -------------------------- | ---------- | -------------------------- |
 | `getSpeciesDistribution(studyId)` | `species:get-distribution` | studyId    | `{ data: Distribution[] }` |
 | `getDistinctSpecies(studyId)`     | `species:get-distinct`     | studyId    | `{ data: string[] }`       |
+| `getBlankMediaCount(studyId)`     | `species:get-blank-count`  | studyId    | `{ data: number }` — count of media with no animal/human/vehicle observation (covers zero-obs media + media with only `blank`/`unclassified`/`unknown`-typed empty-species rows). |
+| `getVehicleMediaCount(studyId)`   | `species:get-vehicle-count`| studyId    | `{ data: number }` — count of media with at least one `observationType='vehicle'` observation.  |
 
 ### Overview
 
@@ -76,7 +78,8 @@ const { data, error } = await window.api.getSequences(studyId, { limit: 20 })
   threatenedSpecies: Array<{ scientificName: string, iucn: string }>
   cameraCount: number       // distinct COALESCE(cameraID, deploymentID)
   locationCount: number     // distinct deployments.locationID
-  observationCount: number  // observations excluding 'blank'
+  observationCount: number  // animal/human (with species) + vehicle observations only;
+                            // excludes blank/unclassified/unknown empty-species rows
   cameraDays: number        // sum of deployment durations, days
   mediaCount: number
   derivedRange: {           // independently per side: override → observations
