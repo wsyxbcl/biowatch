@@ -43,17 +43,31 @@ const Sparkline = memo(function Sparkline({
 
   if (mode === 'line') {
     const stroke = muted ? '#94a3b8' : '#3b82f6'
-    const points = periods.map((p, i) => {
-      const x = (i / (periods.length - 1 || 1)) * 100
-      const y = 22 - Math.min(p.count / max, 1) * 20
-      return `${x.toFixed(2)},${y.toFixed(2)}`
-    })
-    const linePath = `M${points.join(' L')}`
-    const areaPath = `${linePath} L100,22 L0,22 Z`
+    const pts = periods.map((p, i) => [
+      (i / (periods.length - 1 || 1)) * 100,
+      22 - Math.min(p.count / max, 1) * 20
+    ])
+    // Smooth via Catmull-Rom → cubic Bezier so sparse activity reads as a
+    // wave rather than triangular spikes.
+    let linePath = `M${pts[0][0].toFixed(2)},${pts[0][1].toFixed(2)}`
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i]
+      const p1 = pts[i]
+      const p2 = pts[i + 1]
+      const p3 = pts[i + 2] || p2
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6
+      const c1y = p1[1] + (p2[1] - p0[1]) / 6
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6
+      const c2y = p2[1] - (p3[1] - p1[1]) / 6
+      linePath += ` C${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${p2[0].toFixed(2)},${p2[1].toFixed(2)}`
+    }
+    const lastX = pts[pts.length - 1][0]
+    const firstX = pts[0][0]
+    const areaPath = `${linePath} L${lastX.toFixed(2)},22 L${firstX.toFixed(2)},22 Z`
     return (
       <svg viewBox="0 0 100 22" preserveAspectRatio="none" className="w-full h-[22px] block">
-        <path d={areaPath} fill={stroke} opacity="0.15" />
-        <path d={linePath} fill="none" stroke={stroke} strokeWidth="1.5" />
+        <path d={areaPath} fill={stroke} opacity="0.22" />
+        <path d={linePath} fill="none" stroke={stroke} strokeWidth="1.75" strokeLinejoin="round" />
       </svg>
     )
   }
