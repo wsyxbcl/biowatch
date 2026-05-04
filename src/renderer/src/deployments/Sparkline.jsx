@@ -27,7 +27,6 @@ const Sparkline = memo(function Sparkline({
           return (
             <div
               key={i}
-              title={`${period.count} observations`}
               className={`flex-1 ${muted ? 'bg-slate-300' : 'bg-[#77b7ff]'} rounded-sm`}
               style={{
                 height: `${heightPct}%`,
@@ -85,7 +84,6 @@ const Sparkline = memo(function Sparkline({
           return (
             <div
               key={i}
-              title={`${period.count} observations`}
               className="flex-1 rounded-sm"
               style={{ background: period.count > 0 ? palette[idx] : '#f9fafb' }}
             />
