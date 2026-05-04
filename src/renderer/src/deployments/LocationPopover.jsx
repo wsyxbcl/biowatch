@@ -11,12 +11,7 @@ import { parseCoordinates } from './coordinateParser'
  *   3) "Place on map" — closes the popover and engages place mode on
  *      the big map; the existing flow takes over.
  */
-export default function LocationPopover({
-  deployment,
-  onCommitLatLon,
-  onClearLatLon,
-  onEnterPlaceMode
-}) {
+export default function LocationPopover({ deployment, onCommitLatLon, onEnterPlaceMode }) {
   const [isOpen, setIsOpen] = useState(false)
   const buttonRef = useRef(null)
   const popoverRef = useRef(null)
@@ -109,13 +104,6 @@ export default function LocationPopover({
     onEnterPlaceMode(deployment)
   }, [deployment, onEnterPlaceMode])
 
-  const handleClear = useCallback(() => {
-    setLatInput('')
-    setLonInput('')
-    setCombinedInput('')
-    onClearLatLon(deployment.deploymentID)
-  }, [deployment.deploymentID, onClearLatLon])
-
   const buttonClass = useMemo(
     () =>
       `p-1 rounded ${
@@ -195,12 +183,6 @@ export default function LocationPopover({
             >
               <MapPin size={12} />
               Place on map
-            </button>
-            <button
-              onClick={handleClear}
-              className="ml-auto text-xs text-gray-500 hover:text-gray-700"
-            >
-              Clear
             </button>
           </div>
         </div>

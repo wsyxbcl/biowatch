@@ -856,6 +856,20 @@ export default function Deployments({ studyId }) {
     [studyId, queryClient]
   )
 
+  const handleEnterPlaceMode = useCallback(
+    (location) => {
+      // The popover only opens when a deployment is selected, so the
+      // deployment argument should equal the current selection. Set
+      // selection only if it differs (avoid the toggle-off case where
+      // re-selecting clears the URL param and place mode loses anchor).
+      if (location && location.deploymentID !== selectedLocation?.deploymentID) {
+        setSelectedLocation(location)
+      }
+      setIsPlaceMode(true)
+    },
+    [selectedLocation, setSelectedLocation]
+  )
+
   const handleExitPlaceMode = useCallback(() => {
     setIsPlaceMode(false)
   }, [])
@@ -1022,6 +1036,11 @@ export default function Deployments({ studyId }) {
                   deployment={paneSnapshot}
                   onClose={() => setSelectedLocation(null)}
                   onRenameLocation={onRenameLocation}
+                  onCommitLatLon={async (deploymentID, lat, lon) => {
+                    await onNewLatitude(deploymentID, lat)
+                    await onNewLongitude(deploymentID, lon)
+                  }}
+                  onEnterPlaceMode={handleEnterPlaceMode}
                 />
               </div>
             </Panel>
