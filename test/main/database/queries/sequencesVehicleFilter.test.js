@@ -169,6 +169,36 @@ describe('getMediaForSequencePagination — vehicle/blank pseudo-species', () =>
     assert.deepEqual(ids(result.media), ['m-animal', 'm-mix', 'm-vehicle'])
   })
 
+  test('media matching both species and vehicle arms keeps the species label', async () => {
+    // Regression: dedupByMediaID picks the species-arm row over the vehicle-arm
+    // row so the gallery card shows "Sus scrofa" not "Vehicle". m-mix has both
+    // an animal Sus scrofa observation and a vehicle observation.
+    await seed()
+    const result = await getMediaForSequencePagination(testDbPath, {
+      species: [VEHICLE_SENTINEL, 'Sus scrofa']
+    })
+    const mixRow = result.media.find((r) => r.mediaID === 'm-mix')
+    assert.ok(mixRow, 'm-mix should be in the result')
+    assert.equal(
+      mixRow.scientificName,
+      'Sus scrofa',
+      'species arm must win over vehicle arm in dedup so the card carries the real species name'
+    )
+  })
+
+  test('pure-vehicle arm rows carry VEHICLE_SENTINEL as scientificName', async () => {
+    // The gallery's SpeciesCountLabel uses scientificName=VEHICLE_SENTINEL
+    // to render "Vehicle". Without the sentinel projection the row would
+    // get NULL scientificName and label as "Blank".
+    await seed()
+    const result = await getMediaForSequencePagination(testDbPath, {
+      species: [VEHICLE_SENTINEL]
+    })
+    const vehicleRow = result.media.find((r) => r.mediaID === 'm-vehicle')
+    assert.ok(vehicleRow)
+    assert.equal(vehicleRow.scientificName, VEHICLE_SENTINEL)
+  })
+
   test('BLANK + VEHICLE returns blank media + vehicle media', async () => {
     await seed()
     const result = await getMediaForSequencePagination(testDbPath, {

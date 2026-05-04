@@ -12,6 +12,31 @@ import log from 'electron-log'
 import { existsSync } from 'fs'
 import { getStudyDatabasePath } from '../services/paths.js'
 import { runInWorker } from '../services/sequences/runInWorker.js'
+import { VEHICLE_SENTINEL } from '../../shared/constants.js'
+
+/**
+ * Drop VEHICLE_SENTINEL from a species filter list before passing to the
+ * sequence-aware activity queries (timeseries, heatmap, daily-activity).
+ *
+ * Those queries operate over `WHERE scientificName IN (...)`; vehicle
+ * observations have no `scientificName`, so the sentinel would silently
+ * match nothing and produce an empty chart even on studies with thousands
+ * of vehicle media. The Library/Deployments species filter exposes
+ * Vehicle as a clickable bucket, so the sentinel can legitimately reach
+ * these IPCs.
+ *
+ * Returns { stripped, vehicleOnly } — `vehicleOnly` is true when the
+ * caller passed a non-empty filter that contained only the sentinel
+ * (and/or other ignored values), so the handler can short-circuit with
+ * an appropriate empty result instead of treating the request as
+ * "no filter → return everything".
+ */
+function stripVehicleSentinel(speciesNames) {
+  const input = speciesNames || []
+  const stripped = input.filter((s) => s !== VEHICLE_SENTINEL)
+  const vehicleOnly = input.length > 0 && stripped.length === 0
+  return { stripped, vehicleOnly }
+}
 
 /**
  * Register all sequence-related IPC handlers
@@ -62,12 +87,17 @@ export function registerSequencesIPCHandlers() {
         return { error: 'Database not found for this study' }
       }
 
+      const { stripped, vehicleOnly } = stripVehicleSentinel(speciesNames)
+      if (vehicleOnly) {
+        return { data: { timeseries: [], allSpecies: [] } }
+      }
+
       const data = await runInWorker({
         type: 'timeseries',
         dbPath,
         studyId,
         gapSeconds,
-        speciesNames
+        speciesNames: stripped
       })
       return { data }
     } catch (error) {
@@ -107,12 +137,17 @@ export function registerSequencesIPCHandlers() {
           return { error: 'Database not found for this study' }
         }
 
+        const { stripped, vehicleOnly } = stripVehicleSentinel(speciesNames)
+        if (vehicleOnly) {
+          return { data: {} }
+        }
+
         const data = await runInWorker({
           type: 'heatmap',
           dbPath,
           studyId,
           gapSeconds,
-          speciesNames,
+          speciesNames: stripped,
           startDate,
           endDate,
           startHour,
@@ -145,12 +180,17 @@ export function registerSequencesIPCHandlers() {
           return { error: 'Database not found for this study' }
         }
 
+        const { stripped, vehicleOnly } = stripVehicleSentinel(speciesNames)
+        if (vehicleOnly) {
+          return { data: [] }
+        }
+
         const data = await runInWorker({
           type: 'daily-activity',
           dbPath,
           studyId,
           gapSeconds,
-          speciesNames,
+          speciesNames: stripped,
           startDate,
           endDate
         })

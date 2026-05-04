@@ -202,21 +202,38 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
 
     // Drizzle's union dedups on full-row equality, but the species arm
     // emits selectFieldsWithObs (real scientificName) while blank/vehicle
-    // arms emit selectFields (NULL scientificName) — so a media that
-    // matches both arms produces two non-equal rows. Dedup by mediaID
-    // post-fetch; species arm rows win (they appear first in collectArms),
-    // preserving the species-name on the gallery row.
+    // arms emit selectFields (NULL or VEHICLE_SENTINEL) — so a media that
+    // matches both arms produces two non-equal rows. We dedup by mediaID
+    // post-fetch with an explicit priority so the species-arm row wins
+    // over the vehicle-arm row when both exist for the same media (giving
+    // the gallery card a real species label, not "Vehicle").
+    //
+    // SQLite UNION + ORDER BY does NOT guarantee per-arm ordering, so a
+    // first-seen-wins dedup based on row order is implementation-defined.
+    // Hence the explicit priority below.
+    const armPriority = (row) => {
+      if (row.scientificName === VEHICLE_SENTINEL) return 1
+      if (row.scientificName == null) return 2 // blank arm — NULL scientificName
+      return 0 // species arm — real scientificName wins
+    }
     const dedupByMediaID = (rows) => {
-      const seen = new Set()
-      const out = []
+      const byID = new Map()
       for (const r of rows) {
-        if (!seen.has(r.mediaID)) {
-          seen.add(r.mediaID)
-          out.push(r)
+        const existing = byID.get(r.mediaID)
+        if (!existing || armPriority(r) < armPriority(existing)) {
+          byID.set(r.mediaID, r)
         }
       }
-      return out
+      return [...byID.values()]
     }
+
+    // Oversample factor for the union path: when 2+ arms are active a
+    // single media can produce N rows in the raw fetch, eating LIMIT
+    // slots before JS-side dedup runs. Oversampling by `arms.length` is
+    // the worst-case bound — every media in the page has the maximum
+    // possible duplicate count. Single-arm calls (the common case)
+    // skip oversampling entirely.
+    const oversampleFactor = (armsLen) => Math.max(1, armsLen)
 
     // Phase 1: Timestamped media
     if (phase === 'timestamped') {
@@ -280,8 +297,13 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
         // pure pseudo-species request. Union the appropriate arms.
         const arms = collectArms(timestampedConditions)
         const unioned = arms.length === 1 ? arms[0] : union(...arms)
-        const raw = await unioned.orderBy(sql`timestamp DESC, mediaID DESC`).limit(batchSize)
-        timestampedMedia = dedupByMediaID(raw)
+        // Oversample to absorb cross-arm duplicates (a media matching both
+        // the species and vehicle arms shows up twice in the raw union).
+        // Without this, dedup undercounts the page and hasMoreTimestamped
+        // can falsely report exhaustion.
+        const fetchLimit = batchSize * oversampleFactor(arms.length)
+        const raw = await unioned.orderBy(sql`timestamp DESC, mediaID DESC`).limit(fetchLimit)
+        timestampedMedia = dedupByMediaID(raw).slice(0, batchSize)
       } else {
         // Regular species query — rewritten as a semi-join (EXISTS).
         //
@@ -368,11 +390,14 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
             .from(media)
             .where(and(...nullConditions))
         } else if (requestingBlanks || requestingVehicle) {
-          // Union the requested arms and count the deduped result.
+          // hasMoreNull only needs "any match?" so probe each arm with
+          // LIMIT 1 instead of materializing the full union (which would
+          // pull millions of null-timestamp rows on image-only studies
+          // like 1378cb43 just to take .length).
           const arms = collectArms(nullConditions)
-          const unioned = arms.length === 1 ? arms[0] : union(...arms)
-          const combined = dedupByMediaID(await unioned)
-          nullCountResult = [{ count: combined.length }]
+          const probes = await Promise.all(arms.map((arm) => arm.limit(1)))
+          const anyMatch = probes.some((rows) => rows.length > 0)
+          nullCountResult = [{ count: anyMatch ? 1 : 0 }]
         } else {
           nullCountResult = await db
             .select({ count: sql`COUNT(DISTINCT ${media.mediaID})`.as('count') })
@@ -426,11 +451,12 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
       } else if (requestingBlanks || requestingVehicle) {
         const arms = collectArms(nullConditions)
         const unioned = arms.length === 1 ? arms[0] : union(...arms)
+        const fetchLimit = batchSize * oversampleFactor(arms.length)
         const raw = await unioned
           .orderBy(sql`mediaID DESC`)
-          .limit(batchSize)
+          .limit(fetchLimit)
           .offset(offset)
-        nullMedia = dedupByMediaID(raw)
+        nullMedia = dedupByMediaID(raw).slice(0, batchSize)
       } else {
         // Regular species query — semi-join rewrite (see timestamped phase
         // for rationale and expected speedup).
