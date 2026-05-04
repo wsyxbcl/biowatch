@@ -27,7 +27,7 @@ const SectionHeader = memo(function SectionHeader({
         isSelected ? 'border-l-4 border-l-blue-500 pl-2' : 'border-l-4 border-l-transparent'
       }`}
     >
-      <div className="flex items-center gap-2 w-[200px] min-w-0">
+      <div className="flex items-center gap-2 w-[140px] min-w-0">
         <div className="min-w-0 flex-1">
           <EditableLocationName
             locationID={group.locationID}

@@ -463,7 +463,7 @@ const DeploymentRow = memo(function DeploymentRow({
           : 'border-l-4 border-l-transparent'
       }`}
     >
-      <div className="w-[200px] min-w-0">
+      <div className="w-[140px] min-w-0">
         <EditableLocationName
           locationID={location.locationID}
           locationName={location.locationName}
@@ -609,7 +609,7 @@ function LocationsList({
             left gutter matches the row's name column + leading padding;
             the 16px right gutter matches the count column; toggle on
             the far right. */}
-        <div className="w-[212px] flex-shrink-0" />
+        <div className="w-[152px] flex-shrink-0" />
         <div ref={timelineRef} className="flex-1 flex justify-between text-xs text-gray-600">
           {dateMarkers.map((date, i) => (
             <div key={i} className="flex flex-col items-center flex-1 min-w-0">
