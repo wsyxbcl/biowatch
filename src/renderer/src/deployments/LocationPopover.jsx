@@ -129,9 +129,18 @@ export default function LocationPopover({ deployment, onCommitLatLon, onEnterPla
           ref={popoverRef}
           className="absolute right-0 top-full mt-1 w-[300px] bg-white border border-gray-200 rounded-lg shadow-lg z-[1100] p-3"
         >
-          <h5 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
-            Location
-          </h5>
+          <div className="flex items-center justify-between mb-2">
+            <h5 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              Location
+            </h5>
+            <button
+              onClick={handlePlaceClick}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-500 hover:bg-blue-600 text-white text-[11px] rounded"
+            >
+              <MapPin size={12} />
+              Place on map
+            </button>
+          </div>
 
           <div className="mb-2">
             <input
@@ -176,15 +185,6 @@ export default function LocationPopover({ deployment, onCommitLatLon, onEnterPla
             </label>
           </div>
 
-          <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-            <button
-              onClick={handlePlaceClick}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded"
-            >
-              <MapPin size={12} />
-              Place on map
-            </button>
-          </div>
         </div>
       )}
     </div>
