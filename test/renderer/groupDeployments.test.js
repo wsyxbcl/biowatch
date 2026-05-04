@@ -30,8 +30,20 @@ describe('groupDeploymentsByLocation', () => {
 
   test('groups deployments sharing locationID', () => {
     const result = groupDeploymentsByLocation([
-      { deploymentID: 'd1', locationID: 'loc-A', locationName: 'Alpha', deploymentStart: '2024-01-01', periods: [mkPeriod(5)] },
-      { deploymentID: 'd2', locationID: 'loc-A', locationName: 'Alpha', deploymentStart: '2025-01-01', periods: [mkPeriod(7)] }
+      {
+        deploymentID: 'd1',
+        locationID: 'loc-A',
+        locationName: 'Alpha',
+        deploymentStart: '2024-01-01',
+        periods: [mkPeriod(5)]
+      },
+      {
+        deploymentID: 'd2',
+        locationID: 'loc-A',
+        locationName: 'Alpha',
+        deploymentStart: '2025-01-01',
+        periods: [mkPeriod(7)]
+      }
     ])
     assert.equal(result.length, 1)
     assert.equal(result[0].isSingleDeployment, false)
@@ -42,8 +54,20 @@ describe('groupDeploymentsByLocation', () => {
 
   test('aggregates periods within a group by summing per-bucket counts', () => {
     const result = groupDeploymentsByLocation([
-      { deploymentID: 'd1', locationID: 'loc-A', locationName: 'Alpha', deploymentStart: '2024-01-01', periods: [mkPeriod(5), mkPeriod(3)] },
-      { deploymentID: 'd2', locationID: 'loc-A', locationName: 'Alpha', deploymentStart: '2025-01-01', periods: [mkPeriod(2), mkPeriod(8)] }
+      {
+        deploymentID: 'd1',
+        locationID: 'loc-A',
+        locationName: 'Alpha',
+        deploymentStart: '2024-01-01',
+        periods: [mkPeriod(5), mkPeriod(3)]
+      },
+      {
+        deploymentID: 'd2',
+        locationID: 'loc-A',
+        locationName: 'Alpha',
+        deploymentStart: '2025-01-01',
+        periods: [mkPeriod(2), mkPeriod(8)]
+      }
     ])
     assert.deepEqual(
       result[0].aggregatedPeriods.map((p) => p.count),
@@ -53,10 +77,34 @@ describe('groupDeploymentsByLocation', () => {
 
   test('sorts alphabetically with sections interleaved with singletons (NOT groups-first)', () => {
     const result = groupDeploymentsByLocation([
-      { deploymentID: 'd1', locationID: 'loc-Z', locationName: 'Zulu', deploymentStart: '2024-01-01', periods: [mkPeriod(1)] },
-      { deploymentID: 'd2', locationID: 'loc-M', locationName: 'Mike', deploymentStart: '2024-01-01', periods: [mkPeriod(1)] },
-      { deploymentID: 'd3', locationID: 'loc-M', locationName: 'Mike', deploymentStart: '2025-01-01', periods: [mkPeriod(1)] },
-      { deploymentID: 'd4', locationID: 'loc-A', locationName: 'Alpha', deploymentStart: '2024-01-01', periods: [mkPeriod(1)] }
+      {
+        deploymentID: 'd1',
+        locationID: 'loc-Z',
+        locationName: 'Zulu',
+        deploymentStart: '2024-01-01',
+        periods: [mkPeriod(1)]
+      },
+      {
+        deploymentID: 'd2',
+        locationID: 'loc-M',
+        locationName: 'Mike',
+        deploymentStart: '2024-01-01',
+        periods: [mkPeriod(1)]
+      },
+      {
+        deploymentID: 'd3',
+        locationID: 'loc-M',
+        locationName: 'Mike',
+        deploymentStart: '2025-01-01',
+        periods: [mkPeriod(1)]
+      },
+      {
+        deploymentID: 'd4',
+        locationID: 'loc-A',
+        locationName: 'Alpha',
+        deploymentStart: '2024-01-01',
+        periods: [mkPeriod(1)]
+      }
     ])
     // Expected order: Alpha (singleton), Mike (group), Zulu (singleton)
     assert.equal(result[0].locationName, 'Alpha')
@@ -66,8 +114,20 @@ describe('groupDeploymentsByLocation', () => {
 
   test('falls back to locationID when locationName is missing', () => {
     const result = groupDeploymentsByLocation([
-      { deploymentID: 'd1', locationID: 'loc-Beta', locationName: null, deploymentStart: '2024-01-01', periods: [mkPeriod(1)] },
-      { deploymentID: 'd2', locationID: 'loc-Alpha', locationName: null, deploymentStart: '2024-01-01', periods: [mkPeriod(1)] }
+      {
+        deploymentID: 'd1',
+        locationID: 'loc-Beta',
+        locationName: null,
+        deploymentStart: '2024-01-01',
+        periods: [mkPeriod(1)]
+      },
+      {
+        deploymentID: 'd2',
+        locationID: 'loc-Alpha',
+        locationName: null,
+        deploymentStart: '2024-01-01',
+        periods: [mkPeriod(1)]
+      }
     ])
     assert.equal(result[0].locationID, 'loc-Alpha')
     assert.equal(result[1].locationID, 'loc-Beta')
@@ -75,7 +135,13 @@ describe('groupDeploymentsByLocation', () => {
 
   test('falls back to deploymentID when locationID is missing', () => {
     const result = groupDeploymentsByLocation([
-      { deploymentID: 'd1', locationID: null, locationName: 'Alpha', deploymentStart: '2024-01-01', periods: [mkPeriod(1)] }
+      {
+        deploymentID: 'd1',
+        locationID: null,
+        locationName: 'Alpha',
+        deploymentStart: '2024-01-01',
+        periods: [mkPeriod(1)]
+      }
     ])
     assert.equal(result.length, 1)
     assert.equal(result[0].locationID, 'd1')
