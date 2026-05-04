@@ -1,6 +1,40 @@
 import { useQuery } from '@tanstack/react-query'
 import { resolveCommonName, pickEnglishCommonName } from '../../../shared/commonNames/index.js'
 
+/**
+ * Synchronous version of the common-name cascade for contexts that can't run
+ * hooks (e.g. renderToStaticMarkup): study-imported vernacular →
+ * shipped dictionary → null. Skips the GBIF async tier.
+ *
+ * @param {string | null | undefined} scientificName
+ * @param {Record<string, string> | undefined} scientificToCommon
+ * @returns {string | null}
+ */
+export function getMapDisplayName(scientificName, scientificToCommon) {
+  if (!scientificName) return null
+  return scientificToCommon?.[scientificName] || resolveCommonName(scientificName) || null
+}
+
+/**
+ * Build a `scientificName -> English vernacular` map from a CamtrapDP-style
+ * taxonomic block. Defensive against null/non-array input and taxa missing
+ * either field. Used by both the Activity map and the species sidebar so the
+ * two surfaces stay in sync.
+ *
+ * @param {Array<{scientificName?: string, vernacularNames?: {eng?: string}}> | null | undefined} taxonomicData
+ * @returns {Record<string, string>}
+ */
+export function buildScientificToCommonMap(taxonomicData) {
+  const map = {}
+  if (!Array.isArray(taxonomicData)) return map
+  for (const taxon of taxonomicData) {
+    if (taxon?.scientificName && taxon?.vernacularNames?.eng) {
+      map[taxon.scientificName] = taxon.vernacularNames.eng
+    }
+  }
+  return map
+}
+
 // In-memory cache + fetcher live inside a closure — the cache isn't reachable
 // from outside the IIFE, only the exported functions are. Avoids module-level
 // mutable state bleeding through the import surface.

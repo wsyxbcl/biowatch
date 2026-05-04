@@ -330,3 +330,15 @@ input::-webkit-inner-spin-button {
 .leaflet-tooltip.species-map-tooltip::before {
   display: none;
 }
+
+/* Push the hovercard sideways off the pie marker so it sits BESIDE the
+   camembert rather than overlapping its right or left half. The pie marker
+   scales up to 60px wide; 36px clears the largest pie with a small gap.
+   `direction: 'auto'` on the tooltip resolves to either 'right' or 'left'
+   based on map-center, so we cover both cases. */
+.leaflet-tooltip-right.species-map-tooltip {
+  margin-left: 36px;
+}
+.leaflet-tooltip-left.species-map-tooltip {
+  margin-left: -36px;
+}
