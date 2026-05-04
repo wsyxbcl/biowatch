@@ -455,7 +455,7 @@ const DeploymentRow = memo(function DeploymentRow({
       id={location.deploymentID}
       title={location.deploymentStart}
       onClick={handleRowClick}
-      className={`flex gap-3 items-center px-3 h-10 hover:bg-gray-50 cursor-pointer border-b border-gray-100 transition-colors ${
+      className={`flex gap-3 items-center px-3 h-10 hover:bg-gray-100 cursor-pointer border-b border-gray-100 transition-colors ${
         indented ? 'pl-9 bg-[#fcfcfd]' : ''
       } ${
         isSelected
