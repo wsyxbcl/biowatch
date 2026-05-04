@@ -16,6 +16,9 @@ import DeploymentDetailPane from './deployments/DeploymentDetailPane'
 import EditableLocationName from './deployments/EditableLocationName'
 import { groupDeploymentsByLocation } from './deployments/groupDeployments'
 import Sparkline from './deployments/Sparkline'
+import SectionHeader from './deployments/SectionHeader'
+import SparklineToggle from './deployments/SparklineToggle'
+import { useSparklineMode } from './hooks/useSparklineMode'
 
 // Fix the default marker icon issue in react-leaflet
 // This is needed because the CSS assets are not properly loaded
@@ -214,8 +217,7 @@ function DraggableMarker({
   onSelect,
   onDragEnd,
   isPlaceMode,
-  onExitPlaceMode,
-  onExpandGroup
+  onExitPlaceMode
 }) {
   const markerRef = useRef(null)
   const tooltipName = location.locationName || location.locationID
@@ -268,7 +270,6 @@ function DraggableMarker({
             onExitPlaceMode()
           }
           onSelect(location)
-          onExpandGroup?.(location.locationID)
         },
         dragend: (e) => {
           const marker = e.target
@@ -289,9 +290,10 @@ function LocationMap({
   isPlaceMode,
   onPlaceLocation,
   onExitPlaceMode,
-  onExpandGroup,
+  flyToRef, // wired in Task 8 — accepted here to avoid prop-spreading lint
   studyId
 }) {
+  void flyToRef // Task 8 will replace this with the actual FlyToBoundsHandler
   const mapRef = useRef(null)
 
   // Persist map layer selection per study
@@ -391,7 +393,6 @@ function LocationMap({
               }}
               isPlaceMode={isPlaceMode}
               onExitPlaceMode={onExitPlaceMode}
-              onExpandGroup={onExpandGroup}
             />
           ))}
         </MarkerClusterGroup>
@@ -484,21 +485,18 @@ const formatDateShort = (date) => {
 }
 
 function LocationsList({
+  studyId,
   activity,
   selectedLocation,
   setSelectedLocation,
-  onNewLatitude,
-  onNewLongitude,
-  onEnterPlaceMode,
   onRenameLocation,
-  isPlaceMode,
-  groupToExpand,
-  onGroupExpanded,
+  onSectionClick,
   onPeriodCountChange
 }) {
   const parentRef = useRef(null)
   const timelineRef = useRef(null)
   const [timelineWidth, setTimelineWidth] = useState(0)
+  const [sparklineMode, setSparklineMode] = useSparklineMode(studyId)
 
   useEffect(() => {
     const node = timelineRef.current
@@ -510,116 +508,55 @@ function LocationsList({
     return () => ro.disconnect()
   }, [])
 
-  // Date markers: live frontend-only count, ~1 per 150px, clamped 2..15.
   const dateCount = timelineWidth ? Math.max(2, Math.min(15, Math.round(timelineWidth / 150))) : 5
-
-  // Period circles: bucketed to multiples of 10 (~1 per 30px) so we don't
-  // refetch the SQL aggregation on every pixel of resize.
   const periodCount = timelineWidth ? Math.max(10, Math.round(timelineWidth / 30 / 10) * 10) : 20
 
   useEffect(() => {
     onPeriodCountChange?.(periodCount)
   }, [periodCount, onPeriodCountChange])
 
-  // Track which groups are expanded (collapsed by default)
-  const [expandedGroups, setExpandedGroups] = useState(new Set())
-
-  // Toggle group expansion
-  const toggleGroup = useCallback((locationID) => {
-    setExpandedGroups((prev) => {
-      const next = new Set(prev)
-      if (next.has(locationID)) {
-        next.delete(locationID)
-      } else {
-        next.add(locationID)
-      }
-      return next
-    })
-  }, [])
-
-  // Handle external group expansion request (from map marker click)
-  useEffect(() => {
-    if (groupToExpand) {
-      setExpandedGroups((prev) => new Set(prev).add(groupToExpand))
-      onGroupExpanded?.()
-    }
-  }, [groupToExpand, onGroupExpanded])
-
-  // Group deployments by location
   const locationGroups = useMemo(
     () => groupDeploymentsByLocation(activity.deployments),
     [activity.deployments]
   )
 
-  // Flatten groups into virtual items for the virtualizer
   const virtualItems = useMemo(() => {
     const items = []
     locationGroups.forEach((group) => {
       if (group.isSingleDeployment) {
-        // Single deployment - render as simple row (no grouping)
-        items.push({
-          type: 'single',
-          deployment: group.deployments[0],
-          locationID: group.locationID
-        })
+        items.push({ type: 'single', deployment: group.deployments[0], group })
       } else {
-        // Multi-deployment group - render header
-        items.push({
-          type: 'group-header',
-          group: group,
-          isExpanded: expandedGroups.has(group.locationID)
+        items.push({ type: 'group-header', group })
+        group.deployments.forEach((deployment) => {
+          items.push({ type: 'group-deployment', deployment, group })
         })
-        // If expanded, add individual deployments
-        if (expandedGroups.has(group.locationID)) {
-          group.deployments.forEach((deployment) => {
-            items.push({
-              type: 'group-deployment',
-              deployment: deployment,
-              locationID: group.locationID
-            })
-          })
-        }
       }
     })
     return items
-  }, [locationGroups, expandedGroups])
+  }, [locationGroups])
 
-  // Memoize date markers for timeline header
   const dateMarkers = useMemo(
     () => getDateMarkers(activity.startDate, activity.endDate, dateCount),
     [activity.startDate, activity.endDate, dateCount]
   )
 
-  // Setup virtualizer with dynamic sizing
   const rowVirtualizer = useVirtualizer({
     count: virtualItems.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: (index) => {
-      const item = virtualItems[index]
-      if (item.type === 'group-header') return 60
-      return 88 // deployment row height
-    },
-    overscan: 5
+    estimateSize: (index) => (virtualItems[index].type === 'group-header' ? 36 : 40),
+    overscan: 8
   })
 
-  // Scroll to selected location
   useEffect(() => {
-    if (selectedLocation) {
-      const index = virtualItems.findIndex((item) => {
-        if (item.type === 'single' || item.type === 'group-deployment') {
-          return item.deployment.deploymentID === selectedLocation.deploymentID
-        }
-        if (item.type === 'group-header') {
-          // If selecting a deployment in a collapsed group, find the header
-          return item.group.deployments.some(
-            (d) => d.deploymentID === selectedLocation.deploymentID
-          )
-        }
-        return false
-      })
-      if (index !== -1) {
-        rowVirtualizer.scrollToIndex(index, { align: 'center', behavior: 'smooth' })
+    if (!selectedLocation) return
+    const index = virtualItems.findIndex((item) => {
+      if (item.type === 'single' || item.type === 'group-deployment') {
+        return item.deployment.deploymentID === selectedLocation.deploymentID
       }
+      return false
+    })
+    if (index !== -1) {
+      rowVirtualizer.scrollToIndex(index, { align: 'center', behavior: 'smooth' })
     }
   }, [selectedLocation, virtualItems, rowVirtualizer])
 
@@ -650,8 +587,13 @@ function LocationsList({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-      <header className="bg-white z-10 pl-68 py-3 border-b border-gray-300">
-        <div ref={timelineRef} className="flex justify-between text-xs text-gray-600">
+      <header className="bg-white z-10 py-2 border-b border-gray-300 flex items-stretch">
+        {/* Date markers stretch across the activity column. The 212px
+            left gutter matches the row's name column + leading padding;
+            the 16px right gutter matches the count column; toggle on
+            the far right. */}
+        <div className="w-[212px] flex-shrink-0" />
+        <div ref={timelineRef} className="flex-1 flex justify-between text-xs text-gray-600">
           {dateMarkers.map((date, i) => (
             <div key={i} className="flex flex-col items-center flex-1 min-w-0">
               <span>{formatDateShort(date)}</span>
@@ -659,7 +601,12 @@ function LocationsList({
             </div>
           ))}
         </div>
+        <div className="w-16 flex-shrink-0" />
+        <div className="px-2 flex items-center">
+          <SparklineToggle mode={sparklineMode} onChange={setSparklineMode} />
+        </div>
       </header>
+
       <div ref={parentRef} className="flex-1 overflow-auto min-h-0">
         <div
           style={{
@@ -670,6 +617,11 @@ function LocationsList({
         >
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const item = virtualItems[virtualRow.index]
+            const isSelectedDeployment = (deployment) =>
+              deployment && selectedLocation?.deploymentID === deployment.deploymentID
+            const sectionHasSelection = (group) =>
+              group.deployments.some((d) => d.deploymentID === selectedLocation?.deploymentID)
+
             return (
               <div
                 key={virtualRow.key}
@@ -686,41 +638,34 @@ function LocationsList({
                 {item.type === 'single' && (
                   <DeploymentRow
                     location={item.deployment}
-                    isSelected={selectedLocation?.deploymentID === item.deployment.deploymentID}
-                    isPlaceMode={isPlaceMode}
+                    isSelected={isSelectedDeployment(item.deployment)}
                     onSelect={setSelectedLocation}
-                    onNewLatitude={onNewLatitude}
-                    onNewLongitude={onNewLongitude}
-                    onEnterPlaceMode={onEnterPlaceMode}
                     onRenameLocation={onRenameLocation}
+                    sparklineMode={sparklineMode}
                     percentile90Count={activity.percentile90Count}
                   />
                 )}
 
                 {item.type === 'group-header' && (
-                  <LocationGroupHeader
+                  <SectionHeader
                     group={item.group}
-                    isExpanded={item.isExpanded}
-                    onToggle={toggleGroup}
+                    sparklineMode={sparklineMode}
                     percentile90Count={activity.percentile90Count}
-                    isSelected={item.group.deployments.some(
-                      (d) => d.deploymentID === selectedLocation?.deploymentID
-                    )}
+                    isSelected={sectionHasSelection(item.group)}
                     onRenameLocation={onRenameLocation}
+                    onSectionClick={onSectionClick}
                   />
                 )}
 
                 {item.type === 'group-deployment' && (
-                  <GroupedDeploymentRow
+                  <DeploymentRow
                     location={item.deployment}
-                    isSelected={selectedLocation?.deploymentID === item.deployment.deploymentID}
-                    isPlaceMode={isPlaceMode}
+                    isSelected={isSelectedDeployment(item.deployment)}
                     onSelect={setSelectedLocation}
-                    onNewLatitude={onNewLatitude}
-                    onNewLongitude={onNewLongitude}
-                    onEnterPlaceMode={onEnterPlaceMode}
                     onRenameLocation={onRenameLocation}
+                    sparklineMode={sparklineMode}
                     percentile90Count={activity.percentile90Count}
+                    indented
                   />
                 )}
               </div>
@@ -734,7 +679,6 @@ function LocationsList({
 
 export default function Deployments({ studyId }) {
   const [isPlaceMode, setIsPlaceMode] = useState(false)
-  const [groupToExpand, setGroupToExpand] = useState(null)
   // Bucketed period count, set by LocationsList from its measured timeline
   // width. Drives the SQL aggregation; null until the timeline measures itself.
   const [periodCount, setPeriodCount] = useState(null)
@@ -895,24 +839,6 @@ export default function Deployments({ studyId }) {
     [studyId, queryClient]
   )
 
-  const handleEnterPlaceMode = useCallback(
-    (location) => {
-      // Use provided location or fall back to selectedLocation
-      if (!location && !selectedLocation) {
-        console.warn('Please select a deployment first')
-        return
-      }
-      // Skip the toggle wrapper when the row is already selected — selecting
-      // it again would deselect (clear the URL param) and place mode would
-      // run with no anchor.
-      if (location && location.deploymentID !== selectedLocation?.deploymentID) {
-        setSelectedLocation(location)
-      }
-      setIsPlaceMode(true)
-    },
-    [selectedLocation, setSelectedLocation]
-  )
-
   const handleExitPlaceMode = useCallback(() => {
     setIsPlaceMode(false)
   }, [])
@@ -928,12 +854,16 @@ export default function Deployments({ studyId }) {
     [selectedLocation, onNewLatitude, onNewLongitude]
   )
 
-  const handleExpandGroup = useCallback((locationID) => {
-    setGroupToExpand(locationID)
-  }, [])
+  const sectionFlyToRef = useRef(null)
 
-  const handleGroupExpanded = useCallback(() => {
-    setGroupToExpand(null)
+  const handleSectionClick = useCallback((group) => {
+    // Fly map to bounds of the group's children. Selection is unchanged.
+    const positions = group.deployments
+      .filter((d) => d.latitude != null && d.longitude != null)
+      .map((d) => [parseFloat(d.latitude), parseFloat(d.longitude)])
+    if (positions.length === 0) return
+    const bounds = L.latLngBounds(positions)
+    sectionFlyToRef.current?.(bounds)
   }, [])
 
   const onRenameLocation = useCallback(
@@ -1024,16 +954,12 @@ export default function Deployments({ studyId }) {
                 <SkeletonDeploymentsList itemCount={6} />
               ) : activity ? (
                 <LocationsList
+                  studyId={studyId}
                   activity={activity}
                   selectedLocation={selectedLocation}
                   setSelectedLocation={setSelectedLocation}
-                  onNewLatitude={onNewLatitude}
-                  onNewLongitude={onNewLongitude}
-                  onEnterPlaceMode={handleEnterPlaceMode}
                   onRenameLocation={onRenameLocation}
-                  isPlaceMode={isPlaceMode}
-                  groupToExpand={groupToExpand}
-                  onGroupExpanded={handleGroupExpanded}
+                  onSectionClick={handleSectionClick}
                   onPeriodCountChange={setPeriodCount}
                 />
               ) : null}
@@ -1054,7 +980,7 @@ export default function Deployments({ studyId }) {
                     isPlaceMode={isPlaceMode}
                     onPlaceLocation={handlePlaceLocation}
                     onExitPlaceMode={handleExitPlaceMode}
-                    onExpandGroup={handleExpandGroup}
+                    flyToRef={sectionFlyToRef}
                     studyId={studyId}
                   />
                 )}
