@@ -68,6 +68,19 @@ export default function Activity({ studyData, studyId }) {
     staleTime: Infinity
   })
 
+  // Fetch vehicle media count (media with at least one vehicle observation)
+  const { data: vehicleCount = 0 } = useQuery({
+    queryKey: ['vehicleMediaCount', actualStudyId],
+    queryFn: async () => {
+      const response = await window.api.getVehicleMediaCount(actualStudyId)
+      if (response.error) throw new Error(response.error)
+      return response.data
+    },
+    enabled: !!actualStudyId,
+    refetchInterval: importStatus?.isRunning ? 5000 : false,
+    staleTime: Infinity
+  })
+
   // Initialize selectedSpecies when speciesDistributionData loads
   // Check URL params first (from overview click), then default to top species
   useEffect(() => {
@@ -249,6 +262,7 @@ export default function Activity({ studyData, studyId }) {
                   onSpeciesChange={handleSpeciesChange}
                   palette={palette}
                   blankCount={blankCount}
+                  vehicleCount={vehicleCount}
                   studyId={actualStudyId}
                 />
               )}
