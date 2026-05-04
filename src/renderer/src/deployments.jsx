@@ -19,6 +19,7 @@ import Sparkline from './deployments/Sparkline'
 import SectionHeader from './deployments/SectionHeader'
 import SparklineToggle from './deployments/SparklineToggle'
 import { useSparklineMode } from './hooks/useSparklineMode'
+import { formatStatNumber } from './overview/utils/formatStats'
 
 // Fix the default marker icon issue in react-leaflet
 // This is needed because the CSS assets are not properly loaded
@@ -453,7 +454,6 @@ const DeploymentRow = memo(function DeploymentRow({
   return (
     <div
       id={location.deploymentID}
-      title={location.deploymentStart}
       onClick={handleRowClick}
       className={`flex gap-3 items-center px-3 h-10 hover:bg-gray-200 cursor-pointer border-b border-gray-100 transition-colors ${
         indented ? 'pl-9 bg-[#fcfcfd]' : ''
@@ -501,6 +501,24 @@ const formatDateShort = (date) => {
   return date.toLocaleDateString('en-US', { year: '2-digit', month: 'short' })
 }
 
+const ONE_DAY_MS = 86_400_000
+
+// How long the cursor must settle on a bucket before the count pill commits.
+const HOVER_DEBOUNCE_MS = 150
+// Pixel offset of the count pill from the cursor — clears the system pointer.
+const CURSOR_PILL_OFFSET_X = 10
+const CURSOR_PILL_OFFSET_Y = 14
+
+// Format a bucket's [start, end) as a readable range. End is exclusive in
+// the period data; display as inclusive by subtracting one day.
+const formatBucketRange = (startStr, endStr) => {
+  const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const start = new Date(startStr)
+  const end = new Date(new Date(endStr).getTime() - ONE_DAY_MS)
+  if (end < start) return fmt(start)
+  return start.toDateString() === end.toDateString() ? fmt(start) : `${fmt(start)} – ${fmt(end)}`
+}
+
 function LocationsList({
   studyId,
   activity,
@@ -512,19 +530,64 @@ function LocationsList({
 }) {
   const parentRef = useRef(null)
   const timelineRef = useRef(null)
-  const [timelineWidth, setTimelineWidth] = useState(0)
+  const containerRef = useRef(null)
+  // A zero-height invisible mirror of a row's sparkline column. The header's
+  // timelineRef can't be used to bound the crosshair because the header's
+  // right gutter (count col + sparkline-mode toggle) is wider than a row's
+  // (count col only), so timelineRef ends ~60px before the row's sparkline.
+  const sparklineRulerRef = useRef(null)
+  const [metrics, setMetrics] = useState({ timelineWidth: 0, sparklineLeft: 0, sparklineWidth: 0 })
+  const [hoverX, setHoverX] = useState(null)
+  // Cursor Y in container coords — only used to anchor the floating count
+  // pill near the pointer; the crosshair line itself spans full height.
+  const [hoverCursorY, setHoverCursorY] = useState(null)
   const [sparklineMode, setSparklineMode] = useSparklineMode(studyId)
 
   useEffect(() => {
-    const node = timelineRef.current
-    if (!node) return
-    const ro = new ResizeObserver(([entry]) => {
-      setTimelineWidth(entry.contentRect.width)
-    })
-    ro.observe(node)
+    const tNode = timelineRef.current
+    const cNode = containerRef.current
+    const sNode = sparklineRulerRef.current
+    if (!tNode || !cNode || !sNode) return
+    const update = () => {
+      const t = tNode.getBoundingClientRect()
+      const c = cNode.getBoundingClientRect()
+      const s = sNode.getBoundingClientRect()
+      setMetrics({
+        timelineWidth: t.width,
+        sparklineLeft: s.left - c.left,
+        sparklineWidth: s.width
+      })
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(tNode)
+    ro.observe(cNode)
+    ro.observe(sNode)
     return () => ro.disconnect()
   }, [])
 
+  // Track hover at the list level instead of per-row, so scrolling between
+  // rows doesn't cause mouseLeave→mouseMove flicker.
+  const handleListMouseMove = (event) => {
+    const sNode = sparklineRulerRef.current
+    const cNode = containerRef.current
+    if (!sNode || !cNode) return
+    const sRect = sNode.getBoundingClientRect()
+    const x = event.clientX - sRect.left
+    if (x < 0 || x > sRect.width) {
+      setHoverX(null)
+      setHoverCursorY(null)
+      return
+    }
+    setHoverX(x)
+    setHoverCursorY(event.clientY - cNode.getBoundingClientRect().top)
+  }
+  const handleListMouseLeave = () => {
+    setHoverX(null)
+    setHoverCursorY(null)
+  }
+
+  const { timelineWidth, sparklineLeft, sparklineWidth } = metrics
   const dateCount = timelineWidth ? Math.max(2, Math.min(15, Math.round(timelineWidth / 150))) : 5
   const periodCount = timelineWidth ? Math.max(10, Math.round(timelineWidth / 30 / 10) * 10) : 20
 
@@ -556,6 +619,46 @@ function LocationsList({
     () => getDateMarkers(activity.startDate, activity.endDate, dateCount),
     [activity.startDate, activity.endDate, dateCount]
   )
+
+  // All deployments share the same bucket grid (study-wide date range +
+  // periodCount), so any one row's periods array works as the source for
+  // both the bucket index lookup and the date-range label.
+  const periodsForBuckets = activity.deployments?.[0]?.periods || []
+
+  // Selected deployment carries the per-row counts that drive the cursor
+  // pill — selectedLocation is sourced from the de-duped map list, so it
+  // doesn't include periods on its own.
+  const selectedDeployment = useMemo(
+    () =>
+      selectedLocation
+        ? (activity.deployments?.find((d) => d.deploymentID === selectedLocation.deploymentID) ??
+          null)
+        : null,
+    [activity.deployments, selectedLocation]
+  )
+
+  const hoverBucketIndex =
+    hoverX != null && periodsForBuckets.length && sparklineWidth
+      ? Math.max(
+          0,
+          Math.min(
+            periodsForBuckets.length - 1,
+            Math.floor((hoverX / sparklineWidth) * periodsForBuckets.length)
+          )
+        )
+      : null
+
+  // Debounce: pill only commits to a bucket after the cursor settles on
+  // it, so rapid sweeps don't flash count after count.
+  const [debouncedBucketIndex, setDebouncedBucketIndex] = useState(null)
+  useEffect(() => {
+    if (hoverBucketIndex == null) {
+      setDebouncedBucketIndex(null)
+      return
+    }
+    const t = setTimeout(() => setDebouncedBucketIndex(hoverBucketIndex), HOVER_DEBOUNCE_MS)
+    return () => clearTimeout(t)
+  }, [hoverBucketIndex])
 
   const rowVirtualizer = useVirtualizer({
     count: virtualItems.length,
@@ -602,9 +705,28 @@ function LocationsList({
     )
   }
 
+  const hoverBucket = hoverBucketIndex != null ? periodsForBuckets[hoverBucketIndex] : null
+  // Cursor count pill shows the selected row's count for the hovered
+  // bucket — matches the per-cell title tooltip. Hidden when no row is
+  // selected. Stays mounted with the stale count while fading out so
+  // leaving a bucket reads as a fade rather than a snap.
+  const cursorCount =
+    selectedDeployment && debouncedBucketIndex != null
+      ? (selectedDeployment.periods[debouncedBucketIndex]?.count ?? 0)
+      : null
+  const showCount = debouncedBucketIndex != null && debouncedBucketIndex === hoverBucketIndex
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-      <header className="bg-white z-10 py-2 border-b border-gray-300 flex items-stretch">
+    <div ref={containerRef} className="relative flex-1 flex flex-col overflow-hidden min-h-0">
+      <header className="relative bg-white z-10 py-2 border-b border-gray-300 flex items-stretch">
+        {hoverX != null && hoverBucket && (
+          <div
+            className="absolute top-0 -translate-x-1/2 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 text-[11px] text-gray-700 whitespace-nowrap shadow-sm pointer-events-none z-20"
+            style={{ left: `${sparklineLeft + hoverX}px` }}
+          >
+            {formatBucketRange(hoverBucket.start, hoverBucket.end)}
+          </div>
+        )}
         {/* Date markers stretch across the activity column. The 212px
             left gutter matches the row's name column + leading padding;
             the 16px right gutter matches the count column; toggle on
@@ -624,7 +746,21 @@ function LocationsList({
         </div>
       </header>
 
-      <div ref={parentRef} className="flex-1 overflow-auto min-h-0">
+      <div
+        ref={parentRef}
+        className="flex-1 overflow-auto min-h-0"
+        onMouseMove={handleListMouseMove}
+        onMouseLeave={handleListMouseLeave}
+      >
+        {/* Zero-height ruler mirroring a row's column layout. Its middle
+            child has the same bounds as a row's sparkline div, giving the
+            crosshair an accurate reference (auto-tracks scrollbar width
+            and any future row-layout changes). */}
+        <div aria-hidden="true" className="flex gap-3 px-3 h-0 overflow-hidden pointer-events-none">
+          <div className="w-[140px] flex-shrink-0" />
+          <div ref={sparklineRulerRef} className="flex-1 min-w-0" />
+          <div className="w-16 flex-shrink-0" />
+        </div>
         <div
           style={{
             height: `${rowVirtualizer.getTotalSize()}px`,
@@ -632,6 +768,13 @@ function LocationsList({
             position: 'relative'
           }}
         >
+          {/* pointer-events-none so the line never intercepts row clicks */}
+          {hoverX != null && (
+            <div
+              className="absolute top-0 bottom-0 w-px bg-gray-400/50 pointer-events-none z-10"
+              style={{ left: `${sparklineLeft + hoverX}px` }}
+            />
+          )}
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const item = virtualItems[virtualRow.index]
             const isSelectedDeployment = (deployment) =>
@@ -690,6 +833,22 @@ function LocationsList({
           })}
         </div>
       </div>
+
+      {/* Floating count pill anchored to the cursor. Debounced + fades in
+          so rapid sweeps don't flash count after count. */}
+      {hoverX != null && hoverCursorY != null && cursorCount != null && (
+        <div
+          className={`absolute pointer-events-none z-30 px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[11px] text-gray-700 shadow-sm whitespace-nowrap transition-opacity duration-150 ${
+            showCount ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{
+            left: `${sparklineLeft + hoverX + CURSOR_PILL_OFFSET_X}px`,
+            top: `${hoverCursorY + CURSOR_PILL_OFFSET_Y}px`
+          }}
+        >
+          {formatStatNumber(cursorCount)} obs
+        </div>
+      )}
     </div>
   )
 }
