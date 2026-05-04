@@ -14,6 +14,7 @@ import SkeletonDeploymentsList from './ui/SkeletonDeploymentsList'
 import { resolveSelectedDeployment, withDeploymentParam } from './deployments/urlState'
 import DeploymentDetailPane from './deployments/DeploymentDetailPane'
 import EditableLocationName from './deployments/EditableLocationName'
+import { groupDeploymentsByLocation } from './deployments/groupDeployments'
 
 // Fix the default marker icon issue in react-leaflet
 // This is needed because the CSS assets are not properly loaded
@@ -649,58 +650,6 @@ const formatDateShort = (date) => {
   return date.toLocaleDateString('en-US', { year: '2-digit', month: 'short' })
 }
 
-// Aggregate observation periods across multiple deployments
-const aggregatePeriods = (deployments) => {
-  if (deployments.length === 0) return []
-  return deployments[0].periods.map((period, i) => ({
-    start: period.start,
-    end: period.end,
-    count: deployments.reduce((sum, d) => sum + (d.periods[i]?.count || 0), 0)
-  }))
-}
-
-// Group deployments by locationID and compute aggregated timelines
-const groupDeploymentsByLocation = (deployments) => {
-  if (!deployments || deployments.length === 0) return []
-
-  const groups = new Map()
-
-  deployments.forEach((deployment) => {
-    const key = deployment.locationID || deployment.deploymentID
-    if (!groups.has(key)) {
-      groups.set(key, {
-        locationID: deployment.locationID || deployment.deploymentID,
-        locationName: deployment.locationName,
-        latitude: deployment.latitude,
-        longitude: deployment.longitude,
-        deployments: []
-      })
-    }
-    groups.get(key).deployments.push(deployment)
-  })
-
-  // Sort deployments within each group by deploymentStart (descending - most recent first)
-  groups.forEach((group) => {
-    group.deployments.sort((a, b) => new Date(b.deploymentStart) - new Date(a.deploymentStart))
-  })
-
-  return Array.from(groups.values())
-    .map((group) => ({
-      ...group,
-      aggregatedPeriods: aggregatePeriods(group.deployments),
-      isSingleDeployment: group.deployments.length === 1
-    }))
-    .sort((a, b) => {
-      // Show multi-deployment groups first, then single deployments
-      if (a.isSingleDeployment !== b.isSingleDeployment) {
-        return a.isSingleDeployment ? 1 : -1
-      }
-      // Within each category, sort alphabetically by name
-      const aName = a.locationName || a.locationID || ''
-      const bName = b.locationName || b.locationID || ''
-      return aName.localeCompare(bName)
-    })
-}
 
 function LocationsList({
   activity,
