@@ -264,6 +264,18 @@ samples — summing observation counts across them is correct.
   feel too long, add a chevron + per-section collapse + persisted
   state, plus a global "Collapse all / Expand all" button. State key:
   `deploymentsCollapsedSections:${studyId}` → JSON array of locationIDs.
+- **Hover crosshair on the timeline.** A thin vertical line + date
+  label in the header that follows the cursor across the sparkline
+  area, snapped to the bucket the cursor is in, with a dimmer
+  highlight on every row's bar at that index. Lifts a `hoverPercent`
+  (0..1) state to `LocationsList`; rows emit `onMouseMove` /
+  `onMouseLeave` to update it; the header renders a positioned overlay.
+- **Clear coordinates.** A "Clear" affordance in the lat/lon popover
+  that nullifies the deployment's latitude/longitude. Requires null
+  guards in `setDeploymentLatitude` / `setDeploymentLongitude` (both
+  the IPC handlers and the renderer's `onNewLatitude` /
+  `onNewLongitude` wrappers, which currently `parseFloat(null) → NaN`
+  and would corrupt the SQLite row).
 - **Keyboard shortcut.** `L` (or another) to open the lat/lon popover
   while a deployment is selected.
 - **Bulk lat/lon edit.** Multi-select rows, paste a CSV or a list of
