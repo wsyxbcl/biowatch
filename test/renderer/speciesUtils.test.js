@@ -4,7 +4,10 @@ import {
   isNonSpeciesLabel,
   sortSpeciesHumansLast,
   getTopNonHumanSpecies,
-  BLANK_SENTINEL
+  isBlank,
+  isVehicle,
+  BLANK_SENTINEL,
+  VEHICLE_SENTINEL
 } from '../../src/renderer/src/utils/speciesUtils.js'
 
 describe('isNonSpeciesLabel', () => {
@@ -86,6 +89,56 @@ describe('sortSpeciesHumansLast — non-species tier', () => {
     ]
     const sorted = sortSpeciesHumansLast(data).map((s) => s.scientificName)
     assert.deepEqual(sorted, ['Homo sapiens', 'problem'])
+  })
+})
+
+describe('isVehicle', () => {
+  test('returns true for the vehicle sentinel', () => {
+    assert.equal(isVehicle(VEHICLE_SENTINEL), true)
+  })
+
+  test('returns false for a real species name', () => {
+    assert.equal(isVehicle('Sus scrofa'), false)
+  })
+
+  test('returns false for the blank sentinel', () => {
+    assert.equal(isVehicle(BLANK_SENTINEL), false)
+  })
+
+  test('returns false for null/undefined/empty', () => {
+    assert.equal(isVehicle(null), false)
+    assert.equal(isVehicle(undefined), false)
+    assert.equal(isVehicle(''), false)
+  })
+})
+
+describe('isBlank', () => {
+  test('returns true for the blank sentinel', () => {
+    assert.equal(isBlank(BLANK_SENTINEL), true)
+  })
+
+  test('returns false for the vehicle sentinel', () => {
+    assert.equal(isBlank(VEHICLE_SENTINEL), false)
+  })
+})
+
+describe('sortSpeciesHumansLast — vehicle tier', () => {
+  test('vehicle sentinel sorts above blank but below non-species labels', () => {
+    const data = [
+      { scientificName: BLANK_SENTINEL, count: 1000 },
+      { scientificName: VEHICLE_SENTINEL, count: 500 },
+      { scientificName: 'problem', count: 200 },
+      { scientificName: 'Homo sapiens', count: 100 },
+      { scientificName: 'Vulpes vulpes', count: 50 }
+    ]
+    const sorted = sortSpeciesHumansLast(data).map((s) => s.scientificName)
+    assert.deepEqual(sorted, [
+      'Vulpes vulpes',
+      'Homo sapiens',
+      'problem',
+      VEHICLE_SENTINEL,
+      BLANK_SENTINEL
+    ])
   })
 })
 

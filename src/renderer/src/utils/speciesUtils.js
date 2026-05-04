@@ -4,10 +4,10 @@
  * and blanks (media without observations) to the very end.
  */
 
-import { BLANK_SENTINEL } from '../../../shared/constants.js'
+import { BLANK_SENTINEL, VEHICLE_SENTINEL } from '../../../shared/constants.js'
 
 // Re-export for convenience
-export { BLANK_SENTINEL }
+export { BLANK_SENTINEL, VEHICLE_SENTINEL }
 
 // Processing/camera labels some camera-trap studies use for unusable frames
 // (broken camera, blurred image, deliberately skipped). Sort below real
@@ -27,6 +27,13 @@ const NON_SPECIES_LABELS = new Set([
  * @returns {boolean} - True if this is the blank sentinel value
  */
 export const isBlank = (scientificName) => scientificName === BLANK_SENTINEL
+
+/**
+ * Check if a species entry represents the vehicle pseudo-species.
+ * @param {string} scientificName - The scientific name to check
+ * @returns {boolean} - True if this is the vehicle sentinel value
+ */
+export const isVehicle = (scientificName) => scientificName === VEHICLE_SENTINEL
 
 /**
  * Check if a label is a known non-species processing marker (not an animal).
@@ -107,6 +114,11 @@ export const sortSpeciesHumansLast = (data) => {
     const bIsBlank = isBlank(b.scientificName)
     if (aIsBlank !== bIsBlank) return aIsBlank ? 1 : -1
 
+    // Vehicle pseudo-species sits just above Blank
+    const aIsVehicle = isVehicle(a.scientificName)
+    const bIsVehicle = isVehicle(b.scientificName)
+    if (aIsVehicle !== bIsVehicle) return aIsVehicle ? 1 : -1
+
     // Then non-species processing labels
     const aIsNonSpecies = isNonSpeciesLabel(a.scientificName)
     const bIsNonSpecies = isNonSpeciesLabel(b.scientificName)
@@ -137,6 +149,7 @@ export const getTopNonHumanSpecies = (data, n = 2) => {
       (s) =>
         !isHumanOrVehicle(s.scientificName) &&
         !isBlank(s.scientificName) &&
+        !isVehicle(s.scientificName) &&
         !isNonSpeciesLabel(s.scientificName)
     )
     .slice(0, n)
