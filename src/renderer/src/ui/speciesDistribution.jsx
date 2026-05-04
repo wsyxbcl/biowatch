@@ -10,6 +10,7 @@ import {
 } from '../utils/speciesUtils'
 import SpeciesTooltipContent from './SpeciesTooltipContent'
 import { buildScientificToCommonMap, useCommonName } from '../utils/commonNames'
+import { formatScientificName } from '../utils/scientificName'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
 
 function SpeciesRow({
@@ -42,14 +43,14 @@ function SpeciesRow({
     ? 'Blank'
     : isVehicleEntry
       ? 'Vehicle'
-      : resolved || species.scientificName
+      : resolved || formatScientificName(species.scientificName)
 
   const isSelected = selectedSpecies.some((s) => s.scientificName === species.scientificName)
   const colorIndex = selectedSpecies.findIndex((s) => s.scientificName === species.scientificName)
   const color = colorIndex >= 0 ? palette[colorIndex % palette.length] : '#ccc'
 
   const showScientificInItalic =
-    !isPseudoEntry && species.scientificName && displayName !== species.scientificName
+    !isPseudoEntry && species.scientificName && resolved && resolved !== species.scientificName
   // resolveSpeciesInfo is still used to surface a Wikipedia thumbnail when the
   // study has no best-media image. The inline IUCN badge is intentionally NOT
   // rendered on the media/activity sidebars — only inside the hover card.
@@ -71,12 +72,18 @@ function SpeciesRow({
             style={{ backgroundColor: isSelected ? color : null }}
           ></div>
           <span
-            className={`text-sm truncate ${isPseudoEntry ? 'text-gray-500 italic' : 'capitalize'}`}
+            className={`text-sm truncate ${
+              isPseudoEntry
+                ? 'text-gray-500 italic'
+                : showScientificInItalic
+                  ? 'capitalize'
+                  : 'italic'
+            }`}
           >
             {displayName}
             {showScientificInItalic && (
               <span className="text-gray-500 italic ml-2 normal-case">
-                {species.scientificName}
+                {formatScientificName(species.scientificName)}
               </span>
             )}
           </span>

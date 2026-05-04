@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Search, Plus } from 'lucide-react'
 import { searchSpecies } from '../utils/dictionarySearch'
+import { formatScientificName } from '../utils/scientificName'
 import { resolveCommonName } from '../../../shared/commonNames/index.js'
 
 /**
@@ -152,14 +153,17 @@ export default function SpeciesPicker({
                 // "yellow_baboon"). Falls through to the DB value, then to
                 // the scientific name.
                 const dictCommon = resolveCommonName(species.scientificName)
-                const display = dictCommon || species.commonName || species.scientificName
-                const showSci = display !== species.scientificName
+                const resolvedCommon = dictCommon || species.commonName
+                const showSci = resolvedCommon && resolvedCommon !== species.scientificName
+                const display = resolvedCommon || formatScientificName(species.scientificName)
                 return (
                   <div className="min-w-0 truncate">
-                    <span className="text-sm font-medium capitalize">{display}</span>
+                    <span className={`text-sm font-medium ${showSci ? 'capitalize' : 'italic'}`}>
+                      {display}
+                    </span>
                     {showSci && (
                       <span className="text-xs text-gray-500 ml-2 italic normal-case">
-                        ({species.scientificName})
+                        ({formatScientificName(species.scientificName)})
                       </span>
                     )}
                   </div>

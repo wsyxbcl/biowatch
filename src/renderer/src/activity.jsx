@@ -14,6 +14,7 @@ import SpeciesDistribution from './ui/speciesDistribution'
 import TimelineChart from './ui/timeseries'
 import { useImportStatus } from './hooks/import'
 import { buildScientificToCommonMap, getMapDisplayName } from './utils/commonNames'
+import { formatScientificName } from './utils/scientificName'
 import { getTopNonHumanSpecies } from './utils/speciesUtils'
 import { useSequenceGap } from './hooks/useSequenceGap'
 
@@ -430,11 +431,11 @@ const SpeciesMap = ({
                 ></div>
                 <div className="flex flex-col min-w-0 leading-tight">
                   <span className={`text-xs ${common ? 'capitalize' : 'italic'}`}>
-                    {common || species.scientificName}
+                    {common || formatScientificName(species.scientificName)}
                   </span>
                   {showSci && (
                     <span className="text-[10px] text-gray-500 italic">
-                      {species.scientificName}
+                      {formatScientificName(species.scientificName)}
                     </span>
                   )}
                 </div>

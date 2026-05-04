@@ -1,4 +1,5 @@
 import { getMapDisplayName } from '../utils/commonNames'
+import { formatScientificName } from '../utils/scientificName'
 
 // Static React tooltip card for Leaflet markers and clusters in the Activity
 // map. Rendered to HTML via renderToStaticMarkup, then handed to
@@ -61,7 +62,7 @@ export default function MarkerHoverCard({ counts, selectedSpecies, palette, scie
                   fontStyle: common ? 'normal' : 'italic'
                 }}
               >
-                {common || species}
+                {common || formatScientificName(species)}
               </div>
               {showSci && (
                 <div
@@ -71,7 +72,7 @@ export default function MarkerHoverCard({ counts, selectedSpecies, palette, scie
                     fontStyle: 'italic'
                   }}
                 >
-                  {species}
+                  {formatScientificName(species)}
                 </div>
               )}
             </div>

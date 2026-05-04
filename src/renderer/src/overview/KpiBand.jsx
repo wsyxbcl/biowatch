@@ -9,6 +9,7 @@ import SpanPicker from './SpanPicker'
 import IucnBadge from '../ui/IucnBadge'
 import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
 import { useCommonName } from '../utils/commonNames'
+import { formatScientificName } from '../utils/scientificName'
 import { resolveCommonName } from '../../../shared/commonNames/index.js'
 import {
   formatStatNumber,
@@ -274,7 +275,8 @@ function ThreatenedSpeciesPopover({ studyId, species, onClose, ignoreOutsideClic
 
 function ThreatenedSpeciesRow({ studyId, scientificName, iucn, onClick, scrollSignal }) {
   const commonName = useCommonName(scientificName)
-  const display = commonName && commonName !== scientificName ? commonName : scientificName
+  const display =
+    commonName && commonName !== scientificName ? commonName : formatScientificName(scientificName)
   const showScientific = commonName && commonName !== scientificName
   const [hoverOpen, setHoverOpen] = useState(false)
   // Close any open card when the parent list scrolls — Radix HoverCard
@@ -295,9 +297,13 @@ function ThreatenedSpeciesRow({ studyId, scientificName, iucn, onClick, scrollSi
               <IucnBadge category={iucn} />
             </span>
             <span className="min-w-0 flex-1 truncate">
-              <span className="text-sm capitalize text-gray-900">{display}</span>
+              <span className={`text-sm text-gray-900 ${showScientific ? 'capitalize' : 'italic'}`}>
+                {display}
+              </span>
               {showScientific && (
-                <span className="text-xs italic text-gray-400 ml-1.5">{scientificName}</span>
+                <span className="text-xs italic text-gray-400 ml-1.5">
+                  {formatScientificName(scientificName)}
+                </span>
               )}
             </span>
           </button>
