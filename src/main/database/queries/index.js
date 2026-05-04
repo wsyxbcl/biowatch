@@ -25,6 +25,7 @@ export {
 export {
   getSpeciesDistribution,
   getBlankMediaCount,
+  getVehicleMediaCount,
   getDistinctSpecies,
   getSpeciesDistributionByMedia,
   getSpeciesTimeseriesByMedia,

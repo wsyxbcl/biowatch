@@ -8,6 +8,7 @@ import {
   and,
   desc,
   count,
+  countDistinct,
   sql,
   isNotNull,
   ne,
@@ -109,6 +110,38 @@ export async function getBlankMediaCount(dbPath) {
     return blankCount
   } catch (error) {
     log.error(`Error querying blank media count: ${error.message}`)
+    throw error
+  }
+}
+
+/**
+ * Get count of media with at least one vehicle observation
+ * (observationType = 'vehicle'). Each media is counted once even if it has
+ * multiple vehicle observations.
+ * @param {string} dbPath - Path to the SQLite database
+ * @returns {Promise<number>} - Count of vehicle media
+ */
+export async function getVehicleMediaCount(dbPath) {
+  const startTime = Date.now()
+  log.info(`Querying vehicle media count from: ${dbPath}`)
+
+  try {
+    const studyId = getStudyIdFromPath(dbPath)
+    const db = await getDrizzleDb(studyId, dbPath, { readonly: true })
+
+    const result = await db
+      .select({ count: countDistinct(observations.mediaID).as('count') })
+      .from(observations)
+      .where(eq(observations.observationType, 'vehicle'))
+      .get()
+
+    const vehicleCount = result?.count || 0
+    const elapsedTime = Date.now() - startTime
+    log.info(`Retrieved vehicle media count: ${vehicleCount} in ${elapsedTime}ms`)
+
+    return vehicleCount
+  } catch (error) {
+    log.error(`Error querying vehicle media count: ${error.message}`)
     throw error
   }
 }

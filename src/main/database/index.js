@@ -220,6 +220,7 @@ export {
   // Species
   getSpeciesDistribution,
   getBlankMediaCount,
+  getVehicleMediaCount,
   getDistinctSpecies,
   getSpeciesDistributionByMedia,
   getSpeciesTimeseriesByMedia,
