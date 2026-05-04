@@ -209,6 +209,21 @@ function FlyToSelected({ selectedLocation }) {
   return null
 }
 
+// Component to provide an imperative API for flying to bounds
+function FlyToBoundsHandler({ flyToRef }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!flyToRef) return
+    flyToRef.current = (bounds) => {
+      map.flyToBounds(bounds, { duration: 0.8, padding: [40, 40] })
+    }
+    return () => {
+      flyToRef.current = null
+    }
+  }, [map, flyToRef])
+  return null
+}
+
 // Draggable marker component that manually controls dragging via ref
 // This is needed because react-leaflet v5 doesn't properly update the draggable prop dynamically
 function DraggableMarker({
@@ -293,7 +308,6 @@ function LocationMap({
   flyToRef, // wired in Task 8 — accepted here to avoid prop-spreading lint
   studyId
 }) {
-  void flyToRef // Task 8 will replace this with the actual FlyToBoundsHandler
   const mapRef = useRef(null)
 
   // Persist map layer selection per study
@@ -365,6 +379,9 @@ function LocationMap({
 
         {/* Fly to selected location when it changes */}
         <FlyToSelected selectedLocation={selectedLocation} />
+
+        {/* Provides imperative API to fly to bounds when section header is clicked */}
+        <FlyToBoundsHandler flyToRef={flyToRef} />
 
         {/* Map event handler for place mode */}
         <MapEventHandler isPlaceMode={isPlaceMode} onMapClick={onPlaceLocation} />
