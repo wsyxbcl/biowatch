@@ -395,7 +395,6 @@ export async function getBestMedia(dbPath, options = {}) {
         SELECT scientificName, COUNT(*) as species_total
         FROM observations
         WHERE scientificName IS NOT NULL AND scientificName != ''
-          AND (observationType IS NULL OR observationType != 'blank')
         GROUP BY scientificName
       ),
       -- Get max species count for normalization
@@ -458,8 +457,8 @@ export async function getBestMedia(dbPath, options = {}) {
           AND (m.favorite IS NULL OR m.favorite = 0)
           -- Exclude videos (images only)
           AND (m.fileMediatype IS NULL OR m.fileMediatype NOT LIKE 'video/%')
-          -- Exclude blanks
-          AND (o.observationType IS NULL OR o.observationType != 'blank')
+          -- (Empty-species rows are already excluded by the
+          -- o.scientificName != '' filter above.)
           -- Exclude humans/persons (case-insensitive)
           AND LOWER(o.scientificName) NOT IN ('homo sapiens', 'human', 'person', 'people')
           AND LOWER(o.scientificName) NOT LIKE '%human%'
@@ -629,7 +628,6 @@ export async function getBestImagePerSpecies(dbPath) {
         SELECT scientificName, COUNT(*) as species_total
         FROM observations
         WHERE scientificName IS NOT NULL AND scientificName != ''
-          AND (observationType IS NULL OR observationType != 'blank')
         GROUP BY scientificName
       ),
       -- Get max species count for normalization
@@ -678,8 +676,8 @@ export async function getBestImagePerSpecies(dbPath) {
           AND o.scientificName != ''
           -- Exclude videos (images only)
           AND (m.fileMediatype IS NULL OR m.fileMediatype NOT LIKE 'video/%')
-          -- Exclude blanks
-          AND (o.observationType IS NULL OR o.observationType != 'blank')
+          -- (Empty-species rows are already excluded by the
+          -- o.scientificName != '' filter above.)
       ),
       scored_with_formula AS (
         SELECT

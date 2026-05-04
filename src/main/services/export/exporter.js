@@ -331,10 +331,9 @@ export async function exportImageDirectories(studyId, options = {}) {
       conditions.push(ne(observations.scientificName, ''))
     }
 
-    // Always exclude blanks from species query (handled separately)
-    conditions.push(
-      or(isNull(observations.observationType), ne(observations.observationType, 'blank'))
-    )
+    // (Empty-species rows — blank/unclassified/unknown — are already
+    // excluded by the scientificName conditions above; vehicle is also
+    // excluded since it has no species name.)
 
     // Query to get media files with their species using Drizzle
     const mediaFiles = await db
@@ -952,10 +951,8 @@ export async function exportCamtrapDP(studyId, options = {}) {
       obsConditions.push(ne(observations.scientificName, ''))
     }
 
-    // Exclude blanks from species query (blanks have NULL scientificName)
-    obsConditions.push(
-      or(isNull(observations.observationType), ne(observations.observationType, 'blank'))
-    )
+    // (Empty-species rows — blank/unclassified/unknown — are already
+    // excluded by the scientificName conditions above.)
 
     // Query filtered observations (non-blank species)
     let observationsData = await db

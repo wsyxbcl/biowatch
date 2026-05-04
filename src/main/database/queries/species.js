@@ -46,8 +46,10 @@ export async function getSpeciesDistribution(dbPath) {
       .where(
         and(
           isNotNull(observations.scientificName),
-          ne(observations.scientificName, ''),
-          sql`(${observations.observationType} IS NULL OR ${observations.observationType} != 'blank')`
+          ne(observations.scientificName, '')
+          // The scientificName filter already excludes empty-species rows
+          // (blank/unclassified/unknown/vehicle). See spec
+          // docs/specs/2026-05-04-empty-species-observations-design.md.
         )
       )
       .groupBy(observations.scientificName)
@@ -181,8 +183,10 @@ export async function getSpeciesDistributionByMedia(dbPath) {
       .where(
         and(
           isNotNull(observations.scientificName),
-          ne(observations.scientificName, ''),
-          sql`(${observations.observationType} IS NULL OR ${observations.observationType} != 'blank')`
+          ne(observations.scientificName, '')
+          // The scientificName filter already excludes empty-species rows
+          // (blank/unclassified/unknown/vehicle). See spec
+          // docs/specs/2026-05-04-empty-species-observations-design.md.
         )
       )
       .groupBy(observations.scientificName, media.mediaID)
@@ -259,7 +263,6 @@ export async function getSequenceAwareSpeciesCountsSQL(dbPath, gapSeconds) {
               FROM observations o
               INNER JOIN media m ON o.mediaID = m.mediaID
               WHERE o.scientificName IS NOT NULL AND o.scientificName != ''
-                AND (o.observationType IS NULL OR o.observationType != 'blank')
               GROUP BY o.scientificName, m.mediaID
           ),
           classified AS (
@@ -307,7 +310,6 @@ export async function getSequenceAwareSpeciesCountsSQL(dbPath, gapSeconds) {
             FROM observations o
             INNER JOIN media m ON o.mediaID = m.mediaID
             WHERE o.scientificName IS NOT NULL AND o.scientificName != ''
-              AND (o.observationType IS NULL OR o.observationType != 'blank')
             GROUP BY o.scientificName
             ORDER BY count DESC
         `
@@ -389,7 +391,6 @@ export async function getSequenceAwareTimeseriesSQL(dbPath, speciesNames = [], g
               FROM observations o
               INNER JOIN media m ON o.mediaID = m.mediaID
               WHERE o.scientificName IS NOT NULL AND o.scientificName != ''
-                AND (o.observationType IS NULL OR o.observationType != 'blank')
                 AND m.timestamp IS NOT NULL
                 ${speciesFilter}
               GROUP BY o.scientificName, o.mediaID
@@ -416,7 +417,6 @@ export async function getSequenceAwareTimeseriesSQL(dbPath, speciesNames = [], g
             FROM observations o
             INNER JOIN media m ON o.mediaID = m.mediaID
             WHERE o.scientificName IS NOT NULL AND o.scientificName != ''
-              AND (o.observationType IS NULL OR o.observationType != 'blank')
               AND m.timestamp IS NOT NULL
               ${speciesFilter}
             GROUP BY o.scientificName, weekStart
@@ -487,7 +487,6 @@ export async function getSpeciesTimeseriesByMedia(dbPath, speciesNames = []) {
           and(
             isNotNull(observations.scientificName),
             ne(observations.scientificName, ''),
-            or(isNull(observations.observationType), ne(observations.observationType, 'blank')),
             speciesCondition
           )
         )
