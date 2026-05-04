@@ -817,7 +817,7 @@ export default function BestMediaCarousel({ studyId, isRunning, renderEmpty }) {
         {/* Left scroll button */}
         {canScrollLeft && (
           <button
-            className="absolute left-0 top-1/2 translate-y-1 z-10 bg-white/90 rounded-full p-1 shadow-md border border-gray-200"
+            className="absolute left-0 top-[5.75rem] -translate-y-1/2 z-10 bg-white/90 rounded-full p-1 shadow-md border border-gray-200"
             onClick={() => scroll('left')}
             aria-label="Scroll left"
           >
@@ -828,7 +828,7 @@ export default function BestMediaCarousel({ studyId, isRunning, renderEmpty }) {
         {/* Right scroll button */}
         {canScrollRight && (
           <button
-            className="absolute right-0 top-1/2 translate-y-1 z-10 bg-white/90 rounded-full p-1 shadow-md border border-gray-200"
+            className="absolute right-0 top-[5.75rem] -translate-y-1/2 z-10 bg-white/90 rounded-full p-1 shadow-md border border-gray-200"
             onClick={() => scroll('right')}
             aria-label="Scroll right"
           >
