@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { resolveCommonName } from '../../shared/commonNames/index.js'
+import { formatScientificName } from './utils/scientificName'
 
 function ImageDirectoriesExportModal({ isOpen, onConfirm, onCancel, studyId }) {
   const [species, setSpecies] = useState([])
@@ -140,8 +141,8 @@ function ImageDirectoriesExportModal({ isOpen, onConfirm, onCancel, studyId }) {
                     // scientific name. Show the scientific in italics when it
                     // differs (so "yellow baboon (papio cynocephalus)").
                     const dictCommon = resolveCommonName(s.scientificName)
-                    const display = dictCommon || s.scientificName
-                    const showSci = display !== s.scientificName
+                    const showSci = dictCommon && dictCommon !== s.scientificName
+                    const display = dictCommon || formatScientificName(s.scientificName)
                     return (
                       <label
                         key={s.scientificName}
@@ -154,11 +155,13 @@ function ImageDirectoriesExportModal({ isOpen, onConfirm, onCancel, studyId }) {
                           className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                         <div className="flex-1 flex justify-between items-center min-w-0">
-                          <span className="text-sm text-gray-900 truncate capitalize">
+                          <span
+                            className={`text-sm text-gray-900 truncate ${showSci ? 'capitalize' : 'italic'}`}
+                          >
                             {display}
                             {showSci && (
                               <span className="text-xs text-gray-500 ml-2 italic normal-case">
-                                ({s.scientificName})
+                                ({formatScientificName(s.scientificName)})
                               </span>
                             )}
                           </span>

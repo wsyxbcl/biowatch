@@ -5,6 +5,7 @@ import * as HoverCard from '@radix-ui/react-hover-card'
 import { CameraOff, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useSequenceGap } from '../hooks/useSequenceGap'
 import { useCommonName } from '../utils/commonNames'
+import { formatScientificName } from '../utils/scientificName'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
 import { isBlank, isDomestic, isHumanOrVehicle, isNonSpeciesLabel } from '../utils/speciesUtils'
 import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
@@ -161,8 +162,10 @@ function ScrollableStrip({ children }) {
 function SpeciesReferenceCard({ species, studyId, onClick, scrollSignal }) {
   const [imageError, setImageError] = useState(false)
   const [hoverOpen, setHoverOpen] = useState(false)
+  const resolvedCommon = useCommonName(species.scientificName)
+  const showSci = !resolvedCommon && species.scientificName
   const commonName =
-    useCommonName(species.scientificName) || species.scientificName || 'Unknown species'
+    resolvedCommon || formatScientificName(species.scientificName) || 'Unknown species'
 
   useEffect(() => {
     if (scrollSignal > 0) setHoverOpen(false)
@@ -193,7 +196,11 @@ function SpeciesReferenceCard({ species, studyId, onClick, scrollSignal }) {
             )}
           </div>
           <div className="px-2 py-1.5">
-            <p className="text-xs font-medium text-gray-900 truncate capitalize">{commonName}</p>
+            <p
+              className={`text-xs font-medium text-gray-900 truncate ${showSci ? 'italic' : 'capitalize'}`}
+            >
+              {commonName}
+            </p>
             <p className="text-[0.65rem] text-gray-500">
               {species.count.toLocaleString('en-US')} observations
             </p>

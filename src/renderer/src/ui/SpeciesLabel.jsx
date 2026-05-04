@@ -1,4 +1,5 @@
 import { useCommonName } from '../utils/commonNames'
+import { formatScientificName } from '../utils/scientificName'
 import { isBlank, isVehicle } from '../utils/speciesUtils'
 
 // Render a single species name. Pseudo-species sentinels (Blank, Vehicle)
@@ -14,8 +15,10 @@ function pseudoLabelFor(scientificName) {
 function SpeciesName({ scientificName }) {
   const pseudo = pseudoLabelFor(scientificName)
   // Hook must be called unconditionally; pass null for pseudo-species.
-  const resolved = useCommonName(pseudo ? null : scientificName) || scientificName
-  return <>{pseudo || resolved}</>
+  const resolved = useCommonName(pseudo ? null : scientificName)
+  if (pseudo) return <>{pseudo}</>
+  if (resolved) return <>{resolved}</>
+  return <span className="italic">{formatScientificName(scientificName)}</span>
 }
 
 /**
@@ -43,11 +46,12 @@ export default function SpeciesLabel({ names }) {
 
 function SpeciesNameWithCount({ scientificName, count }) {
   const pseudo = pseudoLabelFor(scientificName)
-  const resolved = useCommonName(pseudo ? null : scientificName) || scientificName
-  const label = pseudo || resolved
+  const resolved = useCommonName(pseudo ? null : scientificName)
+  const showSci = !pseudo && !resolved
+  const label = pseudo || resolved || formatScientificName(scientificName)
   return (
     <>
-      {label}
+      {showSci ? <span className="italic">{label}</span> : label}
       {count > 1 && <span className="text-gray-500 font-normal"> ×{count}</span>}
     </>
   )

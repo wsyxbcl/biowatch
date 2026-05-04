@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Download, Copy, AlertCircle, Clock } from 'lucide-react'
+import { formatScientificName } from './utils/scientificName'
 
 /**
  * Format seconds into a human-readable time string
@@ -131,7 +132,9 @@ function ExportProgressModal({ isOpen, onCancel, progress }) {
             <div className="bg-gray-50 rounded-lg p-3 mb-4 overflow-hidden">
               <p className="text-xs text-gray-500 mb-1">Current file:</p>
               {speciesName && (
-                <p className="text-sm text-gray-900 font-medium italic mb-1">{speciesName}</p>
+                <p className="text-sm text-gray-900 font-medium italic mb-1">
+                  {formatScientificName(speciesName)}
+                </p>
               )}
               <p className="text-sm text-gray-700 truncate font-mono">{fileName}</p>
               {isDownloading && downloadPercent > 0 && (

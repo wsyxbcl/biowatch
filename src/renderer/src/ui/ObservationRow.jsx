@@ -5,6 +5,7 @@ import LifeStageSelector from './LifeStageSelector'
 import BehaviorSelector from './BehaviorSelector'
 import SpeciesPicker from './SpeciesPicker'
 import { resolveCommonName } from '../../../shared/commonNames/index.js'
+import { formatScientificName } from '../utils/scientificName'
 
 const BBOX_TYPE_ICON = (
   <span
@@ -60,11 +61,10 @@ export default function ObservationRow({
   // (blank/unclassified/unknown/null).
   const isPseudoSpecies = !observation.scientificName && !observation.commonName
   const pseudoLabel = observation.observationType === 'vehicle' ? 'Vehicle' : 'Blank'
+  const resolvedCommon = resolveCommonName(observation.scientificName) || observation.commonName
+  const showSci = !resolvedCommon && observation.scientificName
   const displayName =
-    resolveCommonName(observation.scientificName) ||
-    observation.commonName ||
-    observation.scientificName ||
-    pseudoLabel
+    resolvedCommon || formatScientificName(observation.scientificName) || pseudoLabel
 
   const confidence =
     observation.classificationProbability != null && !isHuman
@@ -114,7 +114,9 @@ export default function ObservationRow({
 
         <span
           className={`text-sm flex-1 min-w-0 truncate ${
-            isPseudoSpecies ? 'italic text-gray-400' : 'text-[#030213] font-medium capitalize'
+            isPseudoSpecies
+              ? 'italic text-gray-400'
+              : `text-[#030213] font-medium ${showSci ? 'italic' : 'capitalize'}`
           }`}
         >
           {displayName}

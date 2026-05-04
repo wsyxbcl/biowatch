@@ -1,6 +1,7 @@
 import { forwardRef } from 'react'
 import { computeBboxLabelPosition } from '../utils/positioning'
 import { resolveCommonName } from '../../../shared/commonNames/index.js'
+import { formatScientificName } from '../utils/scientificName'
 
 /**
  * Species-only label pill anchored above a bbox on the image.
@@ -22,10 +23,11 @@ const BboxLabelMinimal = forwardRef(function BboxLabelMinimal(
   // for confirmed-blank observationType; bbox without classification reads as
   // "—".
   const dictCommon = resolveCommonName(bbox.scientificName)
+  const resolvedCommon = dictCommon || bbox.commonName
+  const showSci = !resolvedCommon && bbox.scientificName
   const displayName =
-    dictCommon ||
-    bbox.commonName ||
-    bbox.scientificName ||
+    resolvedCommon ||
+    formatScientificName(bbox.scientificName) ||
     (bbox.observationType === 'blank' ? 'Blank' : '—')
   const { left: leftPos, top: topPos, transform: transformVal } = computeBboxLabelPosition(bbox)
 
@@ -39,17 +41,17 @@ const BboxLabelMinimal = forwardRef(function BboxLabelMinimal(
         e.stopPropagation()
         onClick()
       }}
-      className={`absolute pointer-events-auto h-5 px-2 text-white text-xs font-medium whitespace-nowrap max-w-full truncate flex items-center capitalize transition-colors hover:brightness-110 ${bg} ${
-        isSelected ? 'ring-2 ring-white/60' : ''
-      }`}
+      className={`absolute pointer-events-auto h-5 px-2 text-white text-xs font-medium whitespace-nowrap max-w-full truncate flex items-center transition-colors hover:brightness-110 ${
+        showSci ? 'italic' : 'capitalize'
+      } ${bg} ${isSelected ? 'ring-2 ring-white/60' : ''}`}
       style={{
         left: leftPos,
         top: topPos,
         transform: transformVal
       }}
       title={
-        bbox.scientificName && displayName !== bbox.scientificName
-          ? `${displayName} (${bbox.scientificName})`
+        bbox.scientificName && !showSci
+          ? `${displayName} (${formatScientificName(bbox.scientificName)})`
           : displayName
       }
     >

@@ -6,6 +6,7 @@ import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
 import IucnBadge from '../ui/IucnBadge'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
 import { useCommonName } from '../utils/commonNames'
+import { formatScientificName } from '../utils/scientificName'
 import { sortSpeciesHumansLast } from '../utils/speciesUtils'
 
 /**
@@ -20,9 +21,10 @@ function SpeciesRow({
   onRowClick,
   scrollSignal
 }) {
-  const displayName =
-    useCommonName(species.scientificName, { storedCommonName }) || species.scientificName
-  const showScientific = species.scientificName && displayName !== species.scientificName
+  const commonName = useCommonName(species.scientificName, { storedCommonName })
+  const displayName = commonName || formatScientificName(species.scientificName)
+  const showScientific =
+    species.scientificName && commonName && commonName !== species.scientificName
   const info = resolveSpeciesInfo(species.scientificName)
   const iucn = info?.iucn
   const studyImage = speciesImageMap[species.scientificName]
@@ -51,9 +53,15 @@ function SpeciesRow({
         <HoverCard.Trigger asChild>
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="w-80 flex-shrink-0">
-              <span className="capitalize text-sm text-gray-900 font-medium">{displayName}</span>
+              <span
+                className={`text-sm text-gray-900 font-medium ${showScientific ? 'capitalize' : 'italic'}`}
+              >
+                {displayName}
+              </span>
               {showScientific && (
-                <span className="text-gray-400 text-xs italic ml-2">{species.scientificName}</span>
+                <span className="text-gray-400 text-xs italic ml-2">
+                  {formatScientificName(species.scientificName)}
+                </span>
               )}
             </div>
             <div className="w-8 flex-shrink-0">

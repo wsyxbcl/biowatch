@@ -3,18 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import * as HoverCard from '@radix-ui/react-hover-card'
 import { ChevronLeft, ChevronRight, CameraOff, X, Heart, Play, Loader2 } from 'lucide-react'
 import { useCommonName } from '../utils/commonNames'
+import { formatScientificName } from '../utils/scientificName'
 import SpeciesTooltipContent from './SpeciesTooltipContent'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
 import { useHorizontalWheelScroll } from '../hooks/useHorizontalWheelScroll'
 
 function toTitleCase(str) {
   return str.replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
-// Binomial nomenclature: only the genus (first letter) is capitalized.
-function capitalizeGenus(str) {
-  if (!str) return str
-  return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
 /**
@@ -25,7 +20,7 @@ function SpeciesThumbnailLabel({ scientificName }) {
   const common = useCommonName(scientificName)
   if (!scientificName) return <>Unknown species</>
   if (common && common !== scientificName) return <>{toTitleCase(common)}</>
-  return <>{capitalizeGenus(scientificName)}</>
+  return <>{formatScientificName(scientificName)}</>
 }
 
 /**
@@ -41,12 +36,12 @@ function SpeciesHeading({ scientificName }) {
       <>
         {toTitleCase(common)}{' '}
         <span className="italic text-gray-500 font-normal">
-          ({capitalizeGenus(scientificName)})
+          ({formatScientificName(scientificName)})
         </span>
       </>
     )
   }
-  return <>{capitalizeGenus(scientificName)}</>
+  return <>{formatScientificName(scientificName)}</>
 }
 
 /**

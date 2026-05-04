@@ -7,6 +7,7 @@ import EditableLocationName from './EditableLocationName'
 import LocationPopover from './LocationPopover'
 import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
 import { resolveCommonName } from '../../../shared/commonNames/index.js'
+import { formatScientificName } from '../utils/scientificName'
 import { isBlank, isVehicle } from '../utils/speciesUtils'
 
 /**
@@ -216,15 +217,17 @@ function SpeciesFilterRow({ studyId, scientificName, count, isSelected, onToggle
           className={`block text-sm truncate ${
             isPseudo
               ? 'italic text-gray-500'
-              : `${commonName ? 'capitalize' : ''} ${
+              : `${commonName ? 'capitalize' : 'italic'} ${
                   isSelected ? 'text-blue-900 font-medium' : 'text-gray-800'
                 }`
           }`}
         >
-          {pseudoLabel || commonName || scientificName}
+          {pseudoLabel || commonName || formatScientificName(scientificName)}
         </span>
         {!isPseudo && commonName && (
-          <span className="block text-xs italic text-gray-500 truncate">{scientificName}</span>
+          <span className="block text-xs italic text-gray-500 truncate">
+            {formatScientificName(scientificName)}
+          </span>
         )}
       </span>
       <span className="flex-shrink-0 text-xs tabular-nums text-gray-500">{count}</span>

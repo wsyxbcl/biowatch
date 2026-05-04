@@ -1,17 +1,13 @@
 import { useState, useEffect } from 'react'
 import { CameraOff, Loader2 } from 'lucide-react'
 import { useCommonName } from '../utils/commonNames'
+import { formatScientificName } from '../utils/scientificName'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
 import IucnBadge from './IucnBadge'
 import { IUCN_ACCENT_BORDER } from './iucnPalette'
 
 function toTitleCase(str) {
   return str.replace(/\b\w/g, (c) => c.toUpperCase())
-}
-
-function capitalizeGenus(str) {
-  if (!str) return str
-  return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
 /**
@@ -129,10 +125,10 @@ export default function SpeciesTooltipContent({ imageData, studyId, size = 'md' 
             {hasCommon ? (
               <>
                 {toTitleCase(common)}{' '}
-                <span className="italic text-gray-500">({capitalizeGenus(sciName)})</span>
+                <span className="italic text-gray-500">({formatScientificName(sciName)})</span>
               </>
             ) : (
-              <span className="italic">{capitalizeGenus(sciName)}</span>
+              <span className="italic">{formatScientificName(sciName)}</span>
             )}
           </p>
           <IucnBadge category={info?.iucn} />
