@@ -147,10 +147,11 @@ export function groupMediaIntoSequences(mediaFiles, gapThresholdSeconds, isVideo
         const timeA = new Date(a.timestamp).getTime()
         const timeB = new Date(b.timestamp).getTime()
         if (timeA !== timeB) return timeA - timeB
-        // Secondary sort by filePath for stable ordering when timestamps match
-        const pathA = a.filePath || ''
-        const pathB = b.filePath || ''
-        return pathA.localeCompare(pathB)
+        // Tiebreak by fileName: filePath is a random-UUID remote URL for
+        // Agouti/CamtrapDP imports, so sorting by filePath produces noise.
+        const nameA = a.fileName || ''
+        const nameB = b.fileName || ''
+        return nameA.localeCompare(nameB)
       })
 
       // Update startTime/endTime based on sorted items
@@ -228,10 +229,11 @@ export function groupMediaByEventID(mediaFiles) {
       const timeA = new Date(a.timestamp).getTime()
       const timeB = new Date(b.timestamp).getTime()
       if (timeA !== timeB) return timeA - timeB
-      // Secondary sort by filePath for stable ordering when timestamps match
-      const pathA = a.filePath || ''
-      const pathB = b.filePath || ''
-      return pathA.localeCompare(pathB)
+      // Tiebreak by fileName: filePath is a random-UUID remote URL for
+      // Agouti/CamtrapDP imports, so sorting by filePath produces noise.
+      const nameA = a.fileName || ''
+      const nameB = b.fileName || ''
+      return nameA.localeCompare(nameB)
     })
 
     sequences.push({
