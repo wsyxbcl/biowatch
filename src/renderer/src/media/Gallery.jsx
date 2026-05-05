@@ -544,6 +544,24 @@ function ImageModal({
     }
   }
 
+  // Invalidate all queries that depend on the per-media observations after a
+  // create/delete/classification edit. Same set the previous mutations'
+  // onSettled fired — kept inline so the undo path uses the identical fanout.
+  // Declared early so the handlers below can list it as a stable dep.
+  const invalidateAfterObservationChange = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['mediaBboxes', studyId, media?.mediaID] })
+    queryClient.invalidateQueries({ queryKey: ['distinctSpecies', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['thumbnailBboxesBatch'] })
+    queryClient.invalidateQueries({ queryKey: ['sequences', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['sequenceAwareSpeciesDistribution', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['sequenceAwareTimeseries', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['sequenceAwareDailyActivity', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['sequenceAwareHeatmap', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['blankMediaCount', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['vehicleMediaCount', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
+  }, [queryClient, studyId, media?.mediaID])
+
   // Classification update — routed through the undo system. Local state
   // mirrors what the previous useMutation exposed (isPending / isError) so the
   // existing pending/error UI in the footer can keep working.
@@ -695,23 +713,6 @@ function ImageModal({
       invalidateAfterObservationChange
     ]
   )
-
-  // Invalidate all queries that depend on the per-media observations after a
-  // create/delete/classification edit. Same set the previous mutations'
-  // onSettled fired — kept inline so the undo path uses the identical fanout.
-  const invalidateAfterObservationChange = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['mediaBboxes', studyId, media?.mediaID] })
-    queryClient.invalidateQueries({ queryKey: ['distinctSpecies', studyId] })
-    queryClient.invalidateQueries({ queryKey: ['thumbnailBboxesBatch'] })
-    queryClient.invalidateQueries({ queryKey: ['sequences', studyId] })
-    queryClient.invalidateQueries({ queryKey: ['sequenceAwareSpeciesDistribution', studyId] })
-    queryClient.invalidateQueries({ queryKey: ['sequenceAwareTimeseries', studyId] })
-    queryClient.invalidateQueries({ queryKey: ['sequenceAwareDailyActivity', studyId] })
-    queryClient.invalidateQueries({ queryKey: ['sequenceAwareHeatmap', studyId] })
-    queryClient.invalidateQueries({ queryKey: ['blankMediaCount', studyId] })
-    queryClient.invalidateQueries({ queryKey: ['vehicleMediaCount', studyId] })
-    queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
-  }, [queryClient, studyId, media?.mediaID])
 
   // Get default species from existing bboxes (most confident)
   const getDefaultSpecies = useCallback(() => {
