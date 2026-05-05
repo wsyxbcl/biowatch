@@ -87,6 +87,13 @@ export async function getMediaBboxes(dbPath, mediaID, includeWithoutBbox = false
     const rows = await db
       .select({
         observationID: observations.observationID,
+        // mediaID / deploymentID / eventID / eventStart are needed by the
+        // undo system so a deleted observation can be recreated with its
+        // original IDs and event grouping.
+        mediaID: observations.mediaID,
+        deploymentID: observations.deploymentID,
+        eventID: observations.eventID,
+        eventStart: observations.eventStart,
         scientificName: observations.scientificName,
         observationType: observations.observationType,
         commonName: observations.commonName,
