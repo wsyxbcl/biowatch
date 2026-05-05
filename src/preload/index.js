@@ -319,6 +319,15 @@ const api = {
   createObservation: async (studyId, observationData) => {
     return await electronAPI.ipcRenderer.invoke('observations:create', studyId, observationData)
   },
+  // Restore observation to a prior state (used by undo, no auto-stamping)
+  restoreObservation: async (studyId, observationID, fields) => {
+    return await electronAPI.ipcRenderer.invoke(
+      'observations:restore',
+      studyId,
+      observationID,
+      fields
+    )
+  },
   // Get distinct species for dropdown
   getDistinctSpecies: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('species:get-distinct', studyId)

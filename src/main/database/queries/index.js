@@ -55,6 +55,7 @@ export {
   updateObservationBbox,
   deleteObservation,
   createObservation,
+  restoreObservation,
   insertObservations
 } from './observations.js'
 

@@ -15,7 +15,11 @@ export default function BehaviorSelector({ value = [], onChange }) {
   const wasOpenRef = useRef(false)
 
   useEffect(() => {
-    if (isOpen && !wasOpenRef.current) {
+    // Sync local state with the parent's value either when the dropdown is
+    // closed (mirror external updates like undo/redo) or on the closed→open
+    // transition (snapshot for in-flight editing). Once the dropdown is open
+    // and stays open, keep the local edits intact until commit-on-close.
+    if (!isOpen || !wasOpenRef.current) {
       setLocalBehaviors(value || [])
       hasChangesRef.current = false
     }
@@ -78,14 +82,21 @@ export default function BehaviorSelector({ value = [], onChange }) {
         </span>
         <div className="flex items-center gap-1">
           {selectedCount > 0 && (
-            <button
-              type="button"
+            <span
+              role="button"
+              tabIndex={0}
               onClick={handleClearAll}
-              className="p-0.5 rounded hover:bg-gray-100 transition-colors"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleClearAll(e)
+                }
+              }}
+              className="p-0.5 rounded hover:bg-gray-100 transition-colors cursor-pointer"
               title="Clear all"
             >
               <X size={14} />
-            </button>
+            </span>
           )}
           {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </div>

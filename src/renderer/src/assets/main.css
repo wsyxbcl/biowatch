@@ -342,3 +342,22 @@ input::-webkit-inner-spin-button {
 .leaflet-tooltip-left.species-map-tooltip {
   margin-left: -36px;
 }
+
+/* Brief outline pulse on a bbox after undo/redo so the user can see which
+   observation just changed. Rendered as a separate overlay <rect> so it
+   never interferes with the main rect's stroke styling. */
+@keyframes bbox-pulse {
+  0% {
+    stroke-opacity: 1;
+    stroke-width: 4;
+  }
+  100% {
+    stroke-opacity: 0;
+    stroke-width: 10;
+  }
+}
+
+.bbox--pulse {
+  animation: bbox-pulse 600ms ease-out 1;
+  pointer-events: none;
+}

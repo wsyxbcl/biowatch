@@ -191,6 +191,10 @@ src/
 │   │   ├── SpanPicker.jsx            # Two-calendar date-range picker
 │   │   └── utils/formatStats.js      # KPI formatters
 │   ├── ui/                  # Reusable components
+│   ├── undo/                # Undo/redo system for annotation edits
+│   │   ├── UndoManager.js   # Stack class with bounded history + pulse/error events
+│   │   ├── commands.js      # Command builders (create/delete/update-bbox/update-classification)
+│   │   └── context.jsx      # UndoProvider + useUndo hook
 │   └── hooks/               # Custom React hooks
 │       └── useSparklineMode.js # Sparkline display mode state (bars/line/heatmap)
 ├── preload/

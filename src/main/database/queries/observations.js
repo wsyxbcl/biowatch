@@ -243,6 +243,8 @@ export async function deleteObservation(dbPath, observationID) {
  *
  * @param {string} dbPath - Path to the SQLite database
  * @param {Object} observationData - The observation data
+ * @param {string} [observationData.observationID] - Optional explicit ID (used by undo to recreate deleted observations with their original UUID)
+ * @param {string} [observationData.eventID] - Optional explicit event ID (preserved alongside observationID)
  * @param {string} observationData.mediaID - Associated media ID
  * @param {string} observationData.deploymentID - Associated deployment ID
  * @param {string} observationData.timestamp - Media timestamp (ISO 8601)
@@ -311,9 +313,22 @@ export async function createObservation(dbPath, observationData) {
       behaviorSchema.parse(behavior)
     }
 
-    // Generate IDs
-    const observationID = crypto.randomUUID()
-    const eventID = crypto.randomUUID()
+    // Generate IDs (or accept explicit ones — used by the undo system to
+    // recreate a previously deleted observation with its original UUID).
+    const observationID = observationData.observationID ?? crypto.randomUUID()
+    const eventID = observationData.eventID ?? crypto.randomUUID()
+
+    // Classification metadata. Direct user creation defaults to a fresh human
+    // stamp ('human' / 'User' / now / null probability / 'animal'). The undo
+    // path opts out by passing these fields verbatim, so undo-of-delete can
+    // restore an originally machine-classified row in a single IPC instead
+    // of needing a separate stamp-free UPDATE.
+    const observationType = observationData.observationType ?? 'animal'
+    const classificationMethod = observationData.classificationMethod ?? 'human'
+    const classifiedBy = observationData.classifiedBy ?? 'User'
+    const classificationTimestamp =
+      observationData.classificationTimestamp ?? new Date().toISOString()
+    const classificationProbability = observationData.classificationProbability ?? null
 
     // Prepare observation data following CamTrap DP specification
     const newObservation = {
@@ -325,17 +340,17 @@ export async function createObservation(dbPath, observationData) {
       eventEnd: timestamp,
       scientificName: scientificName || null,
       commonName: commonName || null,
-      observationType: 'animal',
-      classificationProbability: null, // Human classification - no classificationProbability score
+      observationType,
+      classificationProbability,
       count: 1,
       bboxX: hasBbox ? bboxX : null,
       bboxY: hasBbox ? bboxY : null,
       bboxWidth: hasBbox ? bboxWidth : null,
       bboxHeight: hasBbox ? bboxHeight : null,
       modelOutputID: null, // No model involved
-      classificationMethod: 'human',
-      classifiedBy: 'User',
-      classificationTimestamp: new Date().toISOString(),
+      classificationMethod,
+      classifiedBy,
+      classificationTimestamp,
       // Camtrap DP observation fields
       sex: sex || null,
       lifeStage: lifeStage || null,
@@ -359,6 +374,62 @@ export async function createObservation(dbPath, observationData) {
     return createdObservation
   } catch (error) {
     log.error(`Error creating observation: ${error.message}`)
+    throw error
+  }
+}
+
+/**
+ * Restore an observation's fields to a prior state (used by the undo system).
+ * Unlike updateObservationClassification / updateObservationBbox, this does NOT
+ * auto-stamp classificationMethod / classifiedBy / classificationTimestamp —
+ * undo is "revert state", not "another user edit", so it must preserve whatever
+ * those fields were at the snapshot point.
+ *
+ * @param {string} dbPath - Path to the SQLite database
+ * @param {string} observationID - The observation ID to restore
+ * @param {Object} fields - Fields to overwrite verbatim. Any combination of:
+ *   bboxX, bboxY, bboxWidth, bboxHeight, scientificName, commonName,
+ *   observationType, sex, lifeStage, behavior, classificationMethod,
+ *   classifiedBy, classificationTimestamp, classificationProbability
+ * @returns {Promise<Object>} - The restored observation
+ * @throws if no row matches observationID (so external deletions trigger the
+ *         caller's failure path rather than silently doing nothing).
+ */
+export async function restoreObservation(dbPath, observationID, fields) {
+  const startTime = Date.now()
+  log.info(`Restoring observation: ${observationID}`)
+
+  try {
+    if (!fields || Object.keys(fields).length === 0) {
+      // No-op restores aren't meaningful, but they shouldn't masquerade as
+      // 'observation not found' — verify the row exists and return it.
+      throw new Error('restoreObservation called with no fields to update')
+    }
+
+    const studyId = getStudyIdFromPath(dbPath)
+    const db = await getDrizzleDb(studyId, dbPath)
+
+    const result = await db
+      .update(observations)
+      .set(fields)
+      .where(eq(observations.observationID, observationID))
+
+    const rowsAffected = result.changes ?? result.rowsAffected ?? 0
+    if (rowsAffected === 0) {
+      throw new Error(`Observation not found: ${observationID}`)
+    }
+
+    const restored = await db
+      .select()
+      .from(observations)
+      .where(eq(observations.observationID, observationID))
+      .get()
+
+    const elapsedTime = Date.now() - startTime
+    log.info(`Restored observation ${observationID} in ${elapsedTime}ms`)
+    return restored
+  } catch (error) {
+    log.error(`Error restoring observation: ${error.message}`)
     throw error
   }
 }

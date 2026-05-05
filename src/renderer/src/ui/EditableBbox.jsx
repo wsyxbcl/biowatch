@@ -6,14 +6,13 @@ import {
   clampBbox,
   getCursorForHandle,
   resizeBboxFromHandle,
-  moveBbox,
-  pixelToNormalizedDeltaWithZoom
+  moveBbox
 } from '../utils/bboxCoordinates'
+import { useUndo } from '../undo/context.jsx'
 
 const CORNER_HANDLE_SIZE = 8 // pixels
 const EDGE_HANDLE_SIZE = 6 // pixels
 const MIN_BBOX_SIZE = 0.05 // 5% of image dimension
-const NUDGE_PIXELS = 1 // pixels to move with arrow keys
 
 /**
  * Editable bounding box with move and resize capabilities.
@@ -32,6 +31,29 @@ export default function EditableBbox({
 }) {
   const [localBbox, setLocalBbox] = useState(null)
   const localBboxRef = useRef(null) // Mirror of localBbox for closure-safe access
+
+  // Pulse state — flips to true for ~600ms after this observation is the
+  // target of an undo/redo, driving the bbox-pulse CSS animation overlay.
+  const [pulseKey, setPulseKey] = useState(0)
+  const undo = useUndo()
+  useEffect(() => {
+    return undo.onPulse((id) => {
+      if (id !== bbox.observationID) return
+      // Bump key to remount the overlay <rect>, restarting the animation
+      // even if it fires twice in quick succession.
+      setPulseKey((n) => n + 1)
+    })
+  }, [undo, bbox.observationID])
+
+  // Undo-of-delete recreates the bbox row in the React Query cache, but the
+  // resulting mount happens on a later React tick — after the manager's
+  // synchronous _emitPulse already fired. The manager buffers the pulse for
+  // such cases; we consume it on mount so the pulse still runs.
+  useEffect(() => {
+    if (undo.consumePendingPulse?.(bbox.observationID)) {
+      setPulseKey((n) => n + 1)
+    }
+  }, [undo, bbox.observationID])
 
   // Refs for drag state (no re-renders during drag, and avoids closure issues)
   const isDraggingRef = useRef(false)
@@ -152,6 +174,7 @@ export default function EditableBbox({
 
     // Commit changes if bbox moved - use ref to get current value
     const currentLocalBbox = localBboxRef.current
+    let committed = false
     if (currentLocalBbox && onUpdate && initialBboxRef.current) {
       const initial = initialBboxRef.current
       const hasChanged =
@@ -162,13 +185,29 @@ export default function EditableBbox({
 
       if (hasChanged) {
         onUpdate(currentLocalBbox)
+        committed = true
       }
     }
 
     cleanupDrag()
-    localBboxRef.current = null
-    setLocalBbox(null)
+    // If we committed an edit, leave localBbox set — the cache will catch up
+    // shortly and a useEffect on the bbox prop will clear localBbox at that
+    // point. Clearing now would cause one render with the old bbox prop and a
+    // visible flicker.
+    if (!committed) {
+      localBboxRef.current = null
+      setLocalBbox(null)
+    }
   }, [onUpdate, cleanupDrag, handleMouseMove])
+
+  // Once the bbox prop catches up to the committed local edit (or rolls back
+  // to the original on IPC failure), drop the local override.
+  useEffect(() => {
+    if (localBboxRef.current) {
+      localBboxRef.current = null
+      setLocalBbox(null)
+    }
+  }, [bbox.bboxX, bbox.bboxY, bbox.bboxWidth, bbox.bboxHeight])
 
   // Handle keyboard events for nudge and escape
   useEffect(() => {
@@ -187,44 +226,11 @@ export default function EditableBbox({
         }
         return
       }
-
-      // Arrow keys to nudge
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        e.preventDefault()
-        const bounds = imageBoundsRef.current || getCurrentBounds()
-        if (!bounds || !onUpdate) return
-
-        // Use zoom-aware delta conversion if zoomed
-        const zoom = zoomTransformRef.current
-        const scale = zoom?.scale || 1
-
-        let deltaX = 0
-        let deltaY = 0
-
-        switch (e.key) {
-          case 'ArrowUp':
-            deltaY = -pixelToNormalizedDeltaWithZoom(NUDGE_PIXELS, bounds, 'y', scale)
-            break
-          case 'ArrowDown':
-            deltaY = pixelToNormalizedDeltaWithZoom(NUDGE_PIXELS, bounds, 'y', scale)
-            break
-          case 'ArrowLeft':
-            deltaX = -pixelToNormalizedDeltaWithZoom(NUDGE_PIXELS, bounds, 'x', scale)
-            break
-          case 'ArrowRight':
-            deltaX = pixelToNormalizedDeltaWithZoom(NUDGE_PIXELS, bounds, 'x', scale)
-            break
-        }
-
-        const newBbox = moveBbox(bbox, deltaX, deltaY)
-        const clamped = clampBbox(newBbox, MIN_BBOX_SIZE)
-        onUpdate(clamped)
-      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isSelected, bbox, onUpdate, getCurrentBounds, handleMouseMove, handleMouseUp, cleanupDrag])
+  }, [isSelected, handleMouseMove, handleMouseUp, cleanupDrag])
 
   const handleMouseDown = useCallback(
     (e, handle = null) => {
@@ -326,6 +332,21 @@ export default function EditableBbox({
         onMouseDown={(e) => handleMouseDown(e)}
         onClick={(e) => e.stopPropagation()}
       />
+
+      {/* Pulse overlay — fires after undo/redo to flag the affected bbox.
+          Keyed by pulseKey so a second pulse restarts the animation. */}
+      {pulseKey > 0 && (
+        <rect
+          key={pulseKey}
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill="none"
+          stroke="#4f9eff"
+          className="bbox--pulse"
+        />
+      )}
 
       {/* Resize handles - only show when selected */}
       {isSelected &&

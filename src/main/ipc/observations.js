@@ -10,7 +10,8 @@ import {
   updateObservationClassification,
   updateObservationBbox,
   deleteObservation,
-  createObservation
+  createObservation,
+  restoreObservation
 } from '../database/index.js'
 
 /**
@@ -88,6 +89,23 @@ export function registerObservationsIPCHandlers() {
       return { data: newObservation }
     } catch (error) {
       log.error('Error creating observation:', error)
+      return { error: error.message }
+    }
+  })
+
+  // Restore observation fields to a prior state (used by undo)
+  ipcMain.handle('observations:restore', async (_, studyId, observationID, fields) => {
+    try {
+      const dbPath = getStudyDatabasePath(app.getPath('userData'), studyId)
+      if (!dbPath || !existsSync(dbPath)) {
+        log.warn(`Database not found for study ID: ${studyId}`)
+        return { error: 'Database not found for this study' }
+      }
+
+      const restored = await restoreObservation(dbPath, observationID, fields)
+      return { data: restored }
+    } catch (error) {
+      log.error('Error restoring observation:', error)
       return { error: error.message }
     }
   })

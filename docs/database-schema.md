@@ -232,6 +232,17 @@ older `observationType != 'blank'` proxy when restricting to "real
 species" rows — the proxy lets `unclassified`/`unknown` empty-species rows
 through, which pollutes species distributions.
 
+#### `observationID` reuse after delete
+
+`observationID` is a TEXT primary key (UUID, not auto-increment). Once an
+observation is deleted, its UUID is freed and a subsequent `INSERT` may reuse
+the same value. The undo system relies on this: undoing a delete recreates the
+row with its original `observationID` and `eventID` so any later stack entries
+that reference the observation (e.g., a follow-up classification edit) remain
+valid. The PK uniqueness constraint still rejects a second insert with a live
+id — `createObservation`'s optional `observationID` / `eventID` parameters are
+the only sanctioned way to reuse a freed UUID.
+
 ---
 
 ### metadata
