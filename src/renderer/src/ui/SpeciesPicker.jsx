@@ -13,6 +13,9 @@ import { resolveCommonName } from '../../../shared/commonNames/index.js'
  *    and the bundled dictionary (3+ chars).
  *  - Keyboard navigation: ↑/↓ moves highlight, Enter commits.
  *  - Custom-species fallback when the query has no results.
+ *  - Browse mode (`initialBrowse`): on mount, dropdown is open with the empty
+ *    query showing the full study species list and the current species
+ *    pre-highlighted. Ends on first keystroke, Escape, or pick.
  *
  * Saves are committal: clicking a result or pressing Enter calls
  * onSelect(scientificName, commonName) and the parent collapses the picker.
@@ -21,11 +24,13 @@ export default function SpeciesPicker({
   studyId,
   currentScientificName,
   onSelect,
-  autoFocus = true
+  autoFocus = true,
+  initialBrowse = false
 }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
+  const [browseOpen, setBrowseOpen] = useState(initialBrowse)
   const inputRef = useRef(null)
   const rowRefs = useRef([])
 
@@ -39,18 +44,27 @@ export default function SpeciesPicker({
   })
 
   useEffect(() => {
-    if (autoFocus && inputRef.current) inputRef.current.focus()
-  }, [autoFocus])
+    if ((autoFocus || initialBrowse) && inputRef.current) inputRef.current.focus()
+  }, [autoFocus, initialBrowse])
 
   useEffect(() => {
     const handle = setTimeout(() => setDebouncedSearch(searchTerm), 150)
     return () => clearTimeout(handle)
   }, [searchTerm])
 
-  const results = useMemo(
-    () => searchSpecies(debouncedSearch, speciesList),
-    [debouncedSearch, speciesList]
-  )
+  const results = useMemo(() => {
+    const base = searchSpecies(debouncedSearch, speciesList)
+    // In browse mode with an empty query, pin the current species to the top
+    // so it acts as a clear "this is what's set" anchor with alternatives
+    // listed below. Once the user types, fall back to natural relevance order
+    // — pinning would otherwise fight the search ranking.
+    if (!browseOpen || debouncedSearch.trim().length > 0 || !currentScientificName) {
+      return base
+    }
+    const idx = base.findIndex((s) => s.scientificName === currentScientificName)
+    if (idx <= 0) return base
+    return [base[idx], ...base.slice(0, idx), ...base.slice(idx + 1)]
+  }, [debouncedSearch, speciesList, browseOpen, currentScientificName])
 
   const customSpeciesQuery = useMemo(
     () => debouncedSearch.trim().replace(/\s+/g, ' '),
@@ -58,9 +72,18 @@ export default function SpeciesPicker({
   )
 
   useEffect(() => {
-    setHighlightedIndex(results.length > 0 ? 0 : -1)
     rowRefs.current.length = results.length
-  }, [results])
+    if (results.length === 0) {
+      setHighlightedIndex(-1)
+      return
+    }
+    if (browseOpen && currentScientificName) {
+      const idx = results.findIndex((s) => s.scientificName === currentScientificName)
+      setHighlightedIndex(idx >= 0 ? idx : 0)
+      return
+    }
+    setHighlightedIndex(0)
+  }, [results, browseOpen, currentScientificName])
 
   useEffect(() => {
     if (highlightedIndex < 0) return
@@ -74,6 +97,7 @@ export default function SpeciesPicker({
   const handleSelect = (scientificName, commonName) => {
     setSearchTerm('')
     setDebouncedSearch('')
+    setBrowseOpen(false)
     onSelect(scientificName, commonName)
     if (inputRef.current) inputRef.current.focus()
   }
@@ -85,7 +109,10 @@ export default function SpeciesPicker({
         ref={inputRef}
         type="text"
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
+        onChange={(e) => {
+          setSearchTerm(e.target.value)
+          setBrowseOpen(false)
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Backspace' || e.key === 'Delete') {
             e.stopPropagation()
@@ -96,6 +123,11 @@ export default function SpeciesPicker({
             if (searchTerm.length > 0) {
               // First Esc: clear the search query (collapses the dropdown).
               setSearchTerm('')
+              setBrowseOpen(false)
+            } else if (browseOpen) {
+              // Browse-mode dropdown is open with empty input — close it
+              // before letting subsequent Escape blur the input.
+              setBrowseOpen(false)
             } else {
               // Second Esc (empty search): blur so the modal handler can act.
               e.currentTarget.blur()
@@ -131,7 +163,7 @@ export default function SpeciesPicker({
         className="w-full pl-7 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent"
       />
 
-      {debouncedSearch.trim().length > 0 && (
+      {(debouncedSearch.trim().length > 0 || browseOpen) && (
         <div className="absolute left-0 right-0 top-full mt-1 z-20 max-h-52 overflow-y-auto border border-gray-200 rounded bg-white shadow-lg">
           {results.map((species, index) => (
             <button
