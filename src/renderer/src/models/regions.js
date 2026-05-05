@@ -39,6 +39,8 @@ export function getRegion(id) {
 
 export function withAlpha(hex, alpha) {
   const a = Math.max(0, Math.min(1, alpha))
-  const byte = Math.round(a * 255).toString(16).padStart(2, '0')
+  const byte = Math.round(a * 255)
+    .toString(16)
+    .padStart(2, '0')
   return `${hex}${byte}`
 }

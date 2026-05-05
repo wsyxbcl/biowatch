@@ -1,9 +1,6 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import {
-  filterSpecies,
-  classSummary
-} from '../../src/renderer/src/models/speciesPanelHelpers.js'
+import { filterSpecies, classSummary } from '../../src/renderer/src/models/speciesPanelHelpers.js'
 
 const sampleSpecies = [
   { common: 'Red fox', scientific: 'Vulpes vulpes', class: 'mammal' },

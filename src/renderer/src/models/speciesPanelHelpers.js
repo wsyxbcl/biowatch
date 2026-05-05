@@ -1,9 +1,9 @@
 const CLASS_DEFAULTS = {
-  mammal:    { label: 'Mammals',    icon: '🦌' },
-  bird:      { label: 'Birds',      icon: '🦅' },
-  reptile:   { label: 'Reptiles',   icon: '🦎' },
+  mammal: { label: 'Mammals', icon: '🦌' },
+  bird: { label: 'Birds', icon: '🦅' },
+  reptile: { label: 'Reptiles', icon: '🦎' },
   amphibian: { label: 'Amphibians', icon: '🐸' },
-  other:     { label: 'Other',      icon: '🐟' }
+  other: { label: 'Other', icon: '🐟' }
 }
 
 export function filterSpecies(species, query) {
@@ -11,8 +11,7 @@ export function filterSpecies(species, query) {
   if (!q) return species
   return species.filter(
     (s) =>
-      s.common.toLowerCase().includes(q) ||
-      (s.scientific && s.scientific.toLowerCase().includes(q))
+      s.common.toLowerCase().includes(q) || (s.scientific && s.scientific.toLowerCase().includes(q))
   )
 }
 

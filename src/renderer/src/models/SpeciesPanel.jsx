@@ -112,10 +112,7 @@ function SmallView({ data, query }) {
 
 function LargeView({ data, query, searchable }) {
   const summary = useMemo(() => classSummary(data), [data])
-  const filtered = useMemo(
-    () => filterSpecies(data.species || [], query),
-    [data.species, query]
-  )
+  const filtered = useMemo(() => filterSpecies(data.species || [], query), [data.species, query])
 
   if (searchable && query.trim()) {
     if (filtered.length === 0) {

@@ -58,10 +58,7 @@ function MapController({ selectedId, regionalModels, geojsonByModel, worldwideId
 }
 
 export default function MapPane({ modelZoo, selectedId, onSelect }) {
-  const worldwideModel = useMemo(
-    () => modelZoo.find((m) => m.region === 'worldwide'),
-    [modelZoo]
-  )
+  const worldwideModel = useMemo(() => modelZoo.find((m) => m.region === 'worldwide'), [modelZoo])
   const regionalModels = useMemo(
     () => modelZoo.filter((m) => m.region !== 'worldwide' && getRegion(m.region)?.geojson),
     [modelZoo]

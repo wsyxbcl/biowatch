@@ -1,10 +1,6 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import {
-  REGIONS,
-  getRegion,
-  withAlpha
-} from '../../src/renderer/src/models/regions.js'
+import { REGIONS, getRegion, withAlpha } from '../../src/renderer/src/models/regions.js'
 
 describe('REGIONS registry', () => {
   test('contains worldwide, europe, himalayas, custom', () => {
