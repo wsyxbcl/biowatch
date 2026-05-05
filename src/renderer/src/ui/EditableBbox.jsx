@@ -6,15 +6,13 @@ import {
   clampBbox,
   getCursorForHandle,
   resizeBboxFromHandle,
-  moveBbox,
-  pixelToNormalizedDeltaWithZoom
+  moveBbox
 } from '../utils/bboxCoordinates'
 import { useUndo } from '../undo/context.jsx'
 
 const CORNER_HANDLE_SIZE = 8 // pixels
 const EDGE_HANDLE_SIZE = 6 // pixels
 const MIN_BBOX_SIZE = 0.05 // 5% of image dimension
-const NUDGE_PIXELS = 1 // pixels to move with arrow keys
 
 /**
  * Editable bounding box with move and resize capabilities.
@@ -218,44 +216,11 @@ export default function EditableBbox({
         }
         return
       }
-
-      // Arrow keys to nudge
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        e.preventDefault()
-        const bounds = imageBoundsRef.current || getCurrentBounds()
-        if (!bounds || !onUpdate) return
-
-        // Use zoom-aware delta conversion if zoomed
-        const zoom = zoomTransformRef.current
-        const scale = zoom?.scale || 1
-
-        let deltaX = 0
-        let deltaY = 0
-
-        switch (e.key) {
-          case 'ArrowUp':
-            deltaY = -pixelToNormalizedDeltaWithZoom(NUDGE_PIXELS, bounds, 'y', scale)
-            break
-          case 'ArrowDown':
-            deltaY = pixelToNormalizedDeltaWithZoom(NUDGE_PIXELS, bounds, 'y', scale)
-            break
-          case 'ArrowLeft':
-            deltaX = -pixelToNormalizedDeltaWithZoom(NUDGE_PIXELS, bounds, 'x', scale)
-            break
-          case 'ArrowRight':
-            deltaX = pixelToNormalizedDeltaWithZoom(NUDGE_PIXELS, bounds, 'x', scale)
-            break
-        }
-
-        const newBbox = moveBbox(bbox, deltaX, deltaY)
-        const clamped = clampBbox(newBbox, MIN_BBOX_SIZE)
-        onUpdate(clamped)
-      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isSelected, bbox, onUpdate, getCurrentBounds, handleMouseMove, handleMouseUp, cleanupDrag])
+  }, [isSelected, handleMouseMove, handleMouseUp, cleanupDrag])
 
   const handleMouseDown = useCallback(
     (e, handle = null) => {
