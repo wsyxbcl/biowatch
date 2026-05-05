@@ -30,13 +30,13 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  Info,
-  MapPin
+  Info
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient, useMutation, useInfiniteQuery } from '@tanstack/react-query'
-import { useNavigate, useParams } from 'react-router'
+import { useParams } from 'react-router'
 import * as Tooltip from '@radix-ui/react-tooltip'
+import DeploymentLinkPill from './DeploymentLinkPill'
 import EditableBbox from '../ui/EditableBbox'
 import VideoBboxOverlay from '../ui/VideoBboxOverlay.jsx'
 import ObservationRail from '../ui/ObservationRail'
@@ -206,54 +206,6 @@ function DrawingOverlay({ imageRef, containerRef, onComplete, zoomTransform }) {
         Click and drag to draw a box
       </div>
     </>
-  )
-}
-
-/**
- * Footer pill in ImageModal that navigates to the corresponding deployment
- * in the Deployments tab. When `interactive` is false (the modal is opened
- * from inside the Deployments tab itself), renders the same label as a
- * static span — context, not a link.
- *
- * Label fallback: locationName → locationID → 'View deployment'.
- */
-function DeploymentLinkPill({
-  studyId,
-  deploymentID,
-  locationName,
-  locationID,
-  interactive,
-  onNavigate
-}) {
-  const navigate = useNavigate()
-  const label = locationName || locationID || 'View deployment'
-
-  if (!interactive) {
-    return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] text-gray-500">
-        <MapPin size={12} />
-        <span className="truncate max-w-[200px]">{label}</span>
-      </span>
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation()
-        onNavigate?.()
-        navigate(
-          `/study/${encodeURIComponent(studyId)}/deployments?deploymentID=${encodeURIComponent(deploymentID)}`
-        )
-      }}
-      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] text-gray-600 hover:text-blue-700 hover:bg-blue-50 transition-colors"
-      title="Open in Deployments tab"
-    >
-      <MapPin size={12} />
-      <span className="truncate max-w-[200px]">{label}</span>
-      <ChevronRight size={12} />
-    </button>
   )
 }
 
