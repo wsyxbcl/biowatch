@@ -40,6 +40,8 @@ import EditableBbox from '../ui/EditableBbox'
 import VideoBboxOverlay from '../ui/VideoBboxOverlay.jsx'
 import ObservationRail from '../ui/ObservationRail'
 import BboxLabelMinimal from '../ui/BboxLabelMinimal'
+import { UndoProvider, useUndo } from '../undo/context.jsx'
+import * as commands from '../undo/commands.js'
 import {
   getImageBounds,
   screenToNormalized,
@@ -246,6 +248,7 @@ function ImageModal({
   // Favorite state
   const [isFavorite, setIsFavorite] = useState(media?.favorite ?? false)
   const queryClient = useQueryClient()
+  const undo = useUndo()
 
   // Zoom and pan state for image viewing
   const {
@@ -541,52 +544,52 @@ function ImageModal({
     }
   }
 
-  // Mutation for updating observation classification
-  const updateMutation = useMutation({
-    mutationFn: async ({
-      observationID,
-      scientificName,
-      commonName,
-      observationType,
-      sex,
-      lifeStage,
-      behavior
-    }) => {
-      // Only include fields that are explicitly provided (not undefined)
-      // This prevents overwriting existing values with null
-      const updates = {}
-      if (scientificName !== undefined) updates.scientificName = scientificName
-      if (commonName !== undefined) updates.commonName = commonName
-      if (observationType !== undefined) updates.observationType = observationType
-      if (sex !== undefined) updates.sex = sex
-      if (lifeStage !== undefined) updates.lifeStage = lifeStage
-      if (behavior !== undefined) updates.behavior = behavior
+  // Classification update — routed through the undo system. Local state
+  // mirrors what the previous useMutation exposed (isPending / isError) so the
+  // existing pending/error UI in the footer can keep working.
+  const [classificationUpdatePending, setClassificationUpdatePending] = useState(false)
+  const [classificationUpdateError, setClassificationUpdateError] = useState(null)
 
-      const response = await window.api.updateObservationClassification(
+  const handleClassificationUpdate = useCallback(
+    async (observationID, rawUpdates) => {
+      // Only include fields explicitly provided (not undefined). This
+      // prevents overwriting existing values with null.
+      const after = {}
+      if (rawUpdates.scientificName !== undefined) after.scientificName = rawUpdates.scientificName
+      if (rawUpdates.commonName !== undefined) after.commonName = rawUpdates.commonName
+      if (rawUpdates.observationType !== undefined)
+        after.observationType = rawUpdates.observationType
+      if (rawUpdates.sex !== undefined) after.sex = rawUpdates.sex
+      if (rawUpdates.lifeStage !== undefined) after.lifeStage = rawUpdates.lifeStage
+      if (rawUpdates.behavior !== undefined) after.behavior = rawUpdates.behavior
+
+      const cached = queryClient.getQueryData(['mediaBboxes', studyId, media?.mediaID])
+      const before = cached?.find((b) => b.observationID === observationID)
+      if (!before) return
+
+      setClassificationUpdatePending(true)
+      setClassificationUpdateError(null)
+
+      const command = commands.updateClassification({
+        api: window.api,
         studyId,
-        observationID,
-        updates
-      )
-      if (response.error) {
-        throw new Error(response.error)
+        mediaId: media.mediaID,
+        observationId: observationID,
+        before,
+        after
+      })
+      try {
+        await undo.exec(command)
+      } catch (err) {
+        setClassificationUpdateError(err)
+        setClassificationUpdatePending(false)
+        return
       }
-      return response.data
+      invalidateAfterObservationChange()
+      setClassificationUpdatePending(false)
     },
-    onSuccess: () => {
-      // Invalidate related queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['mediaBboxes', studyId, media?.mediaID] })
-      queryClient.invalidateQueries({ queryKey: ['distinctSpecies', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['thumbnailBboxesBatch'] })
-      queryClient.invalidateQueries({ queryKey: ['sequences', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['sequenceAwareSpeciesDistribution', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['sequenceAwareTimeseries', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['sequenceAwareDailyActivity', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['sequenceAwareHeatmap', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['blankMediaCount', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['vehicleMediaCount', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
-    }
-  })
+    [queryClient, studyId, media?.mediaID, undo, invalidateAfterObservationChange]
+  )
 
   // Mutation for toggling media favorite status
   const favoriteMutation = useMutation({
@@ -612,140 +615,103 @@ function ImageModal({
     }
   })
 
-  // Mutation for updating observation bounding box coordinates
-  const updateBboxMutation = useMutation({
-    mutationFn: async ({ observationID, bbox }) => {
-      const response = await window.api.updateObservationBbox(studyId, observationID, bbox)
-      if (response.error) {
-        throw new Error(response.error)
-      }
-      return response.data
-    },
-    onMutate: async ({ observationID, bbox }) => {
-      // Cancel outgoing queries
+  const handleBboxUpdate = useCallback(
+    async (observationID, newBbox) => {
+      const cached = queryClient.getQueryData(['mediaBboxes', studyId, media?.mediaID])
+      const before = cached?.find((b) => b.observationID === observationID)
+      if (!before) return
+
+      // Optimistic UI: same patch the previous mutation's onMutate applied.
       await queryClient.cancelQueries({ queryKey: ['mediaBboxes', studyId, media?.mediaID] })
-
-      // Snapshot previous value for rollback
       const previous = queryClient.getQueryData(['mediaBboxes', studyId, media?.mediaID])
-
-      // Optimistically update the cache
       queryClient.setQueryData(['mediaBboxes', studyId, media?.mediaID], (old) =>
         old?.map((b) =>
-          b.observationID === observationID ? { ...b, ...bbox, classificationMethod: 'human' } : b
+          b.observationID === observationID
+            ? { ...b, ...newBbox, classificationMethod: 'human' }
+            : b
         )
       )
 
-      return { previous }
-    },
-    onError: (err, variables, context) => {
-      // Rollback on error
-      if (context?.previous) {
-        queryClient.setQueryData(['mediaBboxes', studyId, media?.mediaID], context.previous)
+      const command = commands.updateBbox({
+        api: window.api,
+        studyId,
+        mediaId: media.mediaID,
+        observationId: observationID,
+        before,
+        after: newBbox
+      })
+      try {
+        await undo.exec(command)
+      } catch (err) {
+        console.error('Failed to update bbox:', err)
+        queryClient.setQueryData(['mediaBboxes', studyId, media?.mediaID], previous)
+        return
       }
-    },
-    onSettled: () => {
-      // Refetch to ensure sync
       queryClient.invalidateQueries({ queryKey: ['mediaBboxes', studyId, media?.mediaID] })
-      // Also update thumbnail grid
       queryClient.invalidateQueries({ queryKey: ['thumbnailBboxesBatch'] })
-      // Bbox geometry feeds the best-media composite score (area / visibility / padding)
       queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
-    }
-  })
-
-  const handleBboxUpdate = useCallback(
-    (observationID, newBbox) => {
-      updateBboxMutation.mutate({ observationID, bbox: newBbox })
     },
-    [updateBboxMutation]
+    [queryClient, studyId, media?.mediaID, undo]
   )
 
-  // Mutation for deleting observation
-  const deleteMutation = useMutation({
-    mutationFn: async (observationID) => {
-      const response = await window.api.deleteObservation(studyId, observationID)
-      if (response.error) {
-        throw new Error(response.error)
-      }
-      return response.data
-    },
-    onMutate: async (observationID) => {
-      // Cancel outgoing queries
+  const handleDeleteObservation = useCallback(
+    async (observationID) => {
+      // Snapshot full pre-state from cache so undo-of-delete can recreate.
+      const cached = queryClient.getQueryData(['mediaBboxes', studyId, media?.mediaID])
+      const before = cached?.find((b) => b.observationID === observationID)
+      if (!before) return
+
+      // Optimistic UI: remove the observation from the cache immediately.
       await queryClient.cancelQueries({ queryKey: ['mediaBboxes', studyId, media?.mediaID] })
-
-      // Snapshot previous value for rollback
       const previous = queryClient.getQueryData(['mediaBboxes', studyId, media?.mediaID])
-
-      // Optimistically remove the observation from cache
       queryClient.setQueryData(['mediaBboxes', studyId, media?.mediaID], (old) =>
         old?.filter((b) => b.observationID !== observationID)
       )
-
-      // Clear selection if deleted bbox was selected
       if (selectedObservationId === observationID) {
         setSelectedObservationId(null)
       }
 
-      return { previous }
-    },
-    onError: (err, variables, context) => {
-      // Rollback on error
-      if (context?.previous) {
-        queryClient.setQueryData(['mediaBboxes', studyId, media?.mediaID], context.previous)
+      const command = commands.delete_({
+        api: window.api,
+        studyId,
+        mediaId: media.mediaID,
+        before
+      })
+      try {
+        await undo.exec(command)
+      } catch (err) {
+        console.error('Failed to delete observation:', err)
+        queryClient.setQueryData(['mediaBboxes', studyId, media?.mediaID], previous)
+        return
       }
+      invalidateAfterObservationChange()
     },
-    onSettled: () => {
-      // Refetch to ensure sync
-      queryClient.invalidateQueries({ queryKey: ['mediaBboxes', studyId, media?.mediaID] })
-      queryClient.invalidateQueries({ queryKey: ['distinctSpecies', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['thumbnailBboxesBatch'] })
-      queryClient.invalidateQueries({ queryKey: ['sequences', studyId] })
-      // Deleting an observation changes species counts, timeseries, and can make
-      // the underlying media become "blank" (no remaining observations).
-      queryClient.invalidateQueries({ queryKey: ['sequenceAwareSpeciesDistribution', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['sequenceAwareTimeseries', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['sequenceAwareDailyActivity', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['sequenceAwareHeatmap', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['blankMediaCount', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['vehicleMediaCount', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
-    }
-  })
-
-  const handleDeleteObservation = useCallback(
-    (observationID) => {
-      deleteMutation.mutate(observationID)
-    },
-    [deleteMutation]
+    [
+      queryClient,
+      studyId,
+      media?.mediaID,
+      selectedObservationId,
+      undo,
+      invalidateAfterObservationChange
+    ]
   )
 
-  // Mutation for creating new observation
-  const createMutation = useMutation({
-    mutationFn: async (observationData) => {
-      const response = await window.api.createObservation(studyId, observationData)
-      if (response.error) {
-        throw new Error(response.error)
-      }
-      return response.data
-    },
-    onSuccess: (data) => {
-      // Invalidate related queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['mediaBboxes', studyId, media?.mediaID] })
-      queryClient.invalidateQueries({ queryKey: ['distinctSpecies', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['thumbnailBboxesBatch'] })
-      queryClient.invalidateQueries({ queryKey: ['sequences', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['sequenceAwareSpeciesDistribution', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['sequenceAwareTimeseries', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['sequenceAwareDailyActivity', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['sequenceAwareHeatmap', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['blankMediaCount', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['vehicleMediaCount', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
-      // Exit draw mode and select the new observation
-      setIsDrawMode(false)
-      setSelectedObservationId(data.observationID)
-    }
-  })
+  // Invalidate all queries that depend on the per-media observations after a
+  // create/delete/classification edit. Same set the previous mutations'
+  // onSettled fired — kept inline so the undo path uses the identical fanout.
+  const invalidateAfterObservationChange = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['mediaBboxes', studyId, media?.mediaID] })
+    queryClient.invalidateQueries({ queryKey: ['distinctSpecies', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['thumbnailBboxesBatch'] })
+    queryClient.invalidateQueries({ queryKey: ['sequences', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['sequenceAwareSpeciesDistribution', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['sequenceAwareTimeseries', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['sequenceAwareDailyActivity', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['sequenceAwareHeatmap', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['blankMediaCount', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['vehicleMediaCount', studyId] })
+    queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
+  }, [queryClient, studyId, media?.mediaID])
 
   // Get default species from existing bboxes (most confident)
   const getDefaultSpecies = useCallback(() => {
@@ -771,9 +737,9 @@ function ImageModal({
     }
   }, [bboxes])
 
-  // Handle draw completion - create new observation
+  // Handle draw completion - create new observation (via undo system)
   const handleDrawComplete = useCallback(
-    (bbox) => {
+    async (bbox) => {
       if (!media) return
 
       const defaultSpecies = getDefaultSpecies()
@@ -789,16 +755,30 @@ function ImageModal({
         bboxHeight: bbox.bboxHeight
       }
 
-      createMutation.mutate(observationData)
+      const command = commands.create({
+        api: window.api,
+        studyId,
+        mediaId: media.mediaID,
+        observationData
+      })
+      try {
+        await undo.exec(command)
+      } catch (err) {
+        console.error('Failed to create observation:', err)
+        return
+      }
+      invalidateAfterObservationChange()
+      setIsDrawMode(false)
+      setSelectedObservationId(command.entry.observationId)
     },
-    [media, getDefaultSpecies, createMutation]
+    [media, getDefaultSpecies, studyId, undo, invalidateAfterObservationChange]
   )
 
   // Handle "Add observation → Whole image" from the rail. Creates an observation
-  // with no bbox geometry; createMutation.onSuccess auto-selects it.
-  const handleAddWholeImage = useCallback(() => {
+  // with no bbox geometry.
+  const handleAddWholeImage = useCallback(async () => {
     if (!media) return
-    createMutation.mutate({
+    const observationData = {
       mediaID: media.mediaID,
       deploymentID: media.deploymentID,
       timestamp: media.timestamp,
@@ -808,8 +788,23 @@ function ImageModal({
       bboxY: null,
       bboxWidth: null,
       bboxHeight: null
+    }
+    const command = commands.create({
+      api: window.api,
+      studyId,
+      mediaId: media.mediaID,
+      observationData
     })
-  }, [media, createMutation])
+    try {
+      await undo.exec(command)
+    } catch (err) {
+      console.error('Failed to create observation:', err)
+      return
+    }
+    invalidateAfterObservationChange()
+    setIsDrawMode(false)
+    setSelectedObservationId(command.entry.observationId)
+  }, [media, studyId, undo, invalidateAfterObservationChange])
 
   useEffect(() => {
     if (!isOpen) return
@@ -817,6 +812,31 @@ function ImageModal({
     const handleKeyDown = (e) => {
       // Don't handle navigation keys when editing timestamp
       if (isEditingTimestamp || showDatePicker) return
+
+      // Cmd+Z / Ctrl+Z → undo, Cmd+Shift+Z / Ctrl+Y → redo. Skip when an
+      // editable element has focus so native text undo in the species picker's
+      // input still works.
+      const activeEl = document.activeElement
+      const isEditable =
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.isContentEditable)
+
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !isEditable) {
+        e.preventDefault()
+        undo.undo()
+        return
+      }
+      if (
+        ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'z') ||
+        ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y')
+      ) {
+        if (isEditable) return
+        e.preventDefault()
+        undo.redo()
+        return
+      }
 
       // Handle escape in draw mode
       if (isDrawMode) {
@@ -937,7 +957,8 @@ function ImageModal({
     resetZoom,
     zoomIn,
     zoomOut,
-    bboxes
+    bboxes,
+    undo
   ])
 
   // Reset selection, draw mode, zoom, and image ready state when changing images
@@ -1447,9 +1468,7 @@ function ImageModal({
               mediaId={media?.mediaID}
               selectedObservationId={selectedObservationId}
               onSelectObservation={setSelectedObservationId}
-              onUpdateClassification={(observationID, updates) =>
-                updateMutation.mutate({ observationID, ...updates })
-              }
+              onUpdateClassification={handleClassificationUpdate}
               onDeleteObservation={handleDeleteObservation}
               onDrawRectangle={() => {
                 setIsDrawMode(true)
@@ -1471,12 +1490,12 @@ function ImageModal({
               )}
             </div>
 
-            {updateMutation.isPending && (
+            {classificationUpdatePending && (
               <p className="text-[11px] text-blue-500 mt-1">Updating classification...</p>
             )}
-            {updateMutation.isError && (
+            {classificationUpdateError && (
               <p className="text-[11px] text-red-500 mt-1">
-                Error: {updateMutation.error?.message || 'Failed to update'}
+                Error: {classificationUpdateError?.message || 'Failed to update'}
               </p>
             )}
           </div>
@@ -2418,6 +2437,31 @@ function Gallery({
     [queryClient, id, species, dateRange, timeRange]
   )
 
+  // Keep a ref to the current mediaID so the UndoManager can read it without
+  // forcing renders. The manager only invokes this lazily during undo/redo.
+  const selectedMediaIdRef = useRef(selectedMedia?.mediaID)
+  useEffect(() => {
+    selectedMediaIdRef.current = selectedMedia?.mediaID
+  }, [selectedMedia?.mediaID])
+
+  // Jump the modal to a specific mediaId — used by the UndoManager so that
+  // undoing an edit on a different image surfaces it. Mirrors the state
+  // mutations that handleNextImage performs but resolves by id.
+  const navigateToMediaId = useCallback(
+    async (targetMediaId) => {
+      if (!targetMediaId || selectedMediaIdRef.current === targetMediaId) return
+      const seq = allNavigableItems.find((s) => s.items.some((m) => m.mediaID === targetMediaId))
+      if (!seq) return // target not in currently loaded pages — best-effort no-op
+      const itemIdx = seq.items.findIndex((m) => m.mediaID === targetMediaId)
+      const safeIdx = itemIdx >= 0 ? itemIdx : 0
+      const isMultiItem = seq.items.length > 1
+      setCurrentSequence(isMultiItem ? seq : null)
+      setCurrentSequenceIndex(safeIdx)
+      setSelectedMedia(seq.items[safeIdx])
+    },
+    [allNavigableItems]
+  )
+
   // Calculate navigation availability based on sequences
   const currentSeqIdx = selectedMedia
     ? allNavigableItems.findIndex((s) => s.items.some((m) => m.mediaID === selectedMedia.mediaID))
@@ -2439,25 +2483,30 @@ function Gallery({
 
   return (
     <>
-      <ImageModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        media={selectedMedia}
-        constructImageUrl={constructImageUrl}
-        onNext={handleNextImage}
-        onPrevious={handlePreviousImage}
-        hasNext={hasNextSequence}
-        hasPrevious={hasPreviousSequence}
-        studyId={id}
-        onTimestampUpdate={handleTimestampUpdate}
-        sequence={currentSequence}
-        sequenceIndex={currentSequenceIndex}
-        onSequenceNext={handleSequenceNext}
-        onSequencePrevious={handleSequencePrevious}
-        hasNextInSequence={hasNextInSequence}
-        hasPreviousInSequence={hasPreviousInSequence}
-        isVideoMedia={isVideoMedia}
-      />
+      <UndoProvider
+        getCurrentMediaId={() => selectedMediaIdRef.current}
+        navigateTo={navigateToMediaId}
+      >
+        <ImageModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          media={selectedMedia}
+          constructImageUrl={constructImageUrl}
+          onNext={handleNextImage}
+          onPrevious={handlePreviousImage}
+          hasNext={hasNextSequence}
+          hasPrevious={hasPreviousSequence}
+          studyId={id}
+          onTimestampUpdate={handleTimestampUpdate}
+          sequence={currentSequence}
+          sequenceIndex={currentSequenceIndex}
+          onSequenceNext={handleSequenceNext}
+          onSequencePrevious={handleSequencePrevious}
+          hasNextInSequence={hasNextInSequence}
+          hasPreviousInSequence={hasPreviousInSequence}
+          isVideoMedia={isVideoMedia}
+        />
+      </UndoProvider>
 
       <div
         className={

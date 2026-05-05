@@ -23,7 +23,11 @@ function fakeApi() {
       updateObservationClassification: async (studyId, id, updates) => {
         calls.push(['update-classification', studyId, id, updates])
         return {
-          data: { observationID: id, ...updates, classificationTimestamp: '2026-05-05T00:00:00.000Z' }
+          data: {
+            observationID: id,
+            ...updates,
+            classificationTimestamp: '2026-05-05T00:00:00.000Z'
+          }
         }
       },
       restoreObservation: async (studyId, id, fields) => {
