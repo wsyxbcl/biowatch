@@ -123,12 +123,12 @@ function LargeView({ data, query, searchable }) {
     }
     return (
       <div className="flex flex-wrap gap-1">
-        {filtered.slice(0, 100).map((s) => (
+        {filtered.slice(0, 50).map((s) => (
           <SpeciesChip key={s.scientific || s.common} species={s} />
         ))}
-        {filtered.length > 100 && (
+        {filtered.length > 50 && (
           <span className="text-[10px] text-gray-500 italic px-2 py-0.5">
-            …and {filtered.length - 100} more
+            …and {filtered.length - 50} more
           </span>
         )}
       </div>
