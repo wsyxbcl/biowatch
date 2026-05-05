@@ -140,7 +140,6 @@ function LargeView({ data, query, searchable }) {
     <div className="flex flex-col gap-1">
       {summary.classes.map((c) => (
         <div key={c.id} className="flex justify-between items-center px-2 py-1 text-xs">
-
           <span>
             {c.icon} {c.label}
           </span>
