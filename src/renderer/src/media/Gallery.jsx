@@ -581,8 +581,7 @@ function ImageModal({
       if (rawUpdates.lifeStage !== undefined) after.lifeStage = rawUpdates.lifeStage
       if (rawUpdates.behavior !== undefined) after.behavior = rawUpdates.behavior
 
-      const cached = queryClient.getQueryData(['mediaBboxes', studyId, media?.mediaID])
-      const before = cached?.find((b) => b.observationID === observationID)
+      const before = bboxes.find((b) => b.observationID === observationID)
       if (!before) return
 
       setClassificationUpdatePending(true)
@@ -606,7 +605,7 @@ function ImageModal({
       invalidateAfterObservationChange()
       setClassificationUpdatePending(false)
     },
-    [queryClient, studyId, media?.mediaID, undo, invalidateAfterObservationChange]
+    [bboxes, studyId, media?.mediaID, undo, invalidateAfterObservationChange]
   )
 
   // Mutation for toggling media favorite status
@@ -635,20 +634,8 @@ function ImageModal({
 
   const handleBboxUpdate = useCallback(
     async (observationID, newBbox) => {
-      const cached = queryClient.getQueryData(['mediaBboxes', studyId, media?.mediaID])
-      const before = cached?.find((b) => b.observationID === observationID)
+      const before = bboxes.find((b) => b.observationID === observationID)
       if (!before) return
-
-      // Optimistic UI: same patch the previous mutation's onMutate applied.
-      await queryClient.cancelQueries({ queryKey: ['mediaBboxes', studyId, media?.mediaID] })
-      const previous = queryClient.getQueryData(['mediaBboxes', studyId, media?.mediaID])
-      queryClient.setQueryData(['mediaBboxes', studyId, media?.mediaID], (old) =>
-        old?.map((b) =>
-          b.observationID === observationID
-            ? { ...b, ...newBbox, classificationMethod: 'human' }
-            : b
-        )
-      )
 
       const command = commands.updateBbox({
         api: window.api,
@@ -662,29 +649,20 @@ function ImageModal({
         await undo.exec(command)
       } catch (err) {
         console.error('Failed to update bbox:', err)
-        queryClient.setQueryData(['mediaBboxes', studyId, media?.mediaID], previous)
         return
       }
       queryClient.invalidateQueries({ queryKey: ['mediaBboxes', studyId, media?.mediaID] })
       queryClient.invalidateQueries({ queryKey: ['thumbnailBboxesBatch'] })
       queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
     },
-    [queryClient, studyId, media?.mediaID, undo]
+    [bboxes, queryClient, studyId, media?.mediaID, undo]
   )
 
   const handleDeleteObservation = useCallback(
     async (observationID) => {
-      // Snapshot full pre-state from cache so undo-of-delete can recreate.
-      const cached = queryClient.getQueryData(['mediaBboxes', studyId, media?.mediaID])
-      const before = cached?.find((b) => b.observationID === observationID)
+      const before = bboxes.find((b) => b.observationID === observationID)
       if (!before) return
 
-      // Optimistic UI: remove the observation from the cache immediately.
-      await queryClient.cancelQueries({ queryKey: ['mediaBboxes', studyId, media?.mediaID] })
-      const previous = queryClient.getQueryData(['mediaBboxes', studyId, media?.mediaID])
-      queryClient.setQueryData(['mediaBboxes', studyId, media?.mediaID], (old) =>
-        old?.filter((b) => b.observationID !== observationID)
-      )
       if (selectedObservationId === observationID) {
         setSelectedObservationId(null)
       }
@@ -699,19 +677,11 @@ function ImageModal({
         await undo.exec(command)
       } catch (err) {
         console.error('Failed to delete observation:', err)
-        queryClient.setQueryData(['mediaBboxes', studyId, media?.mediaID], previous)
         return
       }
       invalidateAfterObservationChange()
     },
-    [
-      queryClient,
-      studyId,
-      media?.mediaID,
-      selectedObservationId,
-      undo,
-      invalidateAfterObservationChange
-    ]
+    [bboxes, studyId, media?.mediaID, selectedObservationId, undo, invalidateAfterObservationChange]
   )
 
   // Get default species from existing bboxes (most confident)
