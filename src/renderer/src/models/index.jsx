@@ -33,7 +33,7 @@ export default function MlZoo({ modelZoo }) {
   }, [])
 
   return (
-    <div className="max-w-7xl mx-auto w-full px-4 py-4 space-y-4">
+    <div className="max-w-[1950px] mx-auto w-full px-6 py-4 space-y-4">
       <MapPane modelZoo={modelZoo} selectedId={selectedId} onSelect={handleSelect} />
       <ModelListPane
         modelZoo={modelZoo}

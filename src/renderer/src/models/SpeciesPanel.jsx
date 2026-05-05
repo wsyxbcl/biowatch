@@ -1,5 +1,34 @@
 import { useEffect, useMemo, useState } from 'react'
+import * as HoverCard from '@radix-ui/react-hover-card'
 import { filterSpecies, classSummary } from './speciesPanelHelpers'
+import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
+
+function SpeciesChip({ species }) {
+  return (
+    <HoverCard.Root openDelay={200} closeDelay={120}>
+      <HoverCard.Trigger asChild>
+        <span
+          className="text-[10px] bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-700 cursor-default"
+          title={species.scientific}
+        >
+          {species.common}
+        </span>
+      </HoverCard.Trigger>
+      <HoverCard.Portal>
+        <HoverCard.Content
+          side="top"
+          sideOffset={6}
+          align="center"
+          avoidCollisions
+          collisionPadding={16}
+          className="z-[10001]"
+        >
+          <SpeciesTooltipContent imageData={{ scientificName: species.scientific }} size="md" />
+        </HoverCard.Content>
+      </HoverCard.Portal>
+    </HoverCard.Root>
+  )
+}
 
 const SMALL_LIST_THRESHOLD = 50
 
@@ -70,13 +99,7 @@ function SmallView({ data, query }) {
   return (
     <div className="flex flex-wrap gap-1">
       {filtered.map((s) => (
-        <span
-          key={s.scientific || s.common}
-          className="text-[10px] bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-700"
-          title={s.scientific}
-        >
-          {s.common}
-        </span>
+        <SpeciesChip key={s.scientific || s.common} species={s} />
       ))}
     </div>
   )
@@ -96,13 +119,7 @@ function LargeView({ data, query, searchable }) {
     return (
       <div className="flex flex-wrap gap-1">
         {filtered.slice(0, 100).map((s) => (
-          <span
-            key={s.scientific || s.common}
-            className="text-[10px] bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-700"
-            title={s.scientific}
-          >
-            {s.common}
-          </span>
+          <SpeciesChip key={s.scientific || s.common} species={s} />
         ))}
         {filtered.length > 100 && (
           <span className="text-[10px] text-gray-500 italic px-2 py-0.5">
