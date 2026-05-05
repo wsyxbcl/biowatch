@@ -29,7 +29,11 @@ const dictionaryFuse = new Fuse(dictionaryEntries, fuseOptions)
 
 export function searchSpecies(query, studySpeciesList) {
   if (!query || query.length < 3) {
-    return studySpeciesList
+    // Cap the unfiltered list — without this, studies with hundreds of
+    // species cause the dropdown to render hundreds of buttons (each with
+    // inline closures), making typing in the search field feel jumpy until
+    // the user reaches the 3-char threshold and the list drops to ≤50.
+    return studySpeciesList.slice(0, 50)
   }
 
   const studyFuse = new Fuse(studySpeciesList, fuseOptions)
