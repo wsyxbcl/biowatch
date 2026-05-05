@@ -804,5 +804,29 @@ describe('Database Query Functions Tests', () => {
       assert.equal(result.media.length, 1, 'Should filter by dateRange when provided')
       assert.equal(result.media[0].mediaID, 'media001', 'Should return only media001')
     })
+
+    test('returns locationID and locationName for each media row', async () => {
+      await createTestData(testDbPath)
+
+      const result = await getMediaForSequencePagination(testDbPath, {
+        species: ['Cervus elaphus'],
+        dateRange: {}
+      })
+
+      // Cervus elaphus matches media001 (deploy001 → loc001 / Forest Site A)
+      // and media003 (deploy002 → loc002 / Meadow Site B).
+      const expectedByMediaID = {
+        media001: { locationID: 'loc001', locationName: 'Forest Site A' },
+        media003: { locationID: 'loc002', locationName: 'Meadow Site B' }
+      }
+
+      assert.equal(result.media.length, 2, 'should return both Cervus elaphus media rows')
+      for (const row of result.media) {
+        const expected = expectedByMediaID[row.mediaID]
+        assert.ok(expected, `unexpected mediaID: ${row.mediaID}`)
+        assert.equal(row.locationID, expected.locationID, `row ${row.mediaID} locationID`)
+        assert.equal(row.locationName, expected.locationName, `row ${row.mediaID} locationName`)
+      }
+    })
   })
 })

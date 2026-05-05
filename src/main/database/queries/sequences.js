@@ -4,7 +4,7 @@
  * Provides cursor-based pagination for sequence grouping in the main process.
  */
 
-import { getDrizzleDb, media, observations } from '../index.js'
+import { getDrizzleDb, deployments, media, observations } from '../index.js'
 import {
   eq,
   and,
@@ -100,6 +100,8 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
       fileName: media.fileName,
       timestamp: media.timestamp,
       deploymentID: media.deploymentID,
+      locationID: deployments.locationID,
+      locationName: deployments.locationName,
       scientificName: sql`NULL`.as('scientificName'),
       fileMediatype: media.fileMediatype,
       eventID: sql`(${eventIDPicker})`.as('eventID'),
@@ -115,6 +117,8 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
       fileName: media.fileName,
       timestamp: media.timestamp,
       deploymentID: media.deploymentID,
+      locationID: deployments.locationID,
+      locationName: deployments.locationName,
       scientificName: sql`${VEHICLE_SENTINEL}`.as('scientificName'),
       fileMediatype: media.fileMediatype,
       eventID: sql`(${eventIDPicker})`.as('eventID'),
@@ -127,6 +131,8 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
       fileName: media.fileName,
       timestamp: media.timestamp,
       deploymentID: media.deploymentID,
+      locationID: deployments.locationID,
+      locationName: deployments.locationName,
       scientificName: observations.scientificName,
       fileMediatype: media.fileMediatype,
       eventID: observations.eventID,
@@ -169,6 +175,7 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
         .selectDistinct(selectFieldsWithObs)
         .from(media)
         .innerJoin(observations, eq(media.mediaID, observations.mediaID))
+        .leftJoin(deployments, eq(media.deploymentID, deployments.deploymentID))
         .where(
           and(
             ...extraConds,
@@ -182,12 +189,14 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
       db
         .selectDistinct(selectFields)
         .from(media)
+        .leftJoin(deployments, eq(media.deploymentID, deployments.deploymentID))
         .where(and(...extraConds, notExists(realObservations)))
 
     const buildVehicleArm = (extraConds) =>
       db
         .selectDistinct(selectFieldsVehicle)
         .from(media)
+        .leftJoin(deployments, eq(media.deploymentID, deployments.deploymentID))
         .where(and(...extraConds, exists(vehicleObservations)))
 
     // Returns an array of arm queries for the requested filter combination.
@@ -289,6 +298,7 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
         timestampedMedia = await db
           .selectDistinct(selectFields)
           .from(media)
+          .leftJoin(deployments, eq(media.deploymentID, deployments.deploymentID))
           .where(and(...timestampedConditions))
           .orderBy(sql`${media.timestamp} DESC, ${media.mediaID} DESC`)
           .limit(batchSize)
@@ -343,6 +353,8 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
             fileName: media.fileName,
             timestamp: media.timestamp,
             deploymentID: media.deploymentID,
+            locationID: deployments.locationID,
+            locationName: deployments.locationName,
             scientificName: sql`(${speciesPicker(observations.scientificName)})`.as(
               'scientificName'
             ),
@@ -351,6 +363,7 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
             favorite: media.favorite
           })
           .from(media)
+          .leftJoin(deployments, eq(media.deploymentID, deployments.deploymentID))
           .where(
             and(
               ...timestampedConditions,
@@ -444,6 +457,7 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
         nullMedia = await db
           .selectDistinct(selectFields)
           .from(media)
+          .leftJoin(deployments, eq(media.deploymentID, deployments.deploymentID))
           .where(and(...nullConditions))
           .orderBy(sql`${media.mediaID} DESC`)
           .limit(batchSize)
@@ -484,6 +498,8 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
             fileName: media.fileName,
             timestamp: media.timestamp,
             deploymentID: media.deploymentID,
+            locationID: deployments.locationID,
+            locationName: deployments.locationName,
             scientificName: sql`(${speciesPicker(observations.scientificName)})`.as(
               'scientificName'
             ),
@@ -492,6 +508,7 @@ export async function getMediaForSequencePagination(dbPath, options = {}) {
             favorite: media.favorite
           })
           .from(media)
+          .leftJoin(deployments, eq(media.deploymentID, deployments.deploymentID))
           .where(
             and(
               ...nullConditions,
