@@ -5,6 +5,40 @@ All notable changes to Biowatch will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.7] - 2026-05-05
+
+### Added
+
+- AI Models tab redesigned in Settings as a split / always-stacked view: new `ModelCard` with all download states, `MapPane` with region overlays + worldwide chip, `SpeciesPanel` with species chip and grouped variants, `CustomModelCard` slot for user models, and an intro copy explaining how to pick a model
+- Region registry with colors and per-region GeoJSON; hand-traced Europe MultiPolygon (mainland + Scandinavia + British Isles, including Finland, Corsica, Sardinia) and a broadened Himalayas (Tien Shan, Pamir, Hindu Kush, Karakoram, Kashmir, Ladakh); Manas region broadened
+- Per-model species data files (`speciesnet`, `deepfaune`, `manas`) and `region` + `species_count` fields on `mlmodels`; SpeciesNet species list populated with 2,493 entries for search
+- Map interactivity in the AI Models tab: auto-fit on region selection, full-width zoom for world view, species hovercards on the species panel
+- Undo/redo for annotation edits: `UndoProvider` + `useUndo` wired through the four observation mutations (create, delete, classification, bbox), with bounded per-study stacks, bbox-pulse animation on undo/redo, and failed operations surfaced as a sonner toast
+- `observations:restore` IPC and `restoreObservation` query backing the undo path; `createObservation` now accepts optional `observationID` and `eventID` for restore-with-same-id behavior; `getMediaBboxes` returns `mediaID`/`deploymentID`/`eventID`/`eventStart` for undo
+- `SpeciesPicker` browse mode opens the dropdown on bbox-label click
+
+### Changed
+
+- Old `models.jsx` removed; `MlZoo` is now the AI Models tab
+- `ModelCard` chrome toned down to match the app palette; Download/Delete moved to the top-right of the card header; Worldwide chip pinned top-right to clear zoom controls
+- AI Models species search caps results at 50
+
+### Fixed
+
+- AI Models: species hovercard suppressed when no Wikipedia info exists; search hidden when the species list is empty; browser tooltip dropped from region chips
+- Annotation undo: optimistic bbox patch held until the canonical `bboxes` prop catches up (no flicker); bboxes cache patched synchronously; queries invalidated after every undo/redo; pre-state read from the live `bboxes` array; undo stack cleared on study switch; failed undo/redo rolls back navigation and surfaces a buffer pulse; empty-fields restore rejected with a clear error; `delete_` inverse collapsed to a single IPC
+- `BehaviorSelector`: nested `<button>` removed for DOM validity; mirrors external value changes when the dropdown is closed
+- `EditableBbox`: keep local override until the bbox prop catches up
+- Truncated duplicate `bbox-pulse` keyframes block in CSS
+
+### Removed
+
+- Arrow-key bbox nudge in `EditableBbox`
+
+### Chore
+
+- Documentation updated for the AI Models tab split-view structure, the undo system, the `observations:restore` IPC, and `observationID` reuse
+
 ## [1.8.6] - 2026-05-04
 
 ### Added
@@ -531,6 +565,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Activity heatmaps
 - Overview statistics
 
+[1.8.7]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.6...v1.8.7
+[1.8.6]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.5...v1.8.6
+[1.8.5]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.4...v1.8.5
 [1.8.4]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.3...v1.8.4
 [1.8.3]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.2...v1.8.3
 [1.8.2]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.1...v1.8.2
