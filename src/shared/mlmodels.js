@@ -167,7 +167,10 @@ export const modelZoo = [
       "Google's SpeciesNet is an open-source AI model launched in 2025, specifically designed for identifying animal species from images captured by camera traps. It boasts the capability to classify images into over 2,000 species labels, greatly enhancing the efficiency of wildlife data analysis for conservation initiatives.",
     website: 'https://github.com/google/cameratrapai',
     logo: 'google',
-    detectionConfidenceThreshold: 0.5
+    detectionConfidenceThreshold: 0.5,
+    region: 'worldwide',
+    species_count: '2,000+',
+    species_data: 'speciesnet.json'
   },
   {
     reference: { id: 'deepfaune', version: '1.3' },
@@ -181,7 +184,10 @@ export const modelZoo = [
       "Launched in 2022, CNRS' DeepFaune is an open-source AI model developed to identify animal species from images captured by camera traps, focusing specifically on European fauna.",
     website: 'https://www.deepfaune.cnrs.fr/en/',
     logo: 'cnrs',
-    detectionConfidenceThreshold: 0.5
+    detectionConfidenceThreshold: 0.5,
+    region: 'europe',
+    species_count: 26,
+    species_data: 'deepfaune.json'
   },
   {
     reference: { id: 'manas', version: '1.0' },
@@ -195,7 +201,10 @@ export const modelZoo = [
       'Manas is an AI model developed by OSI-Panthera and Hex Data for classifying wildlife species from camera trap images in Kirghizistan, focusing on snow leopard (panthera uncia) and other regional fauna including 11 species classes.',
     website: 'https://huggingface.co/Hex-Data/Panthera',
     logo: 'osi-panthera',
-    detectionConfidenceThreshold: 0.5
+    detectionConfidenceThreshold: 0.5,
+    region: 'himalayas',
+    species_count: 11,
+    species_data: 'manas.json'
   }
 ]
 
