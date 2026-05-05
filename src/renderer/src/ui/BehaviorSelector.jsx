@@ -15,7 +15,11 @@ export default function BehaviorSelector({ value = [], onChange }) {
   const wasOpenRef = useRef(false)
 
   useEffect(() => {
-    if (isOpen && !wasOpenRef.current) {
+    // Sync local state with the parent's value either when the dropdown is
+    // closed (mirror external updates like undo/redo) or on the closed→open
+    // transition (snapshot for in-flight editing). Once the dropdown is open
+    // and stays open, keep the local edits intact until commit-on-close.
+    if (!isOpen || !wasOpenRef.current) {
       setLocalBehaviors(value || [])
       hasChangesRef.current = false
     }
