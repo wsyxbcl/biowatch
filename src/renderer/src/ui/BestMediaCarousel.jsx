@@ -4,6 +4,7 @@ import * as HoverCard from '@radix-ui/react-hover-card'
 import { ChevronLeft, ChevronRight, CameraOff, X, Heart, Play, Loader2 } from 'lucide-react'
 import { useCommonName } from '../utils/commonNames'
 import { formatScientificName } from '../utils/scientificName'
+import DeploymentLinkPill from '../media/DeploymentLinkPill'
 import SpeciesTooltipContent from './SpeciesTooltipContent'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
 import { useHorizontalWheelScroll } from '../hooks/useHorizontalWheelScroll'
@@ -28,16 +29,16 @@ function SpeciesThumbnailLabel({ scientificName }) {
  * otherwise just the scientific name. Empty input renders "Blank" — matching
  * the convention used in BboxLabel/SpeciesLabel for unidentified observations.
  */
-function SpeciesHeading({ scientificName }) {
+function SpeciesHeading({ scientificName, tone = 'light' }) {
   const common = useCommonName(scientificName)
+  const sciClass =
+    tone === 'dark' ? 'italic text-gray-300 font-normal' : 'italic text-gray-500 font-normal'
   if (!scientificName) return <>Blank</>
   if (common && common !== scientificName) {
     return (
       <>
         {toTitleCase(common)}{' '}
-        <span className="italic text-gray-500 font-normal">
-          ({formatScientificName(scientificName)})
-        </span>
+        <span className={sciClass}>({formatScientificName(scientificName)})</span>
       </>
     )
   }
@@ -221,6 +222,9 @@ function ImageViewerModal({
 
           {/* Media area */}
           <div className="flex-1 min-h-0 flex items-center justify-center bg-black overflow-hidden relative">
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-black/60 text-white text-sm pointer-events-none">
+              <SpeciesHeading scientificName={media.scientificName} tone="dark" />
+            </div>
             {imageError ? (
               <div className="flex flex-col items-center justify-center bg-gray-800 text-gray-400 aspect-[4/3] min-w-[70vw] max-h-[calc(90vh-152px)]">
                 <CameraOff size={128} />
@@ -240,13 +244,20 @@ function ImageViewerModal({
           {/* Footer */}
           <div className="px-4 py-2.5 bg-gray-50 flex-shrink-0 border-t border-gray-200">
             <div className="flex items-center gap-3 min-w-0">
-              <span className="text-sm font-medium text-gray-800 truncate flex-1 min-w-0">
-                <SpeciesHeading scientificName={media.scientificName} />
-              </span>
               {media.fileName && (
-                <span className="font-mono text-[11px] text-gray-400 flex-shrink-0">
+                <span className="font-mono text-[11px] text-gray-400 truncate min-w-0 flex-1">
                   {media.fileName}
                 </span>
+              )}
+              {media.deploymentID && (
+                <DeploymentLinkPill
+                  studyId={studyId}
+                  deploymentID={media.deploymentID}
+                  locationName={media.locationName}
+                  locationID={media.locationID}
+                  interactive={true}
+                  onNavigate={handleClose}
+                />
               )}
             </div>
           </div>
@@ -483,6 +494,9 @@ function VideoViewerModal({
 
           {/* Media area */}
           <div className="flex-1 min-h-0 flex items-center justify-center bg-black overflow-hidden relative">
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-black/60 text-white text-sm pointer-events-none">
+              <SpeciesHeading scientificName={media.scientificName} tone="dark" />
+            </div>
             {transcodeState === 'checking' ? (
               <div className="flex flex-col items-center justify-center p-8 text-gray-400 min-h-[300px]">
                 <Loader2 size={48} className="animate-spin text-blue-500" />
@@ -541,13 +555,20 @@ function VideoViewerModal({
           {/* Footer */}
           <div className="px-4 py-2.5 bg-gray-50 flex-shrink-0 border-t border-gray-200">
             <div className="flex items-center gap-3 min-w-0">
-              <span className="text-sm font-medium text-gray-800 truncate flex-1 min-w-0">
-                <SpeciesHeading scientificName={media.scientificName} />
-              </span>
               {media.fileName && (
-                <span className="font-mono text-[11px] text-gray-400 flex-shrink-0">
+                <span className="font-mono text-[11px] text-gray-400 truncate min-w-0 flex-1">
                   {media.fileName}
                 </span>
+              )}
+              {media.deploymentID && (
+                <DeploymentLinkPill
+                  studyId={studyId}
+                  deploymentID={media.deploymentID}
+                  locationName={media.locationName}
+                  locationID={media.locationID}
+                  interactive={true}
+                  onNavigate={handleClose}
+                />
               )}
             </div>
           </div>
