@@ -97,7 +97,7 @@ export default function MapPane({ modelZoo, selectedId, onSelect }) {
         <button
           onClick={() => onSelect?.(worldwideModel.reference.id)}
           className={[
-            'absolute top-2 left-2 z-[500] text-xs font-medium rounded-full px-3 py-1 shadow-sm border cursor-pointer transition-colors inline-flex items-center gap-1.5',
+            'absolute top-2 right-2 z-[500] text-xs font-medium rounded-full px-3 py-1 shadow-sm border cursor-pointer transition-colors inline-flex items-center gap-1.5',
             selectedId === worldwideModel.reference.id
               ? 'bg-blue-50 text-blue-700 border-blue-300'
               : 'bg-white/95 text-gray-700 border-gray-200 hover:bg-gray-50'
