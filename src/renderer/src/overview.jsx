@@ -5,6 +5,7 @@ import { LayersControl, MapContainer, TileLayer, Marker, Popup, useMap } from 'r
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import { Camera, MapPin } from 'lucide-react'
+import HideLeafletAttribution from './ui/HideLeafletAttribution'
 import PlaceholderMap from './ui/PlaceholderMap'
 import { useImportStatus } from '@renderer/hooks/import'
 import { useQuery } from '@tanstack/react-query'
@@ -162,6 +163,7 @@ function DeploymentMap({ deployments, studyId }) {
         boundsOptions={{ padding: [30, 30] }}
         style={{ height: '100%', width: '100%' }}
       >
+        <HideLeafletAttribution />
         <LayersControl position="topright">
           <LayersControl.BaseLayer name="Satellite" checked={selectedLayer === 'Satellite'}>
             <TileLayer

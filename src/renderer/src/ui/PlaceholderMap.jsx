@@ -1,6 +1,7 @@
 import { MapPin } from 'lucide-react'
 import { MapContainer, TileLayer } from 'react-leaflet'
 import { Link } from 'react-router'
+import HideLeafletAttribution from './HideLeafletAttribution'
 
 /**
  * PlaceholderMap - Shows a world map with an overlay message when deployment coordinates are missing.
@@ -22,6 +23,7 @@ function PlaceholderMap({ title, description, linkTo, linkText, studyId, icon: I
         zoomControl={true}
         scrollWheelZoom={true}
       >
+        <HideLeafletAttribution />
         <TileLayer
           attribution='&copy; <a href="https://www.esri.com">Esri</a>'
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
