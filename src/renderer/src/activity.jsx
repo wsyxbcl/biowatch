@@ -1,12 +1,15 @@
+import * as htmlToImage from 'html-to-image'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { MapPin } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { LayersControl, MapContainer, Marker, TileLayer, useMap } from 'react-leaflet'
+import { LayersControl, MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import { useParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import ActivityMapContextMenu from './ui/ActivityMapContextMenu'
 import CircularTimeFilter, { DailyActivityRadar } from './ui/clock'
 import MarkerHoverCard from './ui/MarkerHoverCard'
 import PlaceholderMap from './ui/PlaceholderMap'
@@ -51,6 +54,32 @@ function LayerChangeHandler({ onLayerChange }) {
   return null
 }
 
+// Bridges Leaflet's right-click event to React state in the parent
+// SpeciesMap, and keeps a ref to the map instance so the export handler
+// can read it after the menu has closed (which would otherwise drop the
+// reference if it were stored alongside the menu position).
+function MapContextMenuController({ onContextMenu, mapRef }) {
+  const map = useMapEvents({
+    contextmenu(e) {
+      e.originalEvent.preventDefault()
+      onContextMenu({
+        x: e.originalEvent.clientX,
+        y: e.originalEvent.clientY
+      })
+    }
+  })
+  useEffect(() => {
+    mapRef.current = map
+  }, [map, mapRef])
+  return null
+}
+
+const slugifyForFilename = (s) =>
+  (s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
 // SpeciesMap component.
 //
 // Renders the leaflet map in two progressive modes so the user sees something
@@ -76,6 +105,7 @@ const SpeciesMap = ({
   palette,
   geoKey,
   studyId,
+  studyName,
   scientificToCommon
 }) => {
   // Persist map layer selection per study
@@ -88,6 +118,57 @@ const SpeciesMap = ({
   useEffect(() => {
     localStorage.setItem(mapLayerKey, selectedLayer)
   }, [selectedLayer, mapLayerKey])
+
+  // Right-click context menu for "Save map as PNG…"
+  const mapRef = useRef(null)
+  const [contextMenu, setContextMenu] = useState(null)
+
+  const handleSavePng = useCallback(async () => {
+    const map = mapRef.current
+    if (!map) return
+    const container = map.getContainer()
+    const slug = slugifyForFilename(studyName) || slugifyForFilename(studyId) || 'study'
+    const date = new Date().toISOString().slice(0, 10)
+    const defaultFilename = `activity-map-${slug}-${date}.png`
+    toast.loading('Preparing map image…', { id: 'activity-map-export' })
+    try {
+      const dataUrl = await htmlToImage.toPng(container, {
+        pixelRatio: 2,
+        // skipFonts avoids html-to-image fetching @import url(fonts.googleapis.com)
+        // through CSP `connect-src` — fonts in the export fall back to system UI fonts,
+        // which is fine for the tile labels and our own legend text.
+        skipFonts: true,
+        // Strip Leaflet's UI controls from the export. Attribution stays
+        // (legal requirement for OSM/Esri).
+        filter: (node) => {
+          const cl = node.classList
+          if (!cl) return true
+          if (cl.contains('leaflet-control-zoom')) return false
+          if (cl.contains('leaflet-control-layers')) return false
+          return true
+        }
+      })
+      const result = await window.api.exportActivityMapPng({ dataUrl, defaultFilename })
+      if (result?.cancelled) {
+        toast.dismiss('activity-map-export')
+      } else if (result?.success) {
+        toast.success('Map saved', {
+          id: 'activity-map-export',
+          description: result.filePath
+        })
+      } else {
+        toast.error('Export failed', {
+          id: 'activity-map-export',
+          description: result?.error || 'Unknown error'
+        })
+      }
+    } catch (error) {
+      toast.error('Export failed', {
+        id: 'activity-map-export',
+        description: error.message
+      })
+    }
+  }, [studyId, studyName])
   // Function to create a pie chart icon
   const createPieChartIcon = (counts) => {
     const total = Object.values(counts).reduce((sum, count) => sum + count, 0)
@@ -323,129 +404,146 @@ const SpeciesMap = ({
   }
 
   return (
-    <MapContainer
-      bounds={bounds}
-      boundsOptions={boundsOptions}
-      className="rounded w-full h-full border border-gray-200"
-    >
-      <LayersControl position="topright">
-        <LayersControl.BaseLayer name="Satellite" checked={selectedLayer === 'Satellite'}>
-          <TileLayer
-            attribution='&copy; <a href="https://www.esri.com">Esri</a>'
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          />
-        </LayersControl.BaseLayer>
+    <>
+      <MapContainer
+        bounds={bounds}
+        boundsOptions={boundsOptions}
+        className="rounded w-full h-full border border-gray-200"
+      >
+        <MapContextMenuController onContextMenu={setContextMenu} mapRef={mapRef} />
+        <LayersControl position="topright">
+          <LayersControl.BaseLayer name="Satellite" checked={selectedLayer === 'Satellite'}>
+            <TileLayer
+              attribution='&copy; <a href="https://www.esri.com">Esri</a>'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              crossOrigin=""
+            />
+          </LayersControl.BaseLayer>
 
-        <LayersControl.BaseLayer name="Street Map" checked={selectedLayer === 'Street Map'}>
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-        </LayersControl.BaseLayer>
+          <LayersControl.BaseLayer name="Street Map" checked={selectedLayer === 'Street Map'}>
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              crossOrigin=""
+            />
+          </LayersControl.BaseLayer>
 
-        <LayersControl.Overlay name="Species Distribution" checked={true}>
-          {skeletonMode ? (
-            <MarkerClusterGroup
-              key={`skeleton:${skeletonPoints.length}`}
-              chunkedLoading
-              showCoverageOnHover={false}
-              spiderfyOnEveryZoom={false}
-              maxClusterRadius={100}
-              animateAddingMarkers={false}
-              iconCreateFunction={createSkeletonClusterIcon}
-            >
-              {skeletonPoints.map((point, index) => (
-                <Marker
-                  key={`skeleton-${index}`}
-                  position={[point.lat, point.lng]}
-                  icon={skeletonDotIcon}
-                />
-              ))}
-            </MarkerClusterGroup>
-          ) : (
-            <MarkerClusterGroup
-              key={`pies:${geoKey}`}
-              chunkedLoading
-              showCoverageOnHover={false}
-              spiderfyOnEveryZoom={false}
-              maxClusterRadius={100}
-              animateAddingMarkers={false}
-              iconCreateFunction={(cluster) => {
-                // Get all markers in this cluster
-                const markers = cluster.getAllChildMarkers()
+          <LayersControl.Overlay name="Species Distribution" checked={true}>
+            {skeletonMode ? (
+              <MarkerClusterGroup
+                key={`skeleton:${skeletonPoints.length}`}
+                chunkedLoading
+                showCoverageOnHover={false}
+                spiderfyOnEveryZoom={false}
+                maxClusterRadius={100}
+                animateAddingMarkers={false}
+                iconCreateFunction={createSkeletonClusterIcon}
+              >
+                {skeletonPoints.map((point, index) => (
+                  <Marker
+                    key={`skeleton-${index}`}
+                    position={[point.lat, point.lng]}
+                    icon={skeletonDotIcon}
+                  />
+                ))}
+              </MarkerClusterGroup>
+            ) : (
+              <MarkerClusterGroup
+                key={`pies:${geoKey}`}
+                chunkedLoading
+                showCoverageOnHover={false}
+                spiderfyOnEveryZoom={false}
+                maxClusterRadius={100}
+                animateAddingMarkers={false}
+                iconCreateFunction={(cluster) => {
+                  // Get all markers in this cluster
+                  const markers = cluster.getAllChildMarkers()
 
-                // Combine counts from all markers
-                const combinedCounts = {}
+                  // Combine counts from all markers
+                  const combinedCounts = {}
 
-                // First, initialize counts for all selected species to ensure consistent ordering
-                selectedSpecies.forEach((species) => {
-                  combinedCounts[species.scientificName] = 0
-                })
-
-                // Then add actual counts from markers
-                markers.forEach((marker) => {
-                  Object.entries(marker.options.counts).forEach(([species, count]) => {
-                    // Only add species that are in our selectedSpecies list
-                    if (selectedSpecies.some((s) => s.scientificName === species)) {
-                      combinedCounts[species] += count
-                    }
+                  // First, initialize counts for all selected species to ensure consistent ordering
+                  selectedSpecies.forEach((species) => {
+                    combinedCounts[species.scientificName] = 0
                   })
-                })
 
-                // Filter out species with zero counts to avoid empty slices
-                const filteredCounts = Object.fromEntries(
-                  Object.entries(combinedCounts).filter(([, count]) => count > 0)
-                )
+                  // Then add actual counts from markers
+                  markers.forEach((marker) => {
+                    Object.entries(marker.options.counts).forEach(([species, count]) => {
+                      // Only add species that are in our selectedSpecies list
+                      if (selectedSpecies.some((s) => s.scientificName === species)) {
+                        combinedCounts[species] += count
+                      }
+                    })
+                  })
 
-                // Bind tooltip to cluster. Same beside-the-pie behavior as
-                // individual markers — see the per-marker bindTooltip above.
-                const tooltipHtml = createTooltipContent(filteredCounts)
-                cluster.unbindTooltip()
-                cluster.bindTooltip(tooltipHtml, {
-                  direction: 'auto',
-                  offset: [0, 0],
-                  opacity: 1,
-                  className: 'species-map-tooltip'
-                })
+                  // Filter out species with zero counts to avoid empty slices
+                  const filteredCounts = Object.fromEntries(
+                    Object.entries(combinedCounts).filter(([, count]) => count > 0)
+                  )
 
-                return createPieChartIcon(filteredCounts)
-              }}
-            >
-              {locationPoints.map((point, index) => (
-                <PieChartMarker key={index} point={point} icon={createPieChartIcon(point.counts)} />
-              ))}
-            </MarkerClusterGroup>
-          )}
-        </LayersControl.Overlay>
+                  // Bind tooltip to cluster. Same beside-the-pie behavior as
+                  // individual markers — see the per-marker bindTooltip above.
+                  const tooltipHtml = createTooltipContent(filteredCounts)
+                  cluster.unbindTooltip()
+                  cluster.bindTooltip(tooltipHtml, {
+                    direction: 'auto',
+                    offset: [0, 0],
+                    opacity: 1,
+                    className: 'species-map-tooltip'
+                  })
 
-        {/* Add a legend */}
-        <div className="absolute bottom-5 right-5 bg-white p-2 rounded shadow-md z-[1000] flex flex-col gap-2">
-          {selectedSpecies.map((species, index) => {
-            const common = getMapDisplayName(species.scientificName, scientificToCommon)
-            const showSci = common && common !== species.scientificName
-            return (
-              <div key={index} className="flex items-start gap-2">
-                <div
-                  className="w-3 h-3 rounded-full mt-0.5 flex-shrink-0"
-                  style={{ backgroundColor: palette[index % palette.length] }}
-                ></div>
-                <div className="flex flex-col min-w-0 leading-tight">
-                  <span className={`text-xs ${common ? 'capitalize' : 'italic'}`}>
-                    {common || formatScientificName(species.scientificName)}
-                  </span>
-                  {showSci && (
-                    <span className="text-[10px] text-gray-500 italic">
-                      {formatScientificName(species.scientificName)}
+                  return createPieChartIcon(filteredCounts)
+                }}
+              >
+                {locationPoints.map((point, index) => (
+                  <PieChartMarker
+                    key={index}
+                    point={point}
+                    icon={createPieChartIcon(point.counts)}
+                  />
+                ))}
+              </MarkerClusterGroup>
+            )}
+          </LayersControl.Overlay>
+
+          {/* Add a legend */}
+          <div className="absolute bottom-5 right-5 bg-white p-2 rounded shadow-md z-[1000] flex flex-col gap-2">
+            {selectedSpecies.map((species, index) => {
+              const common = getMapDisplayName(species.scientificName, scientificToCommon)
+              const showSci = common && common !== species.scientificName
+              return (
+                <div key={index} className="flex items-start gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full mt-0.5 flex-shrink-0"
+                    style={{ backgroundColor: palette[index % palette.length] }}
+                  ></div>
+                  <div className="flex flex-col min-w-0 leading-tight">
+                    <span className={`text-xs ${common ? 'capitalize' : 'italic'}`}>
+                      {common || formatScientificName(species.scientificName)}
                     </span>
-                  )}
+                    {showSci && (
+                      <span className="text-[10px] text-gray-500 italic">
+                        {formatScientificName(species.scientificName)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
-      </LayersControl>
-      <LayerChangeHandler onLayerChange={setSelectedLayer} />
-    </MapContainer>
+              )
+            })}
+          </div>
+        </LayersControl>
+        <LayerChangeHandler onLayerChange={setSelectedLayer} />
+      </MapContainer>
+      {contextMenu && (
+        <ActivityMapContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onSave={handleSavePng}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+    </>
   )
 }
 
@@ -716,6 +814,7 @@ export default function Activity({ studyData, studyId }) {
                     selectedSpecies={selectedSpecies}
                     palette={palette}
                     studyId={actualStudyId}
+                    studyName={studyData?.name}
                     geoKey={geoKey}
                     scientificToCommon={scientificToCommon}
                   />

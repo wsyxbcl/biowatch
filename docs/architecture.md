@@ -175,7 +175,7 @@ src/
 │   ├── media/               # Media subcomponents shared with the Deployments tab
 │   │   ├── Gallery.jsx               # Sequence grid + ImageModal + bbox editor
 │   │   └── DeploymentMediaGallery.jsx # Deployment-scoped wrapper around Gallery
-│   ├── activity.jsx         # Temporal analysis
+│   ├── activity.jsx         # Temporal analysis (right-click map → Save as PNG via html-to-image)
 │   ├── models/              # AI Models tab (split-view map + cards)
 │   │   ├── index.jsx                  # MlZoo top-level (responsive split/stacked)
 │   │   ├── MapPane.jsx                # Leaflet map + region overlays + worldwide chip
