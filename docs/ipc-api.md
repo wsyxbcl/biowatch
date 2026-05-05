@@ -259,7 +259,21 @@ The `setMediaFavorite` endpoint toggles a media item's favorite status. Favorite
 | `updateObservationClassification(studyId, observationID, updates)` | `observations:update-classification` | studyId, observationID, { scientificName?, commonName? }        | `{ data: Observation }`          |
 | `updateObservationBbox(studyId, observationID, bboxUpdates)`       | `observations:update-bbox`           | studyId, observationID, { bboxX, bboxY, bboxWidth, bboxHeight } | `{ data: Observation }`          |
 | `deleteObservation(studyId, observationID)`                        | `observations:delete`                | studyId, observationID                                          | `{ data: { deleted: boolean } }` |
-| `createObservation(studyId, observationData)`                      | `observations:create`                | studyId, observation object                                     | `{ data: Observation }`          |
+| `createObservation(studyId, observationData)`                      | `observations:create`                | studyId, observation object (optional `observationID`/`eventID`) | `{ data: Observation }`          |
+| `restoreObservation(studyId, observationID, fields)`               | `observations:restore`               | studyId, observationID, fields to overwrite                     | `{ data: Observation }`          |
+
+`observations:create` accepts optional `observationID` and `eventID` in its
+payload. When supplied (used by undo-of-delete), the row is inserted with those
+exact UUIDs instead of fresh ones; SQLite's PK uniqueness constraint still
+rejects a second insert with a live id.
+
+`observations:restore` performs a plain `UPDATE` of the supplied fields without
+auto-stamping `classificationMethod` / `classifiedBy` / `classificationTimestamp`,
+so the undo path can faithfully restore the prior classification metadata
+(including `'machine'` originals). It throws `Observation not found: <id>` when
+zero rows match — the renderer's undo manager treats that as a poisoned entry
+and drops it from the stack. Direct user edits go through the `update-bbox` /
+`update-classification` handlers, never `restore`.
 
 ### Export
 
