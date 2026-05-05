@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
-import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet'
+import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet'
+import L from 'leaflet'
 import { getRegion } from './regions'
 
 const geojsonCache = new Map()
@@ -10,6 +11,27 @@ async function loadRegionGeoJSON(name) {
   const data = mod.default
   geojsonCache.set(name, data)
   return data
+}
+
+const WORLD_CENTER = [20, 20]
+const WORLD_ZOOM = 1
+
+function FitBoundsOnSelection({ selectedId, regionalModels, geojsonByModel, worldwideId }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!selectedId) return
+    if (selectedId === worldwideId) {
+      map.flyTo(WORLD_CENTER, WORLD_ZOOM, { duration: 0.6 })
+      return
+    }
+    const regional = regionalModels.find((m) => m.reference.id === selectedId)
+    if (!regional) return
+    const data = geojsonByModel[regional.reference.id]
+    if (!data) return
+    const layer = L.geoJSON(data)
+    map.flyToBounds(layer.getBounds(), { padding: [40, 40], duration: 0.6 })
+  }, [selectedId, regionalModels, geojsonByModel, worldwideId, map])
+  return null
 }
 
 export default function MapPane({ modelZoo, selectedId, onSelect }) {
@@ -60,17 +82,12 @@ export default function MapPane({ modelZoo, selectedId, onSelect }) {
       )}
 
       <MapContainer
-        center={[20, 20]}
-        zoom={1}
+        center={WORLD_CENTER}
+        zoom={WORLD_ZOOM}
+        minZoom={1}
+        maxZoom={10}
+        worldCopyJump={true}
         style={{ height: '100%', width: '100%' }}
-        zoomControl={false}
-        scrollWheelZoom={false}
-        dragging={false}
-        doubleClickZoom={false}
-        touchZoom={false}
-        boxZoom={false}
-        keyboard={false}
-        attributionControl={false}
       >
         <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
         {regionalModels.map((m) => {
@@ -94,6 +111,12 @@ export default function MapPane({ modelZoo, selectedId, onSelect }) {
             />
           )
         })}
+        <FitBoundsOnSelection
+          selectedId={selectedId}
+          regionalModels={regionalModels}
+          geojsonByModel={geojsonByModel}
+          worldwideId={worldwideModel?.reference.id}
+        />
       </MapContainer>
 
       <div className="absolute bottom-2 left-2 z-[500] bg-white/90 rounded px-2 py-1 text-[10px] text-gray-700">
