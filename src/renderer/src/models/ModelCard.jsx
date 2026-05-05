@@ -134,11 +134,11 @@ export default function ModelCard({
 
   return (
     <div className={cardClass} onClick={() => onSelect?.(model.reference.id)}>
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-sm text-gray-900">{model.name}</span>
+      <div className="flex items-start justify-between gap-3 mb-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="font-medium text-sm text-gray-900 truncate">{model.name}</span>
           {region && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 inline-flex items-center gap-1">
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 inline-flex items-center gap-1 flex-shrink-0">
               <span
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ background: region.color }}
@@ -148,39 +148,16 @@ export default function ModelCard({
             </span>
           )}
         </div>
-        <StatusPill state={isDownloading ? 'downloading' : isDownloaded ? 'downloaded' : 'idle'} />
-      </div>
-
-      <div className="text-xs text-gray-500 mb-1.5">
-        v{model.reference.version} · {formatSize(model.size_in_MB)} ·{' '}
-        <span className="text-gray-700 font-medium">{model.species_count} species</span>
-      </div>
-
-      {!isDownloading && (
-        <div className="text-xs text-gray-600 leading-snug">{model.description}</div>
-      )}
-
-      {isDownloading ? (
-        <div className="mt-3">
-          <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden">
-            <div
-              className="h-full bg-blue-500 transition-all"
-              style={{ width: `${downloadProgress}%` }}
-            />
-          </div>
-          <div className="flex justify-between mt-1 text-[10px] text-gray-500">
-            <span>{downloadMessage}</span>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-3 flex gap-2">
-          {isDownloaded ? (
+        <div className="flex-shrink-0">
+          {isDownloading ? (
+            <StatusPill state="downloading" />
+          ) : isDownloaded ? (
             <button
               onClick={(e) => {
                 e.stopPropagation()
                 handleDelete()
               }}
-              className="text-xs px-3 py-1 rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1.5 shadow-xs"
+              className="text-xs px-3 py-1 rounded-md border border-gray-200 bg-white text-red-600 hover:bg-red-50 hover:border-red-200 inline-flex items-center gap-1.5 shadow-xs"
             >
               <Trash2 size={12} />
               Delete
@@ -197,6 +174,29 @@ export default function ModelCard({
               Download
             </button>
           )}
+        </div>
+      </div>
+
+      <div className="text-xs text-gray-500 mb-1.5">
+        v{model.reference.version} · {formatSize(model.size_in_MB)} ·{' '}
+        <span className="text-gray-700 font-medium">{model.species_count} species</span>
+      </div>
+
+      {!isDownloading && (
+        <div className="text-xs text-gray-600 leading-snug">{model.description}</div>
+      )}
+
+      {isDownloading && (
+        <div className="mt-3">
+          <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden">
+            <div
+              className="h-full bg-blue-500 transition-all"
+              style={{ width: `${downloadProgress}%` }}
+            />
+          </div>
+          <div className="flex justify-between mt-1 text-[10px] text-gray-500">
+            <span>{downloadMessage}</span>
+          </div>
         </div>
       )}
 
