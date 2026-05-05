@@ -132,6 +132,45 @@ describe('UndoManager', () => {
     ])
   })
 
+  test('emits applied before pulse on undo (so cache patch precedes pulse)', async () => {
+    const mgr = new UndoManager()
+    const { command } = makeCommand()
+    const events = []
+    mgr.onApplied(() => events.push('applied'))
+    mgr.onPulse(() => events.push('pulse'))
+
+    await mgr.exec(command)
+    events.length = 0
+    await mgr.undo()
+
+    assert.deepEqual(events, ['applied', 'pulse'])
+  })
+
+  test('buffers pendingPulse for late-mounted bboxes; consumePendingPulse fires once', async () => {
+    const mgr = new UndoManager()
+    const { command } = makeCommand()
+
+    await mgr.exec(command)
+    await mgr.undo()
+
+    // First call after undo: pulse is buffered for 'o1'
+    assert.equal(mgr.consumePendingPulse('o1'), true)
+    // Second call: buffer was cleared on consume
+    assert.equal(mgr.consumePendingPulse('o1'), false)
+  })
+
+  test('consumePendingPulse ignores mismatched observation id', async () => {
+    const mgr = new UndoManager()
+    const { command } = makeCommand()
+
+    await mgr.exec(command)
+    await mgr.undo()
+
+    assert.equal(mgr.consumePendingPulse('different-id'), false)
+    // Original buffer is still consumable for the right id
+    assert.equal(mgr.consumePendingPulse('o1'), true)
+  })
+
   test('clear() empties both stacks', async () => {
     const mgr = new UndoManager()
     await mgr.exec(makeCommand().command)
@@ -174,5 +213,64 @@ describe('UndoManager', () => {
     await mgr.undo()
 
     assert.deepEqual(navigated, [])
+  })
+
+  test('navigates back to pre-undo image when inverse fails after auto-nav', async () => {
+    let currentId = 'mB'
+    const navigated = []
+    const mgr = new UndoManager({
+      getCurrentMediaId: () => currentId,
+      navigateTo: async (mediaId) => {
+        navigated.push(mediaId)
+        currentId = mediaId
+      }
+    })
+    const failing = makeCommand({
+      inverse: async () => {
+        throw new Error('IPC failed')
+      }
+    })
+
+    await mgr.exec(failing.command) // pushes onto undoStack; entry.mediaId = 'm1'
+    navigated.length = 0
+
+    await mgr.undo()
+
+    // Manager navigated to 'm1' for the inverse, failed, then back to 'mB'.
+    assert.deepEqual(navigated, ['m1', 'mB'])
+    // Stack state is consistent: entry was dropped, no redo available.
+    assert.equal(mgr.canUndo(), false)
+    assert.equal(mgr.canRedo(), false)
+  })
+
+  test('navigation-back failure is swallowed (does not double-error)', async () => {
+    let currentId = 'mB'
+    let navAttempts = 0
+    const errors = []
+    const mgr = new UndoManager({
+      getCurrentMediaId: () => currentId,
+      navigateTo: async (mediaId) => {
+        navAttempts++
+        // Forward nav succeeds; back-nav fails. The original IPC error
+        // should still be the only one surfaced.
+        if (navAttempts === 1) {
+          currentId = mediaId
+          return
+        }
+        throw new Error('back nav failed')
+      }
+    })
+    mgr.onError((msg) => errors.push(msg))
+    const failing = makeCommand({
+      inverse: async () => {
+        throw new Error('original IPC failure')
+      }
+    })
+
+    await mgr.exec(failing.command)
+    await mgr.undo()
+
+    assert.equal(errors.length, 1)
+    assert.match(errors[0], /original IPC failure/)
   })
 })

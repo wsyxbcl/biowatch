@@ -1,4 +1,8 @@
 const STACK_CAP = 100
+// How long a pulse buffered for a not-yet-mounted bbox stays consumable.
+// 1s comfortably covers a React commit + paint, while still being short
+// enough that a stale pulse won't fire on an unrelated later mount.
+const PENDING_PULSE_TTL_MS = 1000
 
 export class UndoManager {
   constructor({ getCurrentMediaId, navigateTo } = {}) {
@@ -10,6 +14,11 @@ export class UndoManager {
     this.pulseListeners = new Set()
     this.changeListeners = new Set()
     this.appliedListeners = new Set()
+    // Buffered pulse for a target that may not be mounted yet — undo-of-delete
+    // recreates the bbox via the onApplied cache patch, but React commits the
+    // mount on a later tick, after _emitPulse has fired its listeners. Mounted
+    // EditableBbox checks this on mount and consumes it.
+    this.pendingPulse = null
   }
 
   canUndo() {
@@ -42,34 +51,46 @@ export class UndoManager {
   async undo() {
     if (this.undoStack.length === 0) return
     const command = this.undoStack.pop()
+    const preNavMediaId = this.getCurrentMediaId()
     try {
       await this._navigateIfNeeded(command.entry.mediaId)
       await command.inverse()
     } catch (err) {
       this._emitError(`Couldn't undo: ${err.message}`)
+      // If we navigated away before failing, return the user to where they
+      // were so they're not stranded on an unrelated image with no redo path.
+      await this._tryRestoreNav(preNavMediaId)
       this._notifyChange()
       return
     }
     this.redoStack.push(command)
-    this._emitPulse(command.entry.observationId)
+    // Apply *before* pulse: the cache patch in the onApplied listener may
+    // need to re-add a previously-deleted bbox row. Pulse listeners that
+    // already exist still fire (e.g., on bbox-update / classification undo),
+    // and the pendingPulse buffer covers freshly-mounted bboxes.
     this._emitApplied(command.entry, 'inverse')
+    this._setPendingPulse(command.entry.observationId)
+    this._emitPulse(command.entry.observationId)
     this._notifyChange()
   }
 
   async redo() {
     if (this.redoStack.length === 0) return
     const command = this.redoStack.pop()
+    const preNavMediaId = this.getCurrentMediaId()
     try {
       await this._navigateIfNeeded(command.entry.mediaId)
       await command.redo()
     } catch (err) {
       this._emitError(`Couldn't redo: ${err.message}`)
+      await this._tryRestoreNav(preNavMediaId)
       this._notifyChange()
       return
     }
     this.undoStack.push(command)
-    this._emitPulse(command.entry.observationId)
     this._emitApplied(command.entry, 'redo')
+    this._setPendingPulse(command.entry.observationId)
+    this._emitPulse(command.entry.observationId)
     this._notifyChange()
   }
 
@@ -102,9 +123,37 @@ export class UndoManager {
     return () => this.appliedListeners.delete(fn)
   }
 
+  // Bbox components call this on mount to consume a pulse target that was
+  // emitted before they were rendered (notably after an undo-of-delete).
+  // Returns true if the caller should run its pulse animation; the buffer
+  // is cleared on consumption so it can't fire twice.
+  consumePendingPulse(observationId) {
+    if (!this.pendingPulse) return false
+    if (this.pendingPulse.observationId !== observationId) return false
+    if (Date.now() > this.pendingPulse.expiresAt) {
+      this.pendingPulse = null
+      return false
+    }
+    this.pendingPulse = null
+    return true
+  }
+
   async _navigateIfNeeded(mediaId) {
     if (mediaId && this.getCurrentMediaId() !== mediaId) {
       await this.navigateTo(mediaId)
+    }
+  }
+
+  // Best-effort: if a failed undo/redo moved the user to a different image,
+  // navigate them back. Swallow errors so a broken back-nav can't itself
+  // throw and obscure the original failure.
+  async _tryRestoreNav(targetMediaId) {
+    if (!targetMediaId) return
+    if (this.getCurrentMediaId() === targetMediaId) return
+    try {
+      await this.navigateTo(targetMediaId)
+    } catch {
+      // ignore — user is already aware via the error toast
     }
   }
 
@@ -122,5 +171,13 @@ export class UndoManager {
 
   _emitApplied(entry, kind) {
     for (const fn of this.appliedListeners) fn(entry, kind)
+  }
+
+  _setPendingPulse(observationId) {
+    if (!observationId) return
+    this.pendingPulse = {
+      observationId,
+      expiresAt: Date.now() + PENDING_PULSE_TTL_MS
+    }
   }
 }

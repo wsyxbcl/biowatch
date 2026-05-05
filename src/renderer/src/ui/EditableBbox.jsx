@@ -45,6 +45,16 @@ export default function EditableBbox({
     })
   }, [undo, bbox.observationID])
 
+  // Undo-of-delete recreates the bbox row in the React Query cache, but the
+  // resulting mount happens on a later React tick — after the manager's
+  // synchronous _emitPulse already fired. The manager buffers the pulse for
+  // such cases; we consume it on mount so the pulse still runs.
+  useEffect(() => {
+    if (undo.consumePendingPulse?.(bbox.observationID)) {
+      setPulseKey((n) => n + 1)
+    }
+  }, [undo, bbox.observationID])
+
   // Refs for drag state (no re-renders during drag, and avoids closure issues)
   const isDraggingRef = useRef(false)
   const isResizingRef = useRef(null) // null or handle name
