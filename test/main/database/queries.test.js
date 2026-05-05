@@ -18,7 +18,9 @@ import {
   insertObservations,
   getStudyIdFromPath,
   getBlankMediaCount,
-  getMediaForSequencePagination
+  getMediaForSequencePagination,
+  getBestMedia,
+  updateMediaFavorite
 } from '../../../src/main/database/index.js'
 
 // Test database setup
@@ -827,6 +829,24 @@ describe('Database Query Functions Tests', () => {
         assert.equal(row.locationID, expected.locationID, `row ${row.mediaID} locationID`)
         assert.equal(row.locationName, expected.locationName, `row ${row.mediaID} locationName`)
       }
+    })
+  })
+
+  describe('getBestMedia', () => {
+    test('returns locationID and locationName for favorite media rows', async () => {
+      await createTestData(testDbPath)
+
+      // media001 is on deploy001 → loc001 / Forest Site A. Marking it as
+      // a favorite makes it the only row that the favorites CTE can return,
+      // and gives us a deterministic expected location.
+      await updateMediaFavorite(testDbPath, 'media001', true)
+
+      const result = await getBestMedia(testDbPath, { limit: 12 })
+
+      const row = result.find((r) => r.mediaID === 'media001')
+      assert.ok(row, 'should return media001')
+      assert.equal(row.locationID, 'loc001', 'locationID should be loc001')
+      assert.equal(row.locationName, 'Forest Site A', 'locationName should be Forest Site A')
     })
   })
 })
