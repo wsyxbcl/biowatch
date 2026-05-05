@@ -19,7 +19,9 @@ export function filterSpecies(species, query) {
 export function classSummary(data) {
   const list = data.species || []
 
-  if (list.length === 0 && data.summary) {
+  // Prefer the static summary block when present, even if species[] is
+  // populated. species[] powers search; summary powers the no-query view.
+  if (data.summary) {
     return {
       total: data.summary.total,
       classes: data.summary.classes.map((c) => ({
