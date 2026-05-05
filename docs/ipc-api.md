@@ -115,6 +115,14 @@ Runs in the sequences worker thread (off the main process). Threatened species a
 | ------------------------------- | ------------------------ | ---------- | ---------------------- |
 | `getLocationsActivity(studyId)` | `locations:get-activity` | studyId    | `{ data: Activity[] }` |
 
+### Activity Map Export
+
+| Method                                                  | Channel                    | Parameters                  | Returns                                                                |
+| ------------------------------------------------------- | -------------------------- | --------------------------- | ---------------------------------------------------------------------- |
+| `exportActivityMapPng({ dataUrl, defaultFilename })`    | `activity:export-map-png`  | base64 PNG data URL, name   | `{ success: true, filePath } \| { cancelled: true } \| { success: false, error }` |
+
+The renderer captures the Leaflet map container with `html-to-image` (`pixelRatio: 2`, `crossOrigin=""` set on the tile layers so the canvas isn't tainted) and passes a `data:image/png;base64,…` URL plus a default filename. Main shows a save dialog (default location: Downloads) and writes the decoded buffer to disk. Triggered from the Activity tab's right-click context menu on the map.
+
 ### Sequence-Aware Species Counts
 
 These endpoints perform sequence grouping and counting in the main thread, returning pre-computed results. This avoids transferring raw media-level data to the renderer and keeps computation off the UI thread.

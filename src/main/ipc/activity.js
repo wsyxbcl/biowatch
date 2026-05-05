@@ -2,9 +2,10 @@
  * Activity-related IPC handlers
  */
 
-import { app, ipcMain } from 'electron'
+import { app, dialog, ipcMain } from 'electron'
 import log from 'electron-log'
-import { existsSync } from 'fs'
+import { existsSync, promises as fsp } from 'fs'
+import path from 'path'
 import { getStudyDatabasePath } from '../services/paths.js'
 import { getLocationsActivity } from '../database/index.js'
 
@@ -25,6 +26,33 @@ export function registerActivityIPCHandlers() {
     } catch (error) {
       log.error('Error getting locations activity:', error)
       return { error: error.message }
+    }
+  })
+
+  ipcMain.handle('activity:export-map-png', async (_, { dataUrl, defaultFilename }) => {
+    try {
+      const downloadsPath = app.getPath('downloads')
+      const safeName = defaultFilename || `activity-map-${Date.now()}.png`
+      const result = await dialog.showSaveDialog({
+        title: 'Save Activity Map',
+        defaultPath: path.join(downloadsPath, safeName),
+        filters: [{ name: 'PNG Image', extensions: ['png'] }]
+      })
+
+      if (result.canceled || !result.filePath) {
+        return { cancelled: true }
+      }
+
+      const base64 = (dataUrl || '').replace(/^data:image\/png;base64,/, '')
+      if (!base64) {
+        return { success: false, error: 'Empty image payload' }
+      }
+
+      await fsp.writeFile(result.filePath, Buffer.from(base64, 'base64'))
+      return { success: true, filePath: result.filePath }
+    } catch (error) {
+      log.error('Error exporting activity map PNG:', error)
+      return { success: false, error: error.message }
     }
   })
 }

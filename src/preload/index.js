@@ -384,6 +384,14 @@ const api = {
     return await electronAPI.ipcRenderer.invoke('diagnostics:export')
   },
 
+  // Activity tab — export the rendered Leaflet map as a PNG file
+  exportActivityMapPng: async ({ dataUrl, defaultFilename }) => {
+    return await electronAPI.ipcRenderer.invoke('activity:export-map-png', {
+      dataUrl,
+      defaultFilename
+    })
+  },
+
   // Settings → Info tab
   getChangelog: async (limit = 3) => {
     return await electronAPI.ipcRenderer.invoke('info:get-changelog', limit)

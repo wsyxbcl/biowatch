@@ -444,6 +444,22 @@ function generateDataPackage(studyId, studyName, metadata) {
 }
 ```
 
+## Activity Map PNG Export
+
+Saves the Activity tab's species distribution map (Leaflet basemap + pie chart markers + legend) as a PNG file. Triggered from a right-click context menu on the map.
+
+**Flow:**
+
+1. Renderer (`src/renderer/src/activity.jsx` → `SpeciesMap`) listens for Leaflet's `contextmenu` event via a `useMapEvents` controller.
+2. Right-click renders a small fixed-position menu (`src/renderer/src/ui/ActivityMapContextMenu.jsx`) with **Save map as PNG…**.
+3. On click, `html-to-image` rasterises `map.getContainer()` at `pixelRatio: 2` with a filter that strips the zoom and layer-toggle controls (attribution stays for OSM/Esri compliance).
+4. The base64 PNG data URL is sent to main via `window.api.exportActivityMapPng({ dataUrl, defaultFilename })`.
+5. Main (`src/main/ipc/activity.js`) shows `dialog.showSaveDialog`, then `fs.promises.writeFile`s the decoded buffer.
+
+**Default filename:** `activity-map-<study-slug>-<YYYY-MM-DD>.png`, written to the OS Downloads folder unless the user picks elsewhere.
+
+**Tile CORS:** both `<TileLayer>` components in `SpeciesMap` set `crossOrigin=""` so the Esri World_Imagery and OSM tiles can be rendered onto the canvas without tainting it.
+
 ## Image Directory Export
 
 Organizes images into species-named folders.
