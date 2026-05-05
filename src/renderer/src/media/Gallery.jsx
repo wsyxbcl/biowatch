@@ -562,6 +562,15 @@ function ImageModal({
     queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
   }, [queryClient, studyId, media?.mediaID])
 
+  // After every undo/redo, invalidate the same queries the forward path would
+  // have. Without this, the bboxes useQuery still serves the pre-undo cache
+  // and the change isn't visible until the modal is closed and reopened.
+  useEffect(() => {
+    return undo.onChange(() => {
+      invalidateAfterObservationChange()
+    })
+  }, [undo, invalidateAfterObservationChange])
+
   // Classification update — routed through the undo system. Local state
   // mirrors what the previous useMutation exposed (isPending / isError) so the
   // existing pending/error UI in the footer can keep working.
