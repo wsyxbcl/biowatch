@@ -71,13 +71,14 @@ export default function MapPane({ modelZoo, selectedId, onSelect }) {
         <button
           onClick={() => onSelect?.(worldwideModel.reference.id)}
           className={[
-            'absolute top-2 left-2 z-[500] text-xs font-semibold rounded-full px-3 py-1 shadow border-2 cursor-pointer',
+            'absolute top-2 left-2 z-[500] text-xs font-medium rounded-full px-3 py-1 shadow-sm border cursor-pointer transition-colors inline-flex items-center gap-1.5',
             selectedId === worldwideModel.reference.id
-              ? 'bg-indigo-500 text-white border-indigo-500'
-              : 'bg-white/95 text-indigo-700 border-indigo-500 hover:bg-indigo-50'
+              ? 'bg-blue-50 text-blue-700 border-blue-300'
+              : 'bg-white/95 text-gray-700 border-gray-200 hover:bg-gray-50'
           ].join(' ')}
         >
-          🌍 Worldwide model available
+          <span aria-hidden>🌍</span>
+          Worldwide model available
         </button>
       )}
 

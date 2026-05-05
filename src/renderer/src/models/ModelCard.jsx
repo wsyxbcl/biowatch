@@ -125,26 +125,25 @@ export default function ModelCard({
     currentModelId: model.reference.id
   })
 
-  const borderColor = region?.color || '#6b7280'
   const cardClass = [
-    'bg-white rounded-lg p-3 mb-2 border border-gray-200 cursor-pointer transition-shadow',
-    selected ? 'shadow-[0_0_0_2px_rgba(0,0,0,0.06)] border-gray-900' : ''
+    'bg-white rounded-lg p-4 mb-2 border cursor-pointer transition-shadow',
+    selected
+      ? 'border-blue-300 shadow-[0_0_0_2px_rgba(59,130,246,0.15)]'
+      : 'border-gray-200 hover:shadow-md'
   ].join(' ')
 
   return (
-    <div
-      className={cardClass}
-      style={{ borderLeft: `4px solid ${borderColor}` }}
-      onClick={() => onSelect?.(model.reference.id)}
-    >
+    <div className={cardClass} onClick={() => onSelect?.(model.reference.id)}>
       <div className="flex items-start justify-between gap-2 mb-1">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-sm text-gray-900">{model.name}</span>
+          <span className="font-medium text-sm text-gray-900">{model.name}</span>
           {region && (
-            <span
-              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-              style={{ color: region.badgeText, background: region.badgeBg }}
-            >
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 inline-flex items-center gap-1">
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ background: region.color }}
+                aria-hidden
+              />
               {region.label}
             </span>
           )}
@@ -152,20 +151,20 @@ export default function ModelCard({
         <StatusPill state={isDownloading ? 'downloading' : isDownloaded ? 'downloaded' : 'idle'} />
       </div>
 
-      <div className="text-xs text-gray-500 mb-1">
+      <div className="text-xs text-gray-500 mb-1.5">
         v{model.reference.version} · {formatSize(model.size_in_MB)} ·{' '}
-        <strong>{model.species_count} species</strong>
+        <span className="text-gray-700 font-medium">{model.species_count} species</span>
       </div>
 
       {!isDownloading && (
-        <div className="text-xs text-gray-700 leading-snug">{model.description}</div>
+        <div className="text-xs text-gray-600 leading-snug">{model.description}</div>
       )}
 
       {isDownloading ? (
-        <div className="mt-2">
-          <div className="bg-indigo-100 rounded-full h-1.5 overflow-hidden">
+        <div className="mt-3">
+          <div className="bg-gray-100 rounded-full h-1.5 overflow-hidden">
             <div
-              className="h-full bg-indigo-500 transition-all"
+              className="h-full bg-blue-500 transition-all"
               style={{ width: `${downloadProgress}%` }}
             />
           </div>
@@ -174,16 +173,16 @@ export default function ModelCard({
           </div>
         </div>
       ) : (
-        <div className="mt-2 flex gap-2">
+        <div className="mt-3 flex gap-2">
           {isDownloaded ? (
             <button
               onClick={(e) => {
                 e.stopPropagation()
                 handleDelete()
               }}
-              className="text-xs px-2 py-1 rounded border border-red-300 text-red-700 bg-white hover:bg-red-50"
+              className="text-xs px-3 py-1 rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1.5 shadow-xs"
             >
-              <Trash2 size={12} className="inline mr-1" />
+              <Trash2 size={12} />
               Delete
             </button>
           ) : (
@@ -192,9 +191,9 @@ export default function ModelCard({
                 e.stopPropagation()
                 handleDownload()
               }}
-              className="text-xs px-2 py-1 rounded bg-gray-900 text-white hover:bg-gray-800"
+              className="text-xs px-3 py-1 rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1.5 shadow-xs"
             >
-              <Download size={12} className="inline mr-1" />
+              <Download size={12} />
               Download
             </button>
           )}
@@ -202,13 +201,13 @@ export default function ModelCard({
       )}
 
       <div
-        className="mt-2 text-xs text-indigo-700 cursor-pointer select-none"
+        className="mt-3 text-xs text-blue-600 hover:underline cursor-pointer select-none"
         onClick={(e) => {
           e.stopPropagation()
           onToggleSpecies?.(model.reference.id)
         }}
       >
-        {speciesOpen ? '▾' : '▸'} {speciesOpen ? 'Hide' : 'View'} {model.species_count} species
+        {speciesOpen ? '▾ Hide species' : `▸ View ${model.species_count} species`}
       </div>
 
       {speciesOpen && speciesPanel}
@@ -219,20 +218,20 @@ export default function ModelCard({
 function StatusPill({ state }) {
   if (state === 'downloaded') {
     return (
-      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
         ✓ Downloaded
       </span>
     )
   }
   if (state === 'downloading') {
     return (
-      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
+      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
         Downloading…
       </span>
     )
   }
   return (
-    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700">
+    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-50 text-gray-600 border border-gray-200">
       Not downloaded
     </span>
   )
