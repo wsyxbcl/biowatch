@@ -243,7 +243,9 @@ function DeploymentLinkPill({
       onClick={(e) => {
         e.stopPropagation()
         onNavigate?.()
-        navigate(`/study/${studyId}/deployments?deploymentID=${deploymentID}`)
+        navigate(
+          `/study/${encodeURIComponent(studyId)}/deployments?deploymentID=${encodeURIComponent(deploymentID)}`
+        )
       }}
       className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] text-gray-600 hover:text-blue-700 hover:bg-blue-50 transition-colors"
       title="Open in Deployments tab"
