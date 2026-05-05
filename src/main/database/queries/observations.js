@@ -367,6 +367,56 @@ export async function createObservation(dbPath, observationData) {
 }
 
 /**
+ * Restore an observation's fields to a prior state (used by the undo system).
+ * Unlike updateObservationClassification / updateObservationBbox, this does NOT
+ * auto-stamp classificationMethod / classifiedBy / classificationTimestamp —
+ * undo is "revert state", not "another user edit", so it must preserve whatever
+ * those fields were at the snapshot point.
+ *
+ * @param {string} dbPath - Path to the SQLite database
+ * @param {string} observationID - The observation ID to restore
+ * @param {Object} fields - Fields to overwrite verbatim. Any combination of:
+ *   bboxX, bboxY, bboxWidth, bboxHeight, scientificName, commonName,
+ *   observationType, sex, lifeStage, behavior, classificationMethod,
+ *   classifiedBy, classificationTimestamp, classificationProbability
+ * @returns {Promise<Object>} - The restored observation
+ * @throws if no row matches observationID (so external deletions trigger the
+ *         caller's failure path rather than silently doing nothing).
+ */
+export async function restoreObservation(dbPath, observationID, fields) {
+  const startTime = Date.now()
+  log.info(`Restoring observation: ${observationID}`)
+
+  try {
+    const studyId = getStudyIdFromPath(dbPath)
+    const db = await getDrizzleDb(studyId, dbPath)
+
+    const result = await db
+      .update(observations)
+      .set(fields)
+      .where(eq(observations.observationID, observationID))
+
+    const rowsAffected = result.changes ?? result.rowsAffected ?? 0
+    if (rowsAffected === 0) {
+      throw new Error(`Observation not found: ${observationID}`)
+    }
+
+    const restored = await db
+      .select()
+      .from(observations)
+      .where(eq(observations.observationID, observationID))
+      .get()
+
+    const elapsedTime = Date.now() - startTime
+    log.info(`Restored observation ${observationID} in ${elapsedTime}ms`)
+    return restored
+  } catch (error) {
+    log.error(`Error restoring observation: ${error.message}`)
+    throw error
+  }
+}
+
+/**
  * Insert observations data into the database
  * @param {Object} manager - Database manager instance
  * @param {Array} observationsData - Array of observation objects

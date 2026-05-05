@@ -244,6 +244,7 @@ export {
   updateObservationBbox,
   deleteObservation,
   createObservation,
+  restoreObservation,
   insertObservations,
   // Best media
   getTemporalBucket,
