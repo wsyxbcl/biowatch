@@ -13,15 +13,37 @@ async function loadRegionGeoJSON(name) {
   return data
 }
 
-const WORLD_CENTER = [20, 20]
-const WORLD_ZOOM = 1
+const WORLD_CENTER = [20, 0]
 
-function FitBoundsOnSelection({ selectedId, regionalModels, geojsonByModel, worldwideId }) {
+// Zoom level at which 256 × 2^z (= one world's pixel width) equals the
+// container width. Result: tiles fill the container horizontally with no
+// horizontal dead space; polar regions clip vertically.
+function fillWidthZoom(containerWidthPx) {
+  return Math.max(0, Math.log2(containerWidthPx / 256))
+}
+
+function MapController({ selectedId, regionalModels, geojsonByModel, worldwideId }) {
   const map = useMap()
+
+  // On mount + on resize while worldwide is selected, fit world to width.
+  useEffect(() => {
+    if (selectedId !== worldwideId) return
+    const fit = () => {
+      const w = map.getSize().x
+      if (w === 0) return
+      map.setView(WORLD_CENTER, fillWidthZoom(w), { animate: false })
+    }
+    fit()
+    map.on('resize', fit)
+    return () => map.off('resize', fit)
+  }, [selectedId, worldwideId, map])
+
+  // Fly on selection change.
   useEffect(() => {
     if (!selectedId) return
     if (selectedId === worldwideId) {
-      map.flyTo(WORLD_CENTER, WORLD_ZOOM, { duration: 0.6 })
+      const w = map.getSize().x
+      map.flyTo(WORLD_CENTER, fillWidthZoom(w), { duration: 0.6 })
       return
     }
     const regional = regionalModels.find((m) => m.reference.id === selectedId)
@@ -31,6 +53,7 @@ function FitBoundsOnSelection({ selectedId, regionalModels, geojsonByModel, worl
     const layer = L.geoJSON(data)
     map.flyToBounds(layer.getBounds(), { padding: [40, 40], duration: 0.6 })
   }, [selectedId, regionalModels, geojsonByModel, worldwideId, map])
+
   return null
 }
 
@@ -62,6 +85,12 @@ export default function MapPane({ modelZoo, selectedId, onSelect }) {
     }
   }, [regionalModels])
 
+  // Approximate initial zoom from window width — refined by MapController on mount.
+  const initialZoom = useMemo(
+    () => fillWidthZoom(typeof window !== 'undefined' ? window.innerWidth : 1024),
+    []
+  )
+
   return (
     <div
       className="relative bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden w-full"
@@ -84,13 +113,26 @@ export default function MapPane({ modelZoo, selectedId, onSelect }) {
 
       <MapContainer
         center={WORLD_CENTER}
-        zoom={WORLD_ZOOM}
-        minZoom={1}
+        zoom={initialZoom}
+        minZoom={0}
         maxZoom={10}
-        worldCopyJump={true}
+        zoomSnap={0}
+        zoomDelta={0.5}
+        maxBounds={[
+          [-90, -180],
+          [90, 180]
+        ]}
+        maxBoundsViscosity={1.0}
         style={{ height: '100%', width: '100%' }}
       >
-        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+        <TileLayer
+          noWrap={true}
+          bounds={[
+            [-90, -180],
+            [90, 180]
+          ]}
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+        />
         {regionalModels.map((m) => {
           const region = getRegion(m.region)
           const data = geojsonByModel[m.reference.id]
@@ -112,7 +154,7 @@ export default function MapPane({ modelZoo, selectedId, onSelect }) {
             />
           )
         })}
-        <FitBoundsOnSelection
+        <MapController
           selectedId={selectedId}
           regionalModels={regionalModels}
           geojsonByModel={geojsonByModel}
