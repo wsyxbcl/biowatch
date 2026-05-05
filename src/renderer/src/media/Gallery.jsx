@@ -571,6 +571,36 @@ function ImageModal({
     })
   }, [undo, invalidateAfterObservationChange])
 
+  // Optimistically patch the bboxes cache as soon as an entry is applied —
+  // before the invalidation refetch lands. Without this there's a brief
+  // window where the modal renders the pre-IPC state, causing a visible
+  // flicker on drag-end and on undo/redo. The 3-element queryKey filter
+  // prefix-matches the actual 4-element key (which also carries isVideo).
+  useEffect(() => {
+    return undo.onApplied((entry, kind) => {
+      const { type, observationId, before, after } = entry
+      const fields = kind === 'inverse' ? before : after
+      queryClient.setQueriesData({ queryKey: ['mediaBboxes', studyId, entry.mediaId] }, (old) => {
+        if (!Array.isArray(old)) return old
+        if (type === 'create') {
+          if (kind === 'inverse') return old.filter((b) => b.observationID !== observationId)
+          // forward / redo — append the created row if not already there
+          return old.some((b) => b.observationID === after.observationID) ? old : [...old, after]
+        }
+        if (type === 'delete') {
+          if (kind === 'inverse')
+            return old.some((b) => b.observationID === before.observationID)
+              ? old
+              : [...old, before]
+          // forward / redo — remove the row
+          return old.filter((b) => b.observationID !== before.observationID)
+        }
+        // update-bbox / update-classification — patch the matching row
+        return old.map((b) => (b.observationID === observationId ? { ...b, ...fields } : b))
+      })
+    })
+  }, [undo, queryClient, studyId])
+
   // Classification update — routed through the undo system. Local state
   // mirrors what the previous useMutation exposed (isPending / isError) so the
   // existing pending/error UI in the footer can keep working.
@@ -646,6 +676,20 @@ function ImageModal({
       const before = bboxes.find((b) => b.observationID === observationID)
       if (!before) return
 
+      // Synchronously apply the new bbox to the cache so the displayed bboxes
+      // don't snap back to the pre-edit position during the IPC roundtrip.
+      // The onApplied listener will overwrite this with the same data after
+      // success, so the only visible difference is no flicker.
+      queryClient.setQueriesData({ queryKey: ['mediaBboxes', studyId, media?.mediaID] }, (old) =>
+        Array.isArray(old)
+          ? old.map((b) =>
+              b.observationID === observationID
+                ? { ...b, ...newBbox, classificationMethod: 'human' }
+                : b
+            )
+          : old
+      )
+
       const command = commands.updateBbox({
         api: window.api,
         studyId,
@@ -658,9 +702,14 @@ function ImageModal({
         await undo.exec(command)
       } catch (err) {
         console.error('Failed to update bbox:', err)
+        // Rollback the optimistic patch
+        queryClient.setQueriesData({ queryKey: ['mediaBboxes', studyId, media?.mediaID] }, (old) =>
+          Array.isArray(old)
+            ? old.map((b) => (b.observationID === observationID ? before : b))
+            : old
+        )
         return
       }
-      queryClient.invalidateQueries({ queryKey: ['mediaBboxes', studyId, media?.mediaID] })
       queryClient.invalidateQueries({ queryKey: ['thumbnailBboxesBatch'] })
       queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
     },

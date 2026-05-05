@@ -115,6 +115,23 @@ describe('UndoManager', () => {
     assert.deepEqual(pulses, ['o1'])
   })
 
+  test('emits onApplied(entry, kind) on exec/undo/redo', async () => {
+    const mgr = new UndoManager()
+    const { command } = makeCommand()
+    const applied = []
+    mgr.onApplied((entry, kind) => applied.push([entry.observationId, kind]))
+
+    await mgr.exec(command)
+    await mgr.undo()
+    await mgr.redo()
+
+    assert.deepEqual(applied, [
+      ['o1', 'forward'],
+      ['o1', 'inverse'],
+      ['o1', 'redo']
+    ])
+  })
+
   test('clear() empties both stacks', async () => {
     const mgr = new UndoManager()
     await mgr.exec(makeCommand().command)

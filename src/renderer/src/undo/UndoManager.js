@@ -9,6 +9,7 @@ export class UndoManager {
     this.errorListeners = new Set()
     this.pulseListeners = new Set()
     this.changeListeners = new Set()
+    this.appliedListeners = new Set()
   }
 
   canUndo() {
@@ -34,6 +35,7 @@ export class UndoManager {
       this.undoStack.shift()
     }
     this.redoStack.length = 0
+    this._emitApplied(command.entry, 'forward')
     this._notifyChange()
   }
 
@@ -50,6 +52,7 @@ export class UndoManager {
     }
     this.redoStack.push(command)
     this._emitPulse(command.entry.observationId)
+    this._emitApplied(command.entry, 'inverse')
     this._notifyChange()
   }
 
@@ -66,6 +69,7 @@ export class UndoManager {
     }
     this.undoStack.push(command)
     this._emitPulse(command.entry.observationId)
+    this._emitApplied(command.entry, 'redo')
     this._notifyChange()
   }
 
@@ -90,6 +94,14 @@ export class UndoManager {
     return () => this.changeListeners.delete(fn)
   }
 
+  // Fires after every successful exec / undo / redo with the entry that was
+  // applied and a kind: 'forward' | 'inverse' | 'redo'. Used by the renderer
+  // to keep the React Query cache in sync without waiting for a refetch.
+  onApplied(fn) {
+    this.appliedListeners.add(fn)
+    return () => this.appliedListeners.delete(fn)
+  }
+
   async _navigateIfNeeded(mediaId) {
     if (mediaId && this.getCurrentMediaId() !== mediaId) {
       await this.navigateTo(mediaId)
@@ -106,5 +118,9 @@ export class UndoManager {
 
   _notifyChange() {
     for (const fn of this.changeListeners) fn()
+  }
+
+  _emitApplied(entry, kind) {
+    for (const fn of this.appliedListeners) fn(entry, kind)
   }
 }
