@@ -773,28 +773,15 @@ function ImageModal({
     }
   }, [bboxes])
 
-  // Handle draw completion - create new observation (via undo system)
-  const handleDrawComplete = useCallback(
-    async (bbox) => {
-      if (!media) return
-
-      const defaultSpecies = getDefaultSpecies()
-      const observationData = {
-        mediaID: media.mediaID,
-        deploymentID: media.deploymentID,
-        timestamp: media.timestamp,
-        scientificName: defaultSpecies.scientificName,
-        commonName: defaultSpecies.commonName,
-        bboxX: bbox.bboxX,
-        bboxY: bbox.bboxY,
-        bboxWidth: bbox.bboxWidth,
-        bboxHeight: bbox.bboxHeight
-      }
-
+  // Shared create-observation path for both the draw-mode flow and the
+  // rail's "Add → Whole image" action: builds the create command, routes it
+  // through the undo system, and refreshes the standard query fanout.
+  const createObservationViaUndo = useCallback(
+    async (observationData) => {
       const command = commands.create({
         api: window.api,
         studyId,
-        mediaId: media.mediaID,
+        mediaId: observationData.mediaID,
         observationData
       })
       try {
@@ -807,14 +794,32 @@ function ImageModal({
       setIsDrawMode(false)
       setSelectedObservationId(command.entry.observationId)
     },
-    [media, getDefaultSpecies, studyId, undo, invalidateAfterObservationChange]
+    [studyId, undo, invalidateAfterObservationChange]
   )
 
-  // Handle "Add observation → Whole image" from the rail. Creates an observation
-  // with no bbox geometry.
+  const handleDrawComplete = useCallback(
+    async (bbox) => {
+      if (!media) return
+      const defaultSpecies = getDefaultSpecies()
+      await createObservationViaUndo({
+        mediaID: media.mediaID,
+        deploymentID: media.deploymentID,
+        timestamp: media.timestamp,
+        scientificName: defaultSpecies.scientificName,
+        commonName: defaultSpecies.commonName,
+        bboxX: bbox.bboxX,
+        bboxY: bbox.bboxY,
+        bboxWidth: bbox.bboxWidth,
+        bboxHeight: bbox.bboxHeight
+      })
+    },
+    [media, getDefaultSpecies, createObservationViaUndo]
+  )
+
+  // "Add observation → Whole image" from the rail — no bbox geometry.
   const handleAddWholeImage = useCallback(async () => {
     if (!media) return
-    const observationData = {
+    await createObservationViaUndo({
       mediaID: media.mediaID,
       deploymentID: media.deploymentID,
       timestamp: media.timestamp,
@@ -824,23 +829,8 @@ function ImageModal({
       bboxY: null,
       bboxWidth: null,
       bboxHeight: null
-    }
-    const command = commands.create({
-      api: window.api,
-      studyId,
-      mediaId: media.mediaID,
-      observationData
     })
-    try {
-      await undo.exec(command)
-    } catch (err) {
-      console.error('Failed to create observation:', err)
-      return
-    }
-    invalidateAfterObservationChange()
-    setIsDrawMode(false)
-    setSelectedObservationId(command.entry.observationId)
-  }, [media, studyId, undo, invalidateAfterObservationChange])
+  }, [media, createObservationViaUndo])
 
   useEffect(() => {
     if (!isOpen) return
