@@ -9,6 +9,7 @@ import {
   moveBbox,
   pixelToNormalizedDeltaWithZoom
 } from '../utils/bboxCoordinates'
+import { useUndo } from '../undo/context.jsx'
 
 const CORNER_HANDLE_SIZE = 8 // pixels
 const EDGE_HANDLE_SIZE = 6 // pixels
@@ -32,6 +33,19 @@ export default function EditableBbox({
 }) {
   const [localBbox, setLocalBbox] = useState(null)
   const localBboxRef = useRef(null) // Mirror of localBbox for closure-safe access
+
+  // Pulse state — flips to true for ~600ms after this observation is the
+  // target of an undo/redo, driving the bbox-pulse CSS animation overlay.
+  const [pulseKey, setPulseKey] = useState(0)
+  const undo = useUndo()
+  useEffect(() => {
+    return undo.onPulse((id) => {
+      if (id !== bbox.observationID) return
+      // Bump key to remount the overlay <rect>, restarting the animation
+      // even if it fires twice in quick succession.
+      setPulseKey((n) => n + 1)
+    })
+  }, [undo, bbox.observationID])
 
   // Refs for drag state (no re-renders during drag, and avoids closure issues)
   const isDraggingRef = useRef(false)
@@ -343,6 +357,21 @@ export default function EditableBbox({
         onMouseDown={(e) => handleMouseDown(e)}
         onClick={(e) => e.stopPropagation()}
       />
+
+      {/* Pulse overlay — fires after undo/redo to flag the affected bbox.
+          Keyed by pulseKey so a second pulse restarts the animation. */}
+      {pulseKey > 0 && (
+        <rect
+          key={pulseKey}
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill="none"
+          stroke="#4f9eff"
+          className="bbox--pulse"
+        />
+      )}
 
       {/* Resize handles - only show when selected */}
       {isSelected &&
