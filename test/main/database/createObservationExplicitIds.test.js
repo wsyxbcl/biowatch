@@ -100,6 +100,56 @@ describe('createObservation with explicit IDs', () => {
     assert.match(created.eventID, /^[0-9a-f-]{36}$/)
   })
 
+  test('preserves caller-provided classification metadata (used by undo-of-delete)', async () => {
+    await seedDeploymentAndMedia()
+
+    const created = await createObservation(testDbPath, {
+      observationID: 'metadata-obs',
+      eventID: 'metadata-evt',
+      mediaID: 'm1',
+      deploymentID: 'd1',
+      timestamp: '2024-01-01T00:00:00.000Z',
+      scientificName: 'capreolus capreolus',
+      bboxX: 0.1,
+      bboxY: 0.1,
+      bboxWidth: 0.2,
+      bboxHeight: 0.2,
+      observationType: 'animal',
+      classificationMethod: 'machine',
+      classifiedBy: 'SpeciesNet 4.0.1a',
+      classificationTimestamp: '2023-06-01T00:00:00.000Z',
+      classificationProbability: 0.92
+    })
+
+    // When metadata is supplied (undo-of-delete path), the row keeps it
+    // verbatim instead of being auto-stamped as 'human' / 'User' / now.
+    assert.equal(created.classificationMethod, 'machine')
+    assert.equal(created.classifiedBy, 'SpeciesNet 4.0.1a')
+    assert.equal(created.classificationTimestamp, '2023-06-01T00:00:00.000Z')
+    assert.equal(created.classificationProbability, 0.92)
+    assert.equal(created.observationType, 'animal')
+  })
+
+  test('still auto-stamps when metadata is omitted (direct user creation)', async () => {
+    await seedDeploymentAndMedia()
+
+    const created = await createObservation(testDbPath, {
+      mediaID: 'm1',
+      deploymentID: 'd1',
+      timestamp: '2024-01-01T00:00:00.000Z',
+      scientificName: 'capreolus capreolus',
+      bboxX: 0.1,
+      bboxY: 0.1,
+      bboxWidth: 0.2,
+      bboxHeight: 0.2
+    })
+
+    assert.equal(created.classificationMethod, 'human')
+    assert.equal(created.classifiedBy, 'User')
+    assert.equal(created.classificationProbability, null)
+    assert.match(created.classificationTimestamp, /^\d{4}-\d{2}-\d{2}T/)
+  })
+
   test('rejects a second insert with the same observationID', async () => {
     await seedDeploymentAndMedia()
 

@@ -318,6 +318,18 @@ export async function createObservation(dbPath, observationData) {
     const observationID = observationData.observationID ?? crypto.randomUUID()
     const eventID = observationData.eventID ?? crypto.randomUUID()
 
+    // Classification metadata. Direct user creation defaults to a fresh human
+    // stamp ('human' / 'User' / now / null probability / 'animal'). The undo
+    // path opts out by passing these fields verbatim, so undo-of-delete can
+    // restore an originally machine-classified row in a single IPC instead
+    // of needing a separate stamp-free UPDATE.
+    const observationType = observationData.observationType ?? 'animal'
+    const classificationMethod = observationData.classificationMethod ?? 'human'
+    const classifiedBy = observationData.classifiedBy ?? 'User'
+    const classificationTimestamp =
+      observationData.classificationTimestamp ?? new Date().toISOString()
+    const classificationProbability = observationData.classificationProbability ?? null
+
     // Prepare observation data following CamTrap DP specification
     const newObservation = {
       observationID,
@@ -328,17 +340,17 @@ export async function createObservation(dbPath, observationData) {
       eventEnd: timestamp,
       scientificName: scientificName || null,
       commonName: commonName || null,
-      observationType: 'animal',
-      classificationProbability: null, // Human classification - no classificationProbability score
+      observationType,
+      classificationProbability,
       count: 1,
       bboxX: hasBbox ? bboxX : null,
       bboxY: hasBbox ? bboxY : null,
       bboxWidth: hasBbox ? bboxWidth : null,
       bboxHeight: hasBbox ? bboxHeight : null,
       modelOutputID: null, // No model involved
-      classificationMethod: 'human',
-      classifiedBy: 'User',
-      classificationTimestamp: new Date().toISOString(),
+      classificationMethod,
+      classifiedBy,
+      classificationTimestamp,
       // Camtrap DP observation fields
       sex: sex || null,
       lifeStage: lifeStage || null,

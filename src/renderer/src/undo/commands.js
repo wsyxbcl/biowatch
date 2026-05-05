@@ -86,8 +86,13 @@ export function delete_({ api, studyId, mediaId, before }) {
       unwrap(await api.deleteObservation(studyId, before.observationID))
     },
     inverse: async () => {
-      // Recreate with the original observationID + eventID. createObservation
-      // accepts these as optional explicit IDs.
+      // Recreate with the original IDs *and* the original classification
+      // metadata in one IPC. createObservation accepts these as optional
+      // overrides — when provided, it skips the auto-stamp that would
+      // otherwise rewrite the row as 'human' / 'User' / now. This collapses
+      // what used to be two IPCs (create + stamp-free restore) into one,
+      // eliminating the partial-failure window where the row could come back
+      // with the wrong metadata if the second IPC threw.
       unwrap(
         await api.createObservation(studyId, {
           mediaID: before.mediaID,
@@ -103,14 +108,7 @@ export function delete_({ api, studyId, mediaId, before }) {
           bboxHeight: before.bboxHeight,
           sex: before.sex,
           lifeStage: before.lifeStage,
-          behavior: before.behavior
-        })
-      )
-      // createObservation auto-stamps human classification metadata. To
-      // restore the original (possibly machine-classified) state, follow with
-      // a stamp-free restore of the metadata fields.
-      unwrap(
-        await api.restoreObservation(studyId, before.observationID, {
+          behavior: before.behavior,
           observationType: before.observationType,
           classificationMethod: before.classificationMethod,
           classifiedBy: before.classifiedBy,

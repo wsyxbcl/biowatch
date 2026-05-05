@@ -265,7 +265,12 @@ The `setMediaFavorite` endpoint toggles a media item's favorite status. Favorite
 `observations:create` accepts optional `observationID` and `eventID` in its
 payload. When supplied (used by undo-of-delete), the row is inserted with those
 exact UUIDs instead of fresh ones; SQLite's PK uniqueness constraint still
-rejects a second insert with a live id.
+rejects a second insert with a live id. It also accepts optional
+`observationType` / `classificationMethod` / `classifiedBy` /
+`classificationTimestamp` / `classificationProbability` — when any of these are
+supplied, they are written verbatim instead of being auto-stamped as a fresh
+human classification. This lets undo-of-delete restore an originally
+machine-classified observation in a single IPC.
 
 `observations:restore` performs a plain `UPDATE` of the supplied fields without
 auto-stamping `classificationMethod` / `classifiedBy` / `classificationTimestamp`,

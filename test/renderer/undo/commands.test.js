@@ -111,16 +111,17 @@ describe('commands.delete_', () => {
     assert.equal(cmd.entry.before.observationID, 'obs-X')
 
     await cmd.inverse()
+    // Single IPC: createObservation with all original IDs + metadata.
+    // No follow-up restore (collapsed to avoid partial-failure desync).
+    assert.equal(calls.length, 2)
     const inverseCall = calls[1]
     assert.equal(inverseCall[0], 'create')
     assert.equal(inverseCall[2].observationID, 'obs-X')
     assert.equal(inverseCall[2].eventID, 'evt-X')
     assert.equal(inverseCall[2].scientificName, 'capreolus capreolus')
-    // followed by a stamp-free restore of the metadata
-    const followup = calls[2]
-    assert.equal(followup[0], 'restore')
-    assert.equal(followup[3].classificationMethod, 'machine')
-    assert.equal(followup[3].classifiedBy, 'SpeciesNet 4.0.1a')
+    assert.equal(inverseCall[2].classificationMethod, 'machine')
+    assert.equal(inverseCall[2].classifiedBy, 'SpeciesNet 4.0.1a')
+    assert.equal(inverseCall[2].classificationProbability, 0.9)
   })
 })
 
