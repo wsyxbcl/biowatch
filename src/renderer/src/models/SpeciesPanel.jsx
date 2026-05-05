@@ -5,11 +5,11 @@ const SMALL_LIST_THRESHOLD = 50
 
 const speciesCache = new Map()
 
-async function loadSpecies(filename) {
-  if (speciesCache.has(filename)) return speciesCache.get(filename)
-  const mod = await import(`../../../shared/species/${filename}`)
+async function loadSpecies(name) {
+  if (speciesCache.has(name)) return speciesCache.get(name)
+  const mod = await import(`../../../shared/species/${name}.json`)
   const data = mod.default
-  speciesCache.set(filename, data)
+  speciesCache.set(name, data)
   return data
 }
 

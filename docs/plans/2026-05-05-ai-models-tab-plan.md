@@ -826,7 +826,7 @@ export default function ModelCard({
       </div>
 
       <div className="text-xs text-gray-500 mb-1">
-        v{model.reference.version} · {formatSize(model.size_in_MB)} · ·{' '}
+        v{model.reference.version} · {formatSize(model.size_in_MB)} ·{' '}
         <strong>{model.species_count} species</strong>
       </div>
 

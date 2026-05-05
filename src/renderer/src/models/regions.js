@@ -13,7 +13,7 @@ export const REGIONS = {
     color: '#047857',
     badgeBg: '#d1fae5',
     badgeText: '#047857',
-    geojson: 'europe.geojson'
+    geojson: 'europe'
   },
   himalayas: {
     id: 'himalayas',
@@ -21,7 +21,7 @@ export const REGIONS = {
     color: '#be185d',
     badgeBg: '#fce7f3',
     badgeText: '#be185d',
-    geojson: 'himalayas.geojson'
+    geojson: 'himalayas'
   },
   custom: {
     id: 'custom',

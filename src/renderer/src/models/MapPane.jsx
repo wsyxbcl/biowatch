@@ -4,11 +4,11 @@ import { getRegion } from './regions'
 
 const geojsonCache = new Map()
 
-async function loadRegionGeoJSON(filename) {
-  if (geojsonCache.has(filename)) return geojsonCache.get(filename)
-  const mod = await import(`../../../shared/regions/${filename}`)
+async function loadRegionGeoJSON(name) {
+  if (geojsonCache.has(name)) return geojsonCache.get(name)
+  const mod = await import(`../../../shared/regions/${name}.json`)
   const data = mod.default
-  geojsonCache.set(filename, data)
+  geojsonCache.set(name, data)
   return data
 }
 

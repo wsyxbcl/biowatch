@@ -19,8 +19,8 @@ describe('REGIONS registry', () => {
   })
 
   test('europe and himalayas reference geojson files', () => {
-    assert.equal(REGIONS.europe.geojson, 'europe.geojson')
-    assert.equal(REGIONS.himalayas.geojson, 'himalayas.geojson')
+    assert.equal(REGIONS.europe.geojson, 'europe')
+    assert.equal(REGIONS.himalayas.geojson, 'himalayas')
   })
 })
 

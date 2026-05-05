@@ -170,7 +170,7 @@ export const modelZoo = [
     detectionConfidenceThreshold: 0.5,
     region: 'worldwide',
     species_count: '2,000+',
-    species_data: 'speciesnet.json'
+    species_data: 'speciesnet'
   },
   {
     reference: { id: 'deepfaune', version: '1.3' },
@@ -187,7 +187,7 @@ export const modelZoo = [
     detectionConfidenceThreshold: 0.5,
     region: 'europe',
     species_count: 26,
-    species_data: 'deepfaune.json'
+    species_data: 'deepfaune'
   },
   {
     reference: { id: 'manas', version: '1.0' },
@@ -204,7 +204,7 @@ export const modelZoo = [
     detectionConfidenceThreshold: 0.5,
     region: 'himalayas',
     species_count: 11,
-    species_data: 'manas.json'
+    species_data: 'manas'
   }
 ]
 
