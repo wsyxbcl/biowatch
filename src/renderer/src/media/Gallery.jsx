@@ -234,6 +234,19 @@ function ImageModal({
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState(null)
   const [selectedObservationId, setSelectedObservationId] = useState(null)
+  // Browse-mode trigger for the species picker: { id, epoch }. The id names
+  // which observation should open in browse mode (dropdown open with full
+  // study list, current species highlighted); the epoch increments on every
+  // label click so a re-click on the already-selected bbox forces the picker
+  // to remount and re-trigger. Cleared by an effect whenever id falls out of
+  // sync with selectedObservationId, so non-label selection paths never
+  // inherit browse mode.
+  const [pickerBrowse, setPickerBrowse] = useState({ id: null, epoch: 0 })
+  useEffect(() => {
+    if (pickerBrowse.id !== null && pickerBrowse.id !== selectedObservationId) {
+      setPickerBrowse((prev) => ({ id: null, epoch: prev.epoch }))
+    }
+  }, [pickerBrowse.id, selectedObservationId])
   const [showShortcuts, setShowShortcuts] = useState(false)
   // Draw mode state for creating new bboxes
   const [isDrawMode, setIsDrawMode] = useState(false)
@@ -1468,7 +1481,13 @@ function ImageModal({
                               bbox={bbox}
                               isSelected={bbox.observationID === selectedObservationId}
                               isValidated={bbox.classificationMethod === 'human'}
-                              onClick={() => setSelectedObservationId(bbox.observationID)}
+                              onClick={() => {
+                                setSelectedObservationId(bbox.observationID)
+                                setPickerBrowse((prev) => ({
+                                  id: bbox.observationID,
+                                  epoch: prev.epoch + 1
+                                }))
+                              }}
                             />
                           ))}
                         </div>
@@ -1494,6 +1513,8 @@ function ImageModal({
               mediaId={media?.mediaID}
               selectedObservationId={selectedObservationId}
               onSelectObservation={setSelectedObservationId}
+              pickerBrowseObservationId={pickerBrowse.id}
+              pickerBrowseEpoch={pickerBrowse.epoch}
               onUpdateClassification={handleClassificationUpdate}
               onDeleteObservation={handleDeleteObservation}
               onDrawRectangle={() => {

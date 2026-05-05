@@ -34,7 +34,9 @@ export default function ObservationRail({
   onDrawRectangle,
   onAddWholeImage,
   showShortcuts = false,
-  isLoading = false
+  isLoading = false,
+  pickerBrowseObservationId = null,
+  pickerBrowseEpoch = 0
 }) {
   const mode = getMediaMode(observations)
 
@@ -142,6 +144,8 @@ export default function ObservationRail({
                 }
                 onDelete={() => onDeleteObservation(obs.observationID)}
                 autoFocusPicker={userInteracted}
+                initialBrowse={obs.observationID === pickerBrowseObservationId}
+                browseEpoch={pickerBrowseEpoch}
               />
             ))}
           </div>

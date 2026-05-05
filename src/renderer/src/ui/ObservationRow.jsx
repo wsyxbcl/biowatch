@@ -40,7 +40,9 @@ export default function ObservationRow({
   onSelect,
   onUpdateClassification,
   onDelete,
-  autoFocusPicker = true
+  autoFocusPicker = true,
+  initialBrowse = false,
+  browseEpoch = 0
 }) {
   const rowRef = useRef(null)
 
@@ -145,10 +147,16 @@ export default function ObservationRow({
       {isSelected && (
         <div className="px-3 pb-3 pt-1 space-y-3" onClick={(e) => e.stopPropagation()}>
           <SpeciesPicker
+            // Remount on each label-click epoch when this row is the browse
+            // target, so a re-click on the already-selected bbox re-triggers
+            // browse mode (otherwise the picker's mount-time state ignores
+            // updated props).
+            key={initialBrowse ? `browse-${browseEpoch}` : 'normal'}
             studyId={studyId}
             currentScientificName={observation.scientificName}
             onSelect={handleSpeciesSelect}
             autoFocus={autoFocusPicker}
+            initialBrowse={initialBrowse}
           />
 
           <div>
