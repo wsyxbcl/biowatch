@@ -534,6 +534,8 @@ export async function getBestMedia(dbPath, options = {}) {
         m.fileName,
         m.timestamp,
         m.deploymentID,
+        d.locationID,
+        d.locationName,
         m.fileMediatype,
         m.favorite,
         r.observationID,
@@ -548,6 +550,7 @@ export async function getBestMedia(dbPath, options = {}) {
         r.compositeScore
       FROM ranked_per_species r
       INNER JOIN media m ON r.mediaID = m.mediaID
+      LEFT JOIN deployments d ON d.deploymentID = m.deploymentID
       WHERE r.species_rank <= ?
       ORDER BY r.compositeScore DESC
     `
