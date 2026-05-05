@@ -42,6 +42,7 @@ import ObservationRail from '../ui/ObservationRail'
 import BboxLabelMinimal from '../ui/BboxLabelMinimal'
 import { UndoProvider, useUndo } from '../undo/context.jsx'
 import * as commands from '../undo/commands.js'
+import { toast } from 'sonner'
 import {
   getImageBounds,
   screenToNormalized,
@@ -570,6 +571,12 @@ function ImageModal({
       invalidateAfterObservationChange()
     })
   }, [undo, invalidateAfterObservationChange])
+
+  // Surface failed undo/redo IPCs as a toast (the manager already drops the
+  // poisoned entry from its stacks, so retry isn't useful).
+  useEffect(() => {
+    return undo.onError((msg) => toast.error(msg))
+  }, [undo])
 
   // Optimistically patch the bboxes cache as soon as an entry is applied —
   // before the invalidation refetch lands. Without this there's a brief
