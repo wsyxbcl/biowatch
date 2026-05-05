@@ -1,0 +1,13 @@
+{
+  "species": [],
+  "summary": {
+    "total": 2000,
+    "classes": [
+      { "id": "mammal",    "label": "Mammals",       "icon": "🦌", "approx_count": 480 },
+      { "id": "bird",      "label": "Birds",         "icon": "🦅", "approx_count": 1200 },
+      { "id": "reptile",   "label": "Reptiles",      "icon": "🦎", "approx_count": 180 },
+      { "id": "amphibian", "label": "Amphibians",    "icon": "🐸", "approx_count": 90 },
+      { "id": "other",     "label": "Fish & other",  "icon": "🐟", "approx_count": 70 }
+    ]
+  }
+}
