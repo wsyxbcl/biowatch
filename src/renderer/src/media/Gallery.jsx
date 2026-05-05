@@ -2520,6 +2520,7 @@ function Gallery({
   return (
     <>
       <UndoProvider
+        studyId={id}
         getCurrentMediaId={() => selectedMediaIdRef.current}
         navigateTo={navigateToMediaId}
       >
