@@ -75,7 +75,7 @@ export default function SpeciesPanel({ model }) {
 
   return (
     <div
-      className="mt-2 p-2 bg-gray-50 rounded border border-gray-200"
+      className="mt-2 p-2 bg-gray-50 rounded border border-gray-200 cursor-default"
       onClick={(e) => e.stopPropagation()}
     >
       {searchable && (
