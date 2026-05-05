@@ -120,4 +120,10 @@ describe('restoreObservation', () => {
       /not found|0 rows/i
     )
   })
+
+  test('rejects empty fields object with a clear error (not "not found")', async () => {
+    await seedObservation()
+
+    await assert.rejects(() => restoreObservation(testDbPath, 'obs1', {}), /no fields/i)
+  })
 })

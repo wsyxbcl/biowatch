@@ -400,6 +400,12 @@ export async function restoreObservation(dbPath, observationID, fields) {
   log.info(`Restoring observation: ${observationID}`)
 
   try {
+    if (!fields || Object.keys(fields).length === 0) {
+      // No-op restores aren't meaningful, but they shouldn't masquerade as
+      // 'observation not found' — verify the row exists and return it.
+      throw new Error('restoreObservation called with no fields to update')
+    }
+
     const studyId = getStudyIdFromPath(dbPath)
     const db = await getDrizzleDb(studyId, dbPath)
 
