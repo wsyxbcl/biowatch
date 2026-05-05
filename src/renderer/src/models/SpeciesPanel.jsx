@@ -7,10 +7,7 @@ function SpeciesChip({ species }) {
   return (
     <HoverCard.Root openDelay={200} closeDelay={120}>
       <HoverCard.Trigger asChild>
-        <span
-          className="text-[10px] bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-700 cursor-default"
-          title={species.scientific}
-        >
+        <span className="text-[10px] bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-700 cursor-default">
           {species.common}
         </span>
       </HoverCard.Trigger>
