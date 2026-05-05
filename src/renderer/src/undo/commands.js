@@ -184,9 +184,7 @@ export function updateClassification({ api, studyId, mediaId, observationId, bef
   return {
     entry,
     forward: async () => {
-      const data = unwrap(
-        await api.updateObservationClassification(studyId, observationId, after)
-      )
+      const data = unwrap(await api.updateObservationClassification(studyId, observationId, after))
       if (data?.classificationTimestamp) {
         afterFields.classificationTimestamp = data.classificationTimestamp
       }
