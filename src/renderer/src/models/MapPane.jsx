@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import HideLeafletAttribution from '../ui/HideLeafletAttribution'
 import { getRegion } from './regions'
 
 const geojsonCache = new Map()
@@ -122,12 +123,14 @@ export default function MapPane({ modelZoo, selectedId, onSelect }) {
         maxBoundsViscosity={1.0}
         style={{ height: '100%', width: '100%' }}
       >
+        <HideLeafletAttribution />
         <TileLayer
           noWrap={true}
           bounds={[
             [-90, -180],
             [90, 180]
           ]}
+          attribution='&copy; <a href="https://www.esri.com">Esri</a>'
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         />
         {regionalModels.map((m) => {

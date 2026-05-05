@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useSearchParams } from 'react-router'
 import { useImportStatus } from '@renderer/hooks/import'
+import HideLeafletAttribution from './ui/HideLeafletAttribution'
 import SkeletonDeploymentsList from './ui/SkeletonDeploymentsList'
 import { resolveSelectedDeployment, withDeploymentParam } from './deployments/urlState'
 import DeploymentDetailPane from './deployments/DeploymentDetailPane'
@@ -358,6 +359,7 @@ function LocationMap({
         style={{ height: '100%', width: '100%' }}
         ref={mapRef}
       >
+        <HideLeafletAttribution />
         <LayersControl position="topright">
           <LayersControl.BaseLayer name="Satellite" checked={selectedLayer === 'Satellite'}>
             <TileLayer

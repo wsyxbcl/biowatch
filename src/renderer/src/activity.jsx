@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import ActivityMapContextMenu from './ui/ActivityMapContextMenu'
 import CircularTimeFilter, { DailyActivityRadar } from './ui/clock'
+import HideLeafletAttribution from './ui/HideLeafletAttribution'
 import MarkerHoverCard from './ui/MarkerHoverCard'
 import PlaceholderMap from './ui/PlaceholderMap'
 import SpeciesDistribution from './ui/speciesDistribution'
@@ -410,6 +411,7 @@ const SpeciesMap = ({
         boundsOptions={boundsOptions}
         className="rounded w-full h-full border border-gray-200"
       >
+        <HideLeafletAttribution />
         <MapContextMenuController onContextMenu={setContextMenu} mapRef={mapRef} />
         <LayersControl position="topright">
           <LayersControl.BaseLayer name="Satellite" checked={selectedLayer === 'Satellite'}>
