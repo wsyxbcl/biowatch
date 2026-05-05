@@ -1,0 +1,19 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Kyrgyzstan (placeholder bbox)" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [69.3, 39.2],
+          [80.3, 39.2],
+          [80.3, 43.3],
+          [69.3, 43.3],
+          [69.3, 39.2]
+        ]]
+      }
+    }
+  ]
+}
