@@ -1,0 +1,30 @@
+{
+  "species": [
+    { "common": "Red fox", "scientific": "Vulpes vulpes" },
+    { "common": "European badger", "scientific": "Meles meles" },
+    { "common": "Wild boar", "scientific": "Sus scrofa" },
+    { "common": "Roe deer", "scientific": "Capreolus capreolus" },
+    { "common": "Red deer", "scientific": "Cervus elaphus" },
+    { "common": "Eurasian lynx", "scientific": "Lynx lynx" },
+    { "common": "Grey wolf", "scientific": "Canis lupus" },
+    { "common": "Brown bear", "scientific": "Ursus arctos" },
+    { "common": "European hare", "scientific": "Lepus europaeus" },
+    { "common": "European rabbit", "scientific": "Oryctolagus cuniculus" },
+    { "common": "Pine marten", "scientific": "Martes martes" },
+    { "common": "Beech marten", "scientific": "Martes foina" },
+    { "common": "European polecat", "scientific": "Mustela putorius" },
+    { "common": "Eurasian otter", "scientific": "Lutra lutra" },
+    { "common": "Western hedgehog", "scientific": "Erinaceus europaeus" },
+    { "common": "Red squirrel", "scientific": "Sciurus vulgaris" },
+    { "common": "European beaver", "scientific": "Castor fiber" },
+    { "common": "Wildcat", "scientific": "Felis silvestris" },
+    { "common": "Domestic cat", "scientific": "Felis catus" },
+    { "common": "Domestic dog", "scientific": "Canis familiaris" },
+    { "common": "Common chamois", "scientific": "Rupicapra rupicapra" },
+    { "common": "Alpine ibex", "scientific": "Capra ibex" },
+    { "common": "Mouflon", "scientific": "Ovis orientalis" },
+    { "common": "Mountain hare", "scientific": "Lepus timidus" },
+    { "common": "Capercaillie", "scientific": "Tetrao urogallus" },
+    { "common": "Wood mouse", "scientific": "Apodemus sylvaticus" }
+  ]
+}

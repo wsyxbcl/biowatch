@@ -1,0 +1,15 @@
+{
+  "species": [
+    { "common": "Snow leopard", "scientific": "Panthera uncia" },
+    { "common": "Grey wolf", "scientific": "Canis lupus" },
+    { "common": "Red fox", "scientific": "Vulpes vulpes" },
+    { "common": "Eurasian lynx", "scientific": "Lynx lynx" },
+    { "common": "Pallas's cat", "scientific": "Otocolobus manul" },
+    { "common": "Brown bear", "scientific": "Ursus arctos" },
+    { "common": "Stone marten", "scientific": "Martes foina" },
+    { "common": "Siberian ibex", "scientific": "Capra sibirica" },
+    { "common": "Argali sheep", "scientific": "Ovis ammon" },
+    { "common": "Marmot", "scientific": "Marmota baibacina" },
+    { "common": "Tolai hare", "scientific": "Lepus tolai" }
+  ]
+}

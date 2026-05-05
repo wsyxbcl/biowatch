@@ -35,7 +35,7 @@ Biowatch uses an **HTTP-based ML model serving architecture** where each machine
 │  │   Renderer   │◄──────────►│      Main Process           │   │
 │  │   (React)    │            │                             │   │
 │  │              │            │  ┌─────────────────────┐    │   │
-│  │ models.jsx   │            │  │   server.ts         │    │   │
+│  │ models/      │            │  │   server.ts         │    │   │
 │  │ - UI controls│            │  │ - start/stop server │    │   │
 │  │ - status     │            │  │ - health checks     │    │   │
 │  └──────────────┘            │  │ - process lifecycle │    │   │
@@ -88,7 +88,12 @@ src/
 ├── preload/
 │   └── index.js                         # IPC bridge (exposes APIs to renderer)
 └── renderer/src/
-    └── models.jsx                       # UI component for model management
+    └── models/                          # UI for model management (split-view map + cards)
+        ├── index.jsx                    # MlZoo top-level component
+        ├── MapPane.jsx                  # Leaflet map with per-region overlays
+        ├── ModelListPane.jsx            # Ordered list of model cards
+        ├── ModelCard.jsx                # Per-model card (download/delete/progress)
+        └── …                            # SpeciesPanel, regions registry, helpers
 
 python-environments/common/
 ├── run_speciesnet_server.py    # SpeciesNet LitServe implementation
@@ -247,7 +252,12 @@ All models are defined in `src/shared/mlmodels.js`. Each model entry has the fol
   files: 3,  // Number of files in the archive
 
   // Inference configuration
-  detectionConfidenceThreshold: 0.5  // Minimum confidence for detections
+  detectionConfidenceThreshold: 0.5,  // Minimum confidence for detections
+
+  // Geographic / coverage metadata (used by the AI Models tab map)
+  region: 'worldwide' | 'europe' | 'himalayas' | …,  // Region key from src/renderer/src/models/regions.js
+  species_count: 26 | '2,000+',                       // Number for exact, string for approximate
+  species_data: 'deepfaune'                           // Loads src/shared/species/<species_data>.json
 }
 ```
 

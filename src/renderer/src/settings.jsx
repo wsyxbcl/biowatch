@@ -3,7 +3,7 @@ import { Navigate, Route, Routes, useNavigate } from 'react-router'
 import { ErrorBoundary } from 'react-error-boundary'
 import { useQuery } from '@tanstack/react-query'
 import { BrainCircuit, Info, Loader2, Settings2 } from 'lucide-react'
-import Zoo from './models'
+import MlZoo from './models'
 import { modelZoo } from '../../shared/mlmodels'
 import { Tab } from './ui/Tab'
 import Diagnostics from './Diagnostics'
@@ -139,7 +139,7 @@ export default function SettingsPage() {
             element={
               <ErrorBoundary FallbackComponent={ErrorFallback} key={'ml_zoo'}>
                 <div className="min-h-full flex flex-col">
-                  <Zoo modelZoo={modelZoo} />
+                  <MlZoo modelZoo={modelZoo} />
                 </div>
               </ErrorBoundary>
             }
