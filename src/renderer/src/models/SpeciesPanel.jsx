@@ -2,15 +2,23 @@ import { useEffect, useMemo, useState } from 'react'
 import * as HoverCard from '@radix-ui/react-hover-card'
 import { filterSpecies, classSummary } from './speciesPanelHelpers'
 import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
+import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
 
 function SpeciesChip({ species }) {
+  const info = resolveSpeciesInfo(species.scientific)
+  const hasContent = !!(info?.imageUrl || info?.blurb || info?.iucn)
+
+  const chip = (
+    <span className="text-[10px] bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-700 cursor-default">
+      {species.common}
+    </span>
+  )
+
+  if (!hasContent) return chip
+
   return (
     <HoverCard.Root openDelay={200} closeDelay={120}>
-      <HoverCard.Trigger asChild>
-        <span className="text-[10px] bg-white border border-gray-200 rounded-full px-2 py-0.5 text-gray-700 cursor-default">
-          {species.common}
-        </span>
-      </HoverCard.Trigger>
+      <HoverCard.Trigger asChild>{chip}</HoverCard.Trigger>
       <HoverCard.Portal>
         <HoverCard.Content
           side="top"
