@@ -631,27 +631,16 @@ function ImageModal({
       if (!before) return
 
       // Synchronously patch the bboxes cache so the row reflects the new
-      // value immediately. Mirrors every field the IPC will set, so the
-      // post-IPC refetch lands on identical data and produces no visible
-      // jump. Specifically: classificationProbability is cleared (CamtrapDP
-      // says human classifications don't carry a probability),
-      // classificationMethod / classifiedBy become 'human' / 'User', and
-      // classificationTimestamp gets stamped now. Clearing scientificName
-      // cascades to commonName, mirroring the IPC's three-case logic.
-      const sciIsCleared =
-        after.scientificName !== undefined &&
-        (after.scientificName === null || after.scientificName === '')
-      const optimisticFields = {
-        ...after,
-        classificationMethod: 'human',
-        classifiedBy: 'User',
-        classificationProbability: null,
-        classificationTimestamp: new Date().toISOString(),
-        ...(sciIsCleared ? { scientificName: null, commonName: null } : {})
-      }
+      // value immediately — without this, the dropdown closes against the
+      // pre-IPC cache and visibly snaps to the new value once the post-IPC
+      // onApplied listener fires.
       queryClient.setQueriesData({ queryKey: ['mediaBboxes', studyId, media?.mediaID] }, (old) =>
         Array.isArray(old)
-          ? old.map((b) => (b.observationID === observationID ? { ...b, ...optimisticFields } : b))
+          ? old.map((b) =>
+              b.observationID === observationID
+                ? { ...b, ...after, classificationMethod: 'human', classifiedBy: 'User' }
+                : b
+            )
           : old
       )
 
