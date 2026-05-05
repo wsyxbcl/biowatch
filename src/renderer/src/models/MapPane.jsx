@@ -12,7 +12,7 @@ async function loadRegionGeoJSON(name) {
   return data
 }
 
-export default function MapPane({ modelZoo, selectedId, onSelect, layout }) {
+export default function MapPane({ modelZoo, selectedId, onSelect }) {
   const worldwideModel = useMemo(
     () => modelZoo.find((m) => m.region === 'worldwide'),
     [modelZoo]
@@ -40,12 +40,10 @@ export default function MapPane({ modelZoo, selectedId, onSelect, layout }) {
     }
   }, [regionalModels])
 
-  const containerHeight = layout === 'stacked' ? '220px' : '100%'
-
   return (
     <div
-      className="relative bg-blue-50 border-r border-gray-200"
-      style={{ height: containerHeight, minHeight: containerHeight }}
+      className="relative bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden w-full"
+      style={{ aspectRatio: '2.8 / 1', minHeight: '220px' }}
     >
       {worldwideModel && (
         <button

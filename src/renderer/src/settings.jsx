@@ -138,7 +138,7 @@ export default function SettingsPage() {
             path="ml_zoo"
             element={
               <ErrorBoundary FallbackComponent={ErrorFallback} key={'ml_zoo'}>
-                <div className="min-h-full h-full flex flex-col">
+                <div className="min-h-full flex flex-col">
                   <MlZoo modelZoo={modelZoo} />
                 </div>
               </ErrorBoundary>

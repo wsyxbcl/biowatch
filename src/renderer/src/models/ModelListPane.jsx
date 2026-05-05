@@ -26,7 +26,7 @@ export default function ModelListPane({
   const ordered = useMemo(() => orderModels(modelZoo), [modelZoo])
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gray-50 p-3 min-w-0 h-full">
+    <div className="min-w-0">
       <div className="flex justify-between items-center mb-2 px-1">
         <span className="text-xs font-semibold text-gray-900">
           {modelZoo.length} models · {downloadedCount} downloaded
