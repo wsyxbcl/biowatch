@@ -243,6 +243,8 @@ export async function deleteObservation(dbPath, observationID) {
  *
  * @param {string} dbPath - Path to the SQLite database
  * @param {Object} observationData - The observation data
+ * @param {string} [observationData.observationID] - Optional explicit ID (used by undo to recreate deleted observations with their original UUID)
+ * @param {string} [observationData.eventID] - Optional explicit event ID (preserved alongside observationID)
  * @param {string} observationData.mediaID - Associated media ID
  * @param {string} observationData.deploymentID - Associated deployment ID
  * @param {string} observationData.timestamp - Media timestamp (ISO 8601)
@@ -311,9 +313,10 @@ export async function createObservation(dbPath, observationData) {
       behaviorSchema.parse(behavior)
     }
 
-    // Generate IDs
-    const observationID = crypto.randomUUID()
-    const eventID = crypto.randomUUID()
+    // Generate IDs (or accept explicit ones — used by the undo system to
+    // recreate a previously deleted observation with its original UUID).
+    const observationID = observationData.observationID ?? crypto.randomUUID()
+    const eventID = observationData.eventID ?? crypto.randomUUID()
 
     // Prepare observation data following CamTrap DP specification
     const newObservation = {
