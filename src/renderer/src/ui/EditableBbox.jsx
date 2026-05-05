@@ -152,6 +152,7 @@ export default function EditableBbox({
 
     // Commit changes if bbox moved - use ref to get current value
     const currentLocalBbox = localBboxRef.current
+    let committed = false
     if (currentLocalBbox && onUpdate && initialBboxRef.current) {
       const initial = initialBboxRef.current
       const hasChanged =
@@ -162,13 +163,29 @@ export default function EditableBbox({
 
       if (hasChanged) {
         onUpdate(currentLocalBbox)
+        committed = true
       }
     }
 
     cleanupDrag()
-    localBboxRef.current = null
-    setLocalBbox(null)
+    // If we committed an edit, leave localBbox set — the cache will catch up
+    // shortly and a useEffect on the bbox prop will clear localBbox at that
+    // point. Clearing now would cause one render with the old bbox prop and a
+    // visible flicker.
+    if (!committed) {
+      localBboxRef.current = null
+      setLocalBbox(null)
+    }
   }, [onUpdate, cleanupDrag, handleMouseMove])
+
+  // Once the bbox prop catches up to the committed local edit (or rolls back
+  // to the original on IPC failure), drop the local override.
+  useEffect(() => {
+    if (localBboxRef.current) {
+      localBboxRef.current = null
+      setLocalBbox(null)
+    }
+  }, [bbox.bboxX, bbox.bboxY, bbox.bboxWidth, bbox.bboxHeight])
 
   // Handle keyboard events for nudge and escape
   useEffect(() => {
