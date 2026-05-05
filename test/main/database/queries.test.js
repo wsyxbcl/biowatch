@@ -804,5 +804,25 @@ describe('Database Query Functions Tests', () => {
       assert.equal(result.media.length, 1, 'Should filter by dateRange when provided')
       assert.equal(result.media[0].mediaID, 'media001', 'Should return only media001')
     })
+
+    test('returns locationID and locationName for each media row', async () => {
+      await createTestData(testDbPath)
+
+      const result = await getMediaForSequencePagination(testDbPath, {
+        species: ['Cervus elaphus'],
+        dateRange: {}
+      })
+
+      assert.ok(result.media.length > 0, 'should return at least one media row')
+      for (const row of result.media) {
+        // Cervus elaphus media live on deploy001 → loc001 / Forest Site A
+        assert.equal(row.locationID, 'loc001', `row ${row.mediaID} should carry locationID`)
+        assert.equal(
+          row.locationName,
+          'Forest Site A',
+          `row ${row.mediaID} should carry locationName`
+        )
+      }
+    })
   })
 })
