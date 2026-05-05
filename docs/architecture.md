@@ -176,7 +176,16 @@ src/
 │   │   ├── Gallery.jsx               # Sequence grid + ImageModal + bbox editor
 │   │   └── DeploymentMediaGallery.jsx # Deployment-scoped wrapper around Gallery
 │   ├── activity.jsx         # Temporal analysis
-│   ├── models.jsx           # ML model manager UI
+│   ├── models/              # AI Models tab (split-view map + cards)
+│   │   ├── index.jsx                  # MlZoo top-level (responsive split/stacked)
+│   │   ├── MapPane.jsx                # Leaflet map + region overlays + worldwide chip
+│   │   ├── ModelListPane.jsx          # Ordered model cards + custom row
+│   │   ├── ModelCard.jsx              # One model card (Not / Downloading / Downloaded)
+│   │   ├── SpeciesPanel.jsx           # Per-model species browser (chips or grouped)
+│   │   ├── CustomModelCard.jsx        # "Custom model for your region" CTA
+│   │   ├── regions.js                 # Region color/label/geojson registry
+│   │   ├── speciesPanelHelpers.js     # Pure filter + class-summary helpers
+│   │   └── useResponsiveLayout.js     # split (≥900px) vs stacked (<900px)
 │   ├── settings.jsx         # Settings pages
 │   ├── export.jsx           # Export UI
 │   ├── files.jsx            # File statistics
