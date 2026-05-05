@@ -630,20 +630,6 @@ function ImageModal({
       const before = bboxes.find((b) => b.observationID === observationID)
       if (!before) return
 
-      // Synchronously patch the bboxes cache so the row reflects the new
-      // value immediately — without this, the dropdown closes against the
-      // pre-IPC cache and visibly snaps to the new value once the post-IPC
-      // onApplied listener fires.
-      queryClient.setQueriesData({ queryKey: ['mediaBboxes', studyId, media?.mediaID] }, (old) =>
-        Array.isArray(old)
-          ? old.map((b) =>
-              b.observationID === observationID
-                ? { ...b, ...after, classificationMethod: 'human', classifiedBy: 'User' }
-                : b
-            )
-          : old
-      )
-
       setClassificationUpdatePending(true)
       setClassificationUpdateError(null)
 
@@ -658,12 +644,6 @@ function ImageModal({
       try {
         await undo.exec(command)
       } catch (err) {
-        // Rollback the optimistic patch
-        queryClient.setQueriesData({ queryKey: ['mediaBboxes', studyId, media?.mediaID] }, (old) =>
-          Array.isArray(old)
-            ? old.map((b) => (b.observationID === observationID ? before : b))
-            : old
-        )
         setClassificationUpdateError(err)
         setClassificationUpdatePending(false)
         return
@@ -671,7 +651,7 @@ function ImageModal({
       invalidateAfterObservationChange()
       setClassificationUpdatePending(false)
     },
-    [bboxes, queryClient, studyId, media?.mediaID, undo, invalidateAfterObservationChange]
+    [bboxes, studyId, media?.mediaID, undo, invalidateAfterObservationChange]
   )
 
   // Mutation for toggling media favorite status
