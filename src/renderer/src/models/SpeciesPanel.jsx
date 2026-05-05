@@ -37,21 +37,24 @@ export default function SpeciesPanel({ model }) {
 
   const total = data.summary?.total ?? data.species.length
   const isLarge = total > SMALL_LIST_THRESHOLD
+  const searchable = data.species && data.species.length > 0
 
   return (
     <div
       className="mt-2 p-2 bg-gray-50 rounded border border-gray-200"
       onClick={(e) => e.stopPropagation()}
     >
-      <input
-        type="text"
-        placeholder={isLarge ? 'Search any species…' : 'Filter species…'}
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="w-full px-2 py-1 text-xs border border-gray-300 rounded mb-2 bg-white"
-      />
+      {searchable && (
+        <input
+          type="text"
+          placeholder={isLarge ? 'Search any species…' : 'Filter species…'}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full px-2 py-1 text-xs border border-gray-300 rounded mb-2 bg-white"
+        />
+      )}
       {isLarge ? (
-        <LargeView data={data} query={query} />
+        <LargeView data={data} query={query} searchable={searchable} />
       ) : (
         <SmallView data={data} query={query} />
       )}
@@ -79,14 +82,14 @@ function SmallView({ data, query }) {
   )
 }
 
-function LargeView({ data, query }) {
+function LargeView({ data, query, searchable }) {
   const summary = useMemo(() => classSummary(data), [data])
   const filtered = useMemo(
     () => filterSpecies(data.species || [], query),
     [data.species, query]
   )
 
-  if (query.trim()) {
+  if (searchable && query.trim()) {
     if (filtered.length === 0) {
       return <div className="text-xs text-gray-500 italic">No matches.</div>
     }
@@ -130,6 +133,11 @@ function LargeView({ data, query }) {
           </span>
         </div>
       ))}
+      {!searchable && (
+        <div className="text-[10px] text-gray-400 italic px-2 pt-2">
+          Per-species search coming soon.
+        </div>
+      )}
     </div>
   )
 }
