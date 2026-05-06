@@ -98,7 +98,11 @@ export async function getAllDeployments(dbPath) {
         locationID: deployments.locationID,
         locationName: deployments.locationName,
         latitude: deployments.latitude,
-        longitude: deployments.longitude
+        longitude: deployments.longitude,
+        deploymentStart: deployments.deploymentStart,
+        deploymentEnd: deployments.deploymentEnd,
+        cameraID: deployments.cameraID,
+        cameraModel: deployments.cameraModel
       })
       .from(deployments)
 
@@ -223,6 +227,46 @@ export async function getVehicleMediaCountForDeployment(dbPath, deploymentID) {
     .where(
       and(eq(observations.deploymentID, deploymentID), eq(observations.observationType, 'vehicle'))
     )
+    .get()
+
+  return Number(result?.count || 0)
+}
+
+/**
+ * Total media count at a single deployment.
+ *
+ * @param {string} dbPath - Path to the SQLite database
+ * @param {string} deploymentID
+ * @returns {Promise<number>}
+ */
+export async function getMediaCountForDeployment(dbPath, deploymentID) {
+  const studyId = getStudyIdFromPath(dbPath)
+  const db = await getDrizzleDb(studyId, dbPath, { readonly: true })
+
+  const result = await db
+    .select({ count: count().as('count') })
+    .from(media)
+    .where(eq(media.deploymentID, deploymentID))
+    .get()
+
+  return Number(result?.count || 0)
+}
+
+/**
+ * Total observation count at a single deployment (including blanks).
+ *
+ * @param {string} dbPath - Path to the SQLite database
+ * @param {string} deploymentID
+ * @returns {Promise<number>}
+ */
+export async function getObservationCountForDeployment(dbPath, deploymentID) {
+  const studyId = getStudyIdFromPath(dbPath)
+  const db = await getDrizzleDb(studyId, dbPath, { readonly: true })
+
+  const result = await db
+    .select({ count: count().as('count') })
+    .from(observations)
+    .where(eq(observations.deploymentID, deploymentID))
     .get()
 
   return Number(result?.count || 0)

@@ -217,6 +217,9 @@ export {
   insertDeployments,
   getDeploymentsActivity,
   getSpeciesForDeployment,
+  getMediaCountForDeployment,
+  getObservationCountForDeployment,
+  getBlankMediaCountForDeployment,
   // Species
   getSpeciesDistribution,
   getBlankMediaCount,
