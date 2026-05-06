@@ -32,7 +32,7 @@ export default function DeploymentSettingsPopover({ studyId, deployment }) {
     return () => window.removeEventListener('mousedown', onDown)
   }, [isOpen])
 
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats } = useQuery({
     queryKey: ['deploymentStats', studyId, deployment.deploymentID],
     queryFn: async () => {
       const response = await window.api.getDeploymentStats(studyId, deployment.deploymentID)
@@ -59,7 +59,7 @@ export default function DeploymentSettingsPopover({ studyId, deployment }) {
           ref={popoverRef}
           className="absolute right-0 top-full mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-[1100] p-4"
         >
-          <StatsSection stats={stats} isLoading={isLoading} />
+          <StatsSection stats={stats} />
           <CameraSection deployment={deployment} />
           <DeploymentSection deployment={deployment} />
         </div>
@@ -68,15 +68,13 @@ export default function DeploymentSettingsPopover({ studyId, deployment }) {
   )
 }
 
-function StatsSection({ stats, isLoading }) {
+function StatsSection({ stats }) {
   const mediaCount = stats?.mediaCount
   const observationCount = stats?.observationCount
   const blankCount = stats?.blankCount
 
   const blankRate =
-    mediaCount && mediaCount > 0 && typeof blankCount === 'number'
-      ? (blankCount / mediaCount) * 100
-      : null
+    mediaCount > 0 && typeof blankCount === 'number' ? (blankCount / mediaCount) * 100 : null
 
   return (
     <div className="mb-3">
@@ -85,23 +83,21 @@ function StatsSection({ stats, isLoading }) {
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <Tile value={isLoading ? '—' : formatCount(mediaCount)} label="Media" />
-        <Tile value={isLoading ? '—' : formatCount(observationCount)} label="Observations" />
+        <Tile value={formatCount(mediaCount)} label="Media" />
+        <Tile value={formatCount(observationCount)} label="Observations" />
       </div>
 
       <div className="flex items-baseline justify-between text-[11px] text-gray-500 mb-1">
         <span className="uppercase tracking-wide">Blank rate</span>
         <span className="text-gray-900 font-medium">
           {blankRate === null ? '—' : `${blankRate.toFixed(1)}%`}{' '}
-          <span className="text-gray-400 font-normal">
-            ({isLoading ? '—' : formatCount(blankCount)})
-          </span>
+          <span className="text-gray-400 font-normal">({formatCount(blankCount)})</span>
         </span>
       </div>
       <div className="h-1.5 bg-gray-200 rounded-sm overflow-hidden">
         <div
           className="h-full bg-gray-400"
-          style={{ width: blankRate === null ? '0%' : `${blankRate}%` }}
+          style={{ width: blankRate === null ? '0%' : `${Math.min(blankRate, 100)}%` }}
         />
       </div>
     </div>
@@ -171,7 +167,9 @@ function formatCount(n) {
 // dialect as the rest of the app (e.g. "Aug 1, 2024").
 function formatDate(s) {
   if (!s) return null
-  return new Date(s).toLocaleDateString('en-US', {
+  const d = new Date(s)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
