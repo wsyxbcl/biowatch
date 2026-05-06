@@ -7,6 +7,7 @@ import log from 'electron-log'
 import { existsSync, rmSync } from 'fs'
 import { getStudyDatabasePath, getStudyPath } from '../services/paths.js'
 import { listStudies, updateStudy } from '../services/study.js'
+import { getStudyCacheStats, clearStudyCache } from '../services/cache/study.js'
 import {
   closeStudyDatabase,
   checkStudyHasEventIDs,
@@ -99,6 +100,26 @@ export function registerStudyIPCHandlers() {
       return { data: sequenceGap }
     } catch (error) {
       log.error('Error setting study sequenceGap:', error)
+      return { error: error.message }
+    }
+  })
+
+  ipcMain.handle('study:get-cache-stats', async (_, studyId) => {
+    try {
+      const data = await getStudyCacheStats(studyId)
+      return { data }
+    } catch (error) {
+      log.error('Error getting study cache stats:', error)
+      return { error: error.message }
+    }
+  })
+
+  ipcMain.handle('study:clear-cache', async (_, studyId) => {
+    try {
+      const data = await clearStudyCache(studyId)
+      return { data }
+    } catch (error) {
+      log.error('Error clearing study cache:', error)
       return { error: error.message }
     }
   })
