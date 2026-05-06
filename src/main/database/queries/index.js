@@ -18,7 +18,10 @@ export {
   getLocationsActivity,
   insertDeployments,
   getDeploymentsActivity,
-  getSpeciesForDeployment
+  getSpeciesForDeployment,
+  getMediaCountForDeployment,
+  getObservationCountForDeployment,
+  getBlankMediaCountForDeployment
 } from './deployments.js'
 
 // Species

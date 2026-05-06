@@ -229,6 +229,46 @@ export async function getVehicleMediaCountForDeployment(dbPath, deploymentID) {
 }
 
 /**
+ * Total media count at a single deployment.
+ *
+ * @param {string} dbPath - Path to the SQLite database
+ * @param {string} deploymentID
+ * @returns {Promise<number>}
+ */
+export async function getMediaCountForDeployment(dbPath, deploymentID) {
+  const studyId = getStudyIdFromPath(dbPath)
+  const db = await getDrizzleDb(studyId, dbPath, { readonly: true })
+
+  const result = await db
+    .select({ count: count().as('count') })
+    .from(media)
+    .where(eq(media.deploymentID, deploymentID))
+    .get()
+
+  return Number(result?.count || 0)
+}
+
+/**
+ * Total observation count at a single deployment (including blanks).
+ *
+ * @param {string} dbPath - Path to the SQLite database
+ * @param {string} deploymentID
+ * @returns {Promise<number>}
+ */
+export async function getObservationCountForDeployment(dbPath, deploymentID) {
+  const studyId = getStudyIdFromPath(dbPath)
+  const db = await getDrizzleDb(studyId, dbPath, { readonly: true })
+
+  const result = await db
+    .select({ count: count().as('count') })
+    .from(observations)
+    .where(eq(observations.deploymentID, deploymentID))
+    .get()
+
+  return Number(result?.count || 0)
+}
+
+/**
  * Get activity data (observation counts) per location over time periods
  * @param {string} dbPath - Path to the SQLite database
  * @returns {Promise<Object>} - Activity data with periods and counts per location
