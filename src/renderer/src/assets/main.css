@@ -228,6 +228,14 @@ body:not(.mac-os) .overflow-y-auto::-webkit-scrollbar-thumb {
   overflow-wrap: anywhere;
 }
 
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
