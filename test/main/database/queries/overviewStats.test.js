@@ -20,6 +20,7 @@ import {
 let testBiowatchDataPath
 let testDbPath
 let testStudyId
+const utc = (value) => DateTime.fromISO(value, { zone: 'utc' })
 
 beforeEach(async () => {
   try {
@@ -66,8 +67,8 @@ describe('getOverviewStats', () => {
         deploymentID: 'd1',
         locationID: 'loc1',
         locationName: 'Site A',
-        deploymentStart: DateTime.fromISO('2023-03-15T10:00:00Z'),
-        deploymentEnd: DateTime.fromISO('2023-06-15T18:00:00Z'),
+        deploymentStart: utc('2023-03-15T10:00:00Z'),
+        deploymentEnd: utc('2023-06-15T18:00:00Z'),
         latitude: 46.7,
         longitude: 6.6,
         cameraID: 'cam1'
@@ -76,8 +77,8 @@ describe('getOverviewStats', () => {
         deploymentID: 'd2',
         locationID: 'loc2',
         locationName: 'Site B',
-        deploymentStart: DateTime.fromISO('2023-04-01T09:00:00Z'),
-        deploymentEnd: DateTime.fromISO('2023-08-01T19:00:00Z'),
+        deploymentStart: utc('2023-04-01T09:00:00Z'),
+        deploymentEnd: utc('2023-08-01T19:00:00Z'),
         latitude: 46.8,
         longitude: 6.7,
         cameraID: 'cam2'
@@ -106,8 +107,8 @@ describe('getOverviewStats', () => {
         deploymentID: 'd1',
         locationID: 'loc1',
         locationName: 'Site A',
-        deploymentStart: DateTime.fromISO('2023-01-01T00:00:00Z'),
-        deploymentEnd: DateTime.fromISO('2023-12-31T23:59:59Z'),
+        deploymentStart: utc('2023-01-01T00:00:00Z'),
+        deploymentEnd: utc('2023-12-31T23:59:59Z'),
         latitude: 46.7,
         longitude: 6.6,
         cameraID: 'cam1'
@@ -117,14 +118,14 @@ describe('getOverviewStats', () => {
       'a.jpg': {
         mediaID: 'm1',
         deploymentID: 'd1',
-        timestamp: DateTime.fromISO('2023-04-15T10:00:00Z'),
+        timestamp: utc('2023-04-15T10:00:00Z'),
         filePath: '/a.jpg',
         fileName: 'a.jpg'
       },
       'b.jpg': {
         mediaID: 'm2',
         deploymentID: 'd1',
-        timestamp: DateTime.fromISO('2023-09-20T12:00:00Z'),
+        timestamp: utc('2023-09-20T12:00:00Z'),
         filePath: '/b.jpg',
         fileName: 'b.jpg'
       }
@@ -134,7 +135,7 @@ describe('getOverviewStats', () => {
         observationID: 'o1',
         mediaID: 'm1',
         deploymentID: 'd1',
-        eventStart: DateTime.fromISO('2023-04-15T10:00:00Z'),
+        eventStart: utc('2023-04-15T10:00:00Z'),
         scientificName: 'Vulpes vulpes', // LC
         observationType: 'animal',
         count: 1
@@ -143,7 +144,7 @@ describe('getOverviewStats', () => {
         observationID: 'o2',
         mediaID: 'm2',
         deploymentID: 'd1',
-        eventStart: DateTime.fromISO('2023-09-20T12:00:00Z'),
+        eventStart: utc('2023-09-20T12:00:00Z'),
         scientificName: 'Acinonyx jubatus', // VU — counts as threatened
         observationType: 'animal',
         count: 1
@@ -175,8 +176,8 @@ describe('getOverviewStats', () => {
         deploymentID: 'd1',
         locationID: 'loc1',
         locationName: 'Site A',
-        deploymentStart: DateTime.fromISO('2023-01-01T00:00:00Z'),
-        deploymentEnd: DateTime.fromISO('2023-12-31T00:00:00Z'),
+        deploymentStart: utc('2023-01-01T00:00:00Z'),
+        deploymentEnd: utc('2023-12-31T00:00:00Z'),
         latitude: 46.7,
         longitude: 6.6,
         cameraID: 'cam1'
