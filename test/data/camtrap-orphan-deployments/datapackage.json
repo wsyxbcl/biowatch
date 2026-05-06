@@ -1,0 +1,12 @@
+{
+  "name": "test-camtrap-orphan-deployments",
+  "title": "Test CamTrap Dataset with Orphan Deployment References",
+  "description": "Fixture: media.csv and observations.csv reference deploymentIDs missing from deployments.csv",
+  "version": "1.0.0",
+  "created": "2024-01-01T00:00:00Z",
+  "resources": [
+    { "name": "deployments", "path": "deployments.csv" },
+    { "name": "media", "path": "media.csv" },
+    { "name": "observations", "path": "observations.csv" }
+  ]
+}

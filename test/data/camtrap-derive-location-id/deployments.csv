@@ -1,0 +1,8 @@
+deploymentID,locationID,locationName,latitude,longitude,deploymentStart,deploymentEnd
+d_curator,siteAlpha,Alpha,46.0,6.0,2023-01-01T00:00:00Z,2023-06-01T00:00:00Z
+d_synth_a,,,46.5,6.5,2023-01-01T00:00:00Z,2023-06-01T00:00:00Z
+d_synth_b,,,46.5,6.5,2023-07-01T00:00:00Z,2023-12-01T00:00:00Z
+d_synth_c,,,46.5,6.50001,2023-01-01T00:00:00Z,2023-06-01T00:00:00Z
+d_unique,,,47.0,7.0,2023-01-01T00:00:00Z,2023-06-01T00:00:00Z
+d_no_coords,,,,,2023-01-01T00:00:00Z,2023-06-01T00:00:00Z
+d_equator,,,0,0,2023-01-01T00:00:00Z,2023-06-01T00:00:00Z

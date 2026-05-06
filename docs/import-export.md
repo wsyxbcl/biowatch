@@ -92,6 +92,35 @@ common HTML entities, and rewrites `<ulink>` as `text (url)` so URLs survive
 in the plain-text value stored in `studies.description`. The same helper is
 applied to the Wildlife Insights `description` field as a no-op safety net.
 
+**Synthesized `locationID` from coordinates.** Some Camtrap DP datasets ship
+with `locationID` left blank but `latitude` / `longitude` populated (e.g.,
+Norwegian Alpine Tundra Rodents, Forest First Mammals). On import, when
+`locationID` is empty AND both coords are present, the parser writes
+`locationID = "biowatch-geo:<lat.4>,<lon.4>"` (4-decimal precision, ~11 m
+on the ground). Deployments at the same physical spot share the same
+synthesized ID, so re-deployments correctly group in the Deployments tab and
+the Overview's location count reflects physical reality. The
+`biowatch-geo:` prefix is self-identifying; the CamTrap-DP exporter strips
+it back to empty so synthesized values never leak into round-tripped
+packages.
+
+**Orphan deploymentID recovery.** Camtrap DP datasets occasionally ship with
+`media.csv` or `observations.csv` rows that reference `deploymentID`s missing
+from `deployments.csv` — typically a curator oversight. Without recovery the
+FK insert aborts mid-batch with `FOREIGN KEY constraint failed` and the entire
+study is lost. The importer pre-scans these files after the deployments
+insert (`src/main/services/import/parsers/orphanDeployments.js`), synthesizes
+a stub deployment row for each orphan ID (with `locationID = deploymentID`,
+NULL location/camera fields, and a `deploymentStart`/`deploymentEnd` window
+derived from the referencing rows' min/max timestamps), then proceeds with
+the media and observations inserts. Observation rows whose `mediaID` is
+non-empty but missing from `media.csv` are dropped (cannot be recovered with
+synthesized media — file path, mediatype, etc. cannot be fabricated). Counts
+are returned on the import result and surfaced in the import-complete
+progress payload as `synthesized.deployments`, `synthesized.orphanMediaRows`,
+`synthesized.orphanObservationRows`, and `synthesized.droppedObservationRows`,
+plus a per-stub `log.warn` line (capped at 50).
+
 ## Wildlife Insights Import
 
 **Format detection:** Looks for `projects.csv` in directory.
