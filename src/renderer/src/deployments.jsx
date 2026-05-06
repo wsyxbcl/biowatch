@@ -448,10 +448,15 @@ const DeploymentRow = memo(function DeploymentRow({
   onRenameLocation,
   sparklineMode,
   percentile90Count,
+  hasTimestamps = true,
   indented = false
 }) {
   const handleRowClick = useCallback(() => onSelect(location), [location, onSelect])
-  const total = (location.periods || []).reduce((sum, p) => sum + (p.count || 0), 0)
+  // Prefer the backend-provided totalCount (used in the no-timestamps path
+  // where periods is empty); fall back to summing periods for the legacy
+  // shape so unchanged callers keep working.
+  const total =
+    location.totalCount ?? (location.periods || []).reduce((sum, p) => sum + (p.count || 0), 0)
 
   return (
     <div
@@ -475,11 +480,13 @@ const DeploymentRow = memo(function DeploymentRow({
       </div>
 
       <div className="flex-1 min-w-0">
-        <Sparkline
-          periods={location.periods}
-          mode={sparklineMode}
-          percentile90Count={percentile90Count}
-        />
+        {hasTimestamps && (
+          <Sparkline
+            periods={location.periods}
+            mode={sparklineMode}
+            percentile90Count={percentile90Count}
+          />
+        )}
       </div>
 
       <div className="flex-shrink-0 w-16 text-right text-xs text-gray-500 tabular-nums">
@@ -530,6 +537,10 @@ function LocationsList({
   onSectionClick,
   onPeriodCountChange
 }) {
+  // Default true so legacy responses (and any external caller) still get the
+  // timeline; only the explicit `false` flag from getDeploymentsActivity hides
+  // the date axis / sparklines / hover affordances.
+  const hasTimestamps = activity?.hasTimestamps !== false
   const parentRef = useRef(null)
   const timelineRef = useRef(null)
   const containerRef = useRef(null)
@@ -571,6 +582,7 @@ function LocationsList({
   // Track hover at the list level instead of per-row, so scrolling between
   // rows doesn't cause mouseLeave→mouseMove flicker.
   const handleListMouseMove = (event) => {
+    if (!hasTimestamps) return
     const sNode = sparklineRulerRef.current
     const cNode = containerRef.current
     if (!sNode || !cNode) return
@@ -720,33 +732,35 @@ function LocationsList({
 
   return (
     <div ref={containerRef} className="relative flex-1 flex flex-col overflow-hidden min-h-0">
-      <header className="relative bg-white z-10 py-2 border-b border-gray-300 flex items-stretch">
-        {hoverX != null && hoverBucket && (
-          <div
-            className="absolute top-0 -translate-x-1/2 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 text-[11px] text-gray-700 whitespace-nowrap shadow-sm pointer-events-none z-20"
-            style={{ left: `${sparklineLeft + hoverX}px` }}
-          >
-            {formatBucketRange(hoverBucket.start, hoverBucket.end)}
-          </div>
-        )}
-        {/* Date markers stretch across the activity column. The 212px
-            left gutter matches the row's name column + leading padding;
-            the 16px right gutter matches the count column; toggle on
-            the far right. */}
-        <div className="w-[152px] flex-shrink-0" />
-        <div ref={timelineRef} className="flex-1 flex justify-between text-xs text-gray-600">
-          {dateMarkers.map((date, i) => (
-            <div key={i} className="flex flex-col items-center flex-1 min-w-0">
-              <span>{formatDateShort(date)}</span>
-              <div className="w-px h-2 bg-gray-400 mt-1" />
+      {hasTimestamps && (
+        <header className="relative bg-white z-10 py-2 border-b border-gray-300 flex items-stretch">
+          {hoverX != null && hoverBucket && (
+            <div
+              className="absolute top-0 -translate-x-1/2 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 text-[11px] text-gray-700 whitespace-nowrap shadow-sm pointer-events-none z-20"
+              style={{ left: `${sparklineLeft + hoverX}px` }}
+            >
+              {formatBucketRange(hoverBucket.start, hoverBucket.end)}
             </div>
-          ))}
-        </div>
-        <div className="w-16 flex-shrink-0" />
-        <div className="px-2 flex items-center">
-          <SparklineToggle mode={sparklineMode} onChange={setSparklineMode} />
-        </div>
-      </header>
+          )}
+          {/* Date markers stretch across the activity column. The 212px
+              left gutter matches the row's name column + leading padding;
+              the 16px right gutter matches the count column; toggle on
+              the far right. */}
+          <div className="w-[152px] flex-shrink-0" />
+          <div ref={timelineRef} className="flex-1 flex justify-between text-xs text-gray-600">
+            {dateMarkers.map((date, i) => (
+              <div key={i} className="flex flex-col items-center flex-1 min-w-0">
+                <span>{formatDateShort(date)}</span>
+                <div className="w-px h-2 bg-gray-400 mt-1" />
+              </div>
+            ))}
+          </div>
+          <div className="w-16 flex-shrink-0" />
+          <div className="px-2 flex items-center">
+            <SparklineToggle mode={sparklineMode} onChange={setSparklineMode} />
+          </div>
+        </header>
+      )}
 
       <div
         ref={parentRef}
@@ -805,6 +819,7 @@ function LocationsList({
                     onRenameLocation={onRenameLocation}
                     sparklineMode={sparklineMode}
                     percentile90Count={activity.percentile90Count}
+                    hasTimestamps={hasTimestamps}
                   />
                 )}
 
@@ -816,6 +831,7 @@ function LocationsList({
                     isSelected={sectionHasSelection(item.group)}
                     onRenameLocation={onRenameLocation}
                     onSectionClick={onSectionClick}
+                    hasTimestamps={hasTimestamps}
                   />
                 )}
 
@@ -827,6 +843,7 @@ function LocationsList({
                     onRenameLocation={onRenameLocation}
                     sparklineMode={sparklineMode}
                     percentile90Count={activity.percentile90Count}
+                    hasTimestamps={hasTimestamps}
                     indented
                   />
                 )}

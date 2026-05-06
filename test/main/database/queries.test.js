@@ -332,6 +332,7 @@ describe('Database Query Functions Tests', () => {
       assert(result.startDate, 'Should have start date')
       assert(result.endDate, 'Should have end date')
       assert(typeof result.percentile90Count === 'number', 'Should have percentile count')
+      assert.equal(result.hasTimestamps, true, 'Should flag timestamped data')
       assert(Array.isArray(result.deployments), 'Should have deployments array')
       assert.equal(result.deployments.length, 3, 'Should have 3 deployments')
 
@@ -345,6 +346,118 @@ describe('Database Query Functions Tests', () => {
           assert(period.end, 'Period should have end date')
           assert(typeof period.count === 'number', 'Period should have numeric count')
         })
+      })
+    })
+
+    test('falls back to timestamp-less list when deployments lack dates', async () => {
+      // Mirrors the LILA Biome Health import: deployments rows exist with
+      // observations against them, but no deploymentStart/deploymentEnd
+      // (the source COCO has no per-image datetime). Without the fallback
+      // the Deployments tab would render "No deployments found".
+      const manager = await createImageDirectoryDatabase(testDbPath)
+
+      await insertDeployments(manager, {
+        NB47: {
+          deploymentID: 'NB47',
+          locationID: 'NB47',
+          locationName: 'NB47',
+          deploymentStart: null,
+          deploymentEnd: null,
+          latitude: null,
+          longitude: null
+        },
+        NB46: {
+          deploymentID: 'NB46',
+          locationID: 'NB46',
+          locationName: 'NB46',
+          deploymentStart: null,
+          deploymentEnd: null,
+          latitude: null,
+          longitude: null
+        }
+      })
+
+      await insertMedia(manager, {
+        'm1.jpg': {
+          mediaID: 'm1',
+          deploymentID: 'NB47',
+          timestamp: null,
+          filePath: 'a/m1.jpg',
+          fileName: 'm1.jpg',
+          importFolder: 'a',
+          folderName: 'a'
+        },
+        'm2.jpg': {
+          mediaID: 'm2',
+          deploymentID: 'NB47',
+          timestamp: null,
+          filePath: 'a/m2.jpg',
+          fileName: 'm2.jpg',
+          importFolder: 'a',
+          folderName: 'a'
+        },
+        'm3.jpg': {
+          mediaID: 'm3',
+          deploymentID: 'NB46',
+          timestamp: null,
+          filePath: 'a/m3.jpg',
+          fileName: 'm3.jpg',
+          importFolder: 'a',
+          folderName: 'a'
+        }
+      })
+
+      await insertObservations(manager, [
+        {
+          observationID: 'o1',
+          mediaID: 'm1',
+          deploymentID: 'NB47',
+          eventID: null,
+          eventStart: null,
+          eventEnd: null,
+          scientificName: 'Loxodonta africana',
+          commonName: 'African Elephant',
+          classificationProbability: 0.9,
+          count: 1
+        },
+        {
+          observationID: 'o2',
+          mediaID: 'm2',
+          deploymentID: 'NB47',
+          eventID: null,
+          eventStart: null,
+          eventEnd: null,
+          scientificName: 'Loxodonta africana',
+          commonName: 'African Elephant',
+          classificationProbability: 0.8,
+          count: 1
+        },
+        {
+          observationID: 'o3',
+          mediaID: 'm3',
+          deploymentID: 'NB46',
+          eventID: null,
+          eventStart: null,
+          eventEnd: null,
+          scientificName: 'Panthera leo',
+          commonName: 'Lion',
+          classificationProbability: 0.85,
+          count: 1
+        }
+      ])
+
+      const result = await getDeploymentsActivity(testDbPath)
+
+      assert.equal(result.hasTimestamps, false, 'Should flag missing timestamps')
+      assert.equal(result.startDate, null, 'startDate should be null')
+      assert.equal(result.endDate, null, 'endDate should be null')
+      assert.equal(result.deployments.length, 2, 'Should still list both deployments')
+
+      const byId = Object.fromEntries(result.deployments.map((d) => [d.deploymentID, d]))
+      assert.equal(byId.NB47.totalCount, 2, 'NB47 should report its 2 observations')
+      assert.equal(byId.NB46.totalCount, 1, 'NB46 should report its 1 observation')
+      result.deployments.forEach((d) => {
+        assert.deepEqual(d.periods, [], 'periods should be empty without a date range')
       })
     })
   })

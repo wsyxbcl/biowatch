@@ -481,12 +481,43 @@ export async function getDeploymentsActivity(dbPath, periodCount) {
       .get()
 
     if (!dateRange || !dateRange.minDate || !dateRange.maxDate) {
-      // Return empty result if no deployments
+      // No-timestamps case: dataset has deployments but no datetimes (e.g.
+      // LILA Biome Health, where COCO images carry only `location`, not
+      // `datetime`). The list still wants every deployment with a total
+      // observation count; the renderer hides the timeline UI based on
+      // hasTimestamps. Without this branch the page short-circuits to
+      // "No deployments found" even though the deployments table is full.
+      const rows = await db
+        .select({
+          deploymentID: deployments.deploymentID,
+          locationName: deployments.locationName,
+          locationID: deployments.locationID,
+          deploymentStart: deployments.deploymentStart,
+          deploymentEnd: deployments.deploymentEnd,
+          latitude: deployments.latitude,
+          longitude: deployments.longitude,
+          totalCount: count(observations.observationID).as('totalCount')
+        })
+        .from(deployments)
+        .leftJoin(observations, eq(deployments.deploymentID, observations.deploymentID))
+        .groupBy(deployments.deploymentID)
+
       return {
         startDate: null,
         endDate: null,
         percentile90Count: 1,
-        deployments: []
+        hasTimestamps: false,
+        deployments: rows.map((row) => ({
+          deploymentID: row.deploymentID,
+          locationName: row.locationName,
+          locationID: row.locationID,
+          deploymentStart: row.deploymentStart,
+          deploymentEnd: row.deploymentEnd,
+          latitude: row.latitude,
+          longitude: row.longitude,
+          periods: [],
+          totalCount: Number(row.totalCount || 0)
+        }))
       }
     }
 
@@ -574,6 +605,7 @@ export async function getDeploymentsActivity(dbPath, periodCount) {
       startDate: dateRange.minDate,
       endDate: dateRange.maxDate,
       percentile90Count,
+      hasTimestamps: true,
       deployments: deploymentsResult
     }
 
