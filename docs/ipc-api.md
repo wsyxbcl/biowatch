@@ -110,6 +110,8 @@ Runs in the sequences worker thread (off the main process). Threatened species a
 
 **Note on `periodCount`:** `getDeploymentsActivity` accepts an optional `periodCount` (number of time-period buckets in the per-deployment timeline). The Deployments tab measures the timeline column width and passes a bucketed value (multiples of 10) so wider screens get more circles per row. Defaults to 20 if null/0/non-numeric, and is clamped to a maximum of 100 backend-side to bound the SUM(CASE)×N SQL aggregation.
 
+**Note on `hasTimestamps` / `totalCount`:** `getDeploymentsActivity` always returns a `hasTimestamps` boolean and always emits `totalCount` per deployment (observation count). When all deployments lack `deploymentStart`/`deploymentEnd` (e.g. LILA Biome Health, where the source COCO has no per-image datetimes), the response sets `hasTimestamps: false`, returns `startDate: null` / `endDate: null`, and emits each deployment with `periods: []`. In the timestamped branch, `totalCount` equals the sum of period counts. The renderer reads `hasTimestamps` to hide the date axis, sparkline column, and hover crosshair, while still listing every deployment with its `totalCount`.
+
 **Note on `setDeploymentLocationName`:** This updates the `locationName` for ALL deployments with the given `locationID`. When deployments share a `locationID` (grouped deployments), renaming any one updates the entire group.
 
 ### Locations

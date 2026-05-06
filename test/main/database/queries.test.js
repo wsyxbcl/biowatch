@@ -332,6 +332,7 @@ describe('Database Query Functions Tests', () => {
       assert(result.startDate, 'Should have start date')
       assert(result.endDate, 'Should have end date')
       assert(typeof result.percentile90Count === 'number', 'Should have percentile count')
+      assert.equal(result.hasTimestamps, true, 'Should flag timestamped data')
       assert(Array.isArray(result.deployments), 'Should have deployments array')
       assert.equal(result.deployments.length, 3, 'Should have 3 deployments')
 
@@ -339,12 +340,204 @@ describe('Database Query Functions Tests', () => {
         assert(deployment.deploymentID, 'Deployment should have ID')
         assert(deployment.locationName, 'Deployment should have location name')
         assert(Array.isArray(deployment.periods), 'Deployment should have periods array')
+        assert.equal(
+          typeof deployment.totalCount,
+          'number',
+          'Deployment should have numeric totalCount'
+        )
+        const periodSum = deployment.periods.reduce((s, p) => s + p.count, 0)
+        assert.equal(
+          deployment.totalCount,
+          periodSum,
+          'totalCount should equal sum of period counts'
+        )
 
         deployment.periods.forEach((period) => {
           assert(period.start, 'Period should have start date')
           assert(period.end, 'Period should have end date')
           assert(typeof period.count === 'number', 'Period should have numeric count')
         })
+      })
+    })
+
+    test('falls back to timestamp-less list when deployments lack dates', async () => {
+      // Mirrors the LILA Biome Health import: deployments rows exist with
+      // observations against them, but no deploymentStart/deploymentEnd
+      // (the source COCO has no per-image datetime). Without the fallback
+      // the Deployments tab would render "No deployments found".
+      const manager = await createImageDirectoryDatabase(testDbPath)
+
+      await insertDeployments(manager, {
+        NB47: {
+          deploymentID: 'NB47',
+          locationID: 'NB47',
+          locationName: 'NB47',
+          deploymentStart: null,
+          deploymentEnd: null,
+          latitude: null,
+          longitude: null
+        },
+        NB46: {
+          deploymentID: 'NB46',
+          locationID: 'NB46',
+          locationName: 'NB46',
+          deploymentStart: null,
+          deploymentEnd: null,
+          latitude: null,
+          longitude: null
+        }
+      })
+
+      await insertMedia(manager, {
+        'm1.jpg': {
+          mediaID: 'm1',
+          deploymentID: 'NB47',
+          timestamp: null,
+          filePath: 'a/m1.jpg',
+          fileName: 'm1.jpg',
+          importFolder: 'a',
+          folderName: 'a'
+        },
+        'm2.jpg': {
+          mediaID: 'm2',
+          deploymentID: 'NB47',
+          timestamp: null,
+          filePath: 'a/m2.jpg',
+          fileName: 'm2.jpg',
+          importFolder: 'a',
+          folderName: 'a'
+        },
+        'm3.jpg': {
+          mediaID: 'm3',
+          deploymentID: 'NB46',
+          timestamp: null,
+          filePath: 'a/m3.jpg',
+          fileName: 'm3.jpg',
+          importFolder: 'a',
+          folderName: 'a'
+        }
+      })
+
+      await insertObservations(manager, [
+        {
+          observationID: 'o1',
+          mediaID: 'm1',
+          deploymentID: 'NB47',
+          eventID: null,
+          eventStart: null,
+          eventEnd: null,
+          scientificName: 'Loxodonta africana',
+          commonName: 'African Elephant',
+          classificationProbability: 0.9,
+          count: 1
+        },
+        {
+          observationID: 'o2',
+          mediaID: 'm2',
+          deploymentID: 'NB47',
+          eventID: null,
+          eventStart: null,
+          eventEnd: null,
+          scientificName: 'Loxodonta africana',
+          commonName: 'African Elephant',
+          classificationProbability: 0.8,
+          count: 1
+        },
+        {
+          observationID: 'o3',
+          mediaID: 'm3',
+          deploymentID: 'NB46',
+          eventID: null,
+          eventStart: null,
+          eventEnd: null,
+          scientificName: 'Panthera leo',
+          commonName: 'Lion',
+          classificationProbability: 0.85,
+          count: 1
+        }
+      ])
+
+      const result = await getDeploymentsActivity(testDbPath)
+
+      assert.equal(result.hasTimestamps, false, 'Should flag missing timestamps')
+      assert.equal(result.startDate, null, 'startDate should be null')
+      assert.equal(result.endDate, null, 'endDate should be null')
+      assert.equal(result.deployments.length, 2, 'Should still list both deployments')
+
+      const byId = Object.fromEntries(result.deployments.map((d) => [d.deploymentID, d]))
+      assert.equal(byId.NB47.totalCount, 2, 'NB47 should report its 2 observations')
+      assert.equal(byId.NB46.totalCount, 1, 'NB46 should report its 1 observation')
+      result.deployments.forEach((d) => {
+        assert.deepEqual(d.periods, [], 'periods should be empty without a date range')
+      })
+    })
+
+    test('lists dateless deployments alongside timestamped ones', async () => {
+      // Mixed shape: at least one deployment has dates so the global
+      // MIN/MAX is non-null and we go through the timestamped branch, but a
+      // dateless deployment should still appear in the list (with empty
+      // sparkline / zero total).
+      const manager = await createImageDirectoryDatabase(testDbPath)
+
+      await insertDeployments(manager, {
+        dated: {
+          deploymentID: 'dated',
+          locationID: 'dated',
+          locationName: 'Dated Site',
+          deploymentStart: DateTime.fromISO('2024-01-01T00:00:00Z'),
+          deploymentEnd: DateTime.fromISO('2024-01-31T23:59:59Z'),
+          latitude: 0,
+          longitude: 0
+        },
+        dateless: {
+          deploymentID: 'dateless',
+          locationID: 'dateless',
+          locationName: 'Dateless Site',
+          deploymentStart: null,
+          deploymentEnd: null,
+          latitude: null,
+          longitude: null
+        }
+      })
+
+      await insertMedia(manager, {
+        'd1.jpg': {
+          mediaID: 'd1',
+          deploymentID: 'dated',
+          timestamp: DateTime.fromISO('2024-01-15T12:00:00Z'),
+          filePath: 'a/d1.jpg',
+          fileName: 'd1.jpg',
+          importFolder: 'a',
+          folderName: 'a'
+        }
+      })
+
+      await insertObservations(manager, [
+        {
+          observationID: 'obs-dated',
+          mediaID: 'd1',
+          deploymentID: 'dated',
+          eventID: 'e1',
+          eventStart: DateTime.fromISO('2024-01-15T12:00:00Z'),
+          eventEnd: DateTime.fromISO('2024-01-15T12:00:30Z'),
+          scientificName: 'Panthera leo',
+          commonName: 'Lion',
+          classificationProbability: 0.9,
+          count: 1
+        }
+      ])
+
+      const result = await getDeploymentsActivity(testDbPath)
+
+      assert.equal(result.hasTimestamps, true, 'Mixed case takes the timestamped branch')
+      assert.equal(result.deployments.length, 2, 'Both deployments should be listed')
+
+      const byId = Object.fromEntries(result.deployments.map((d) => [d.deploymentID, d]))
+      assert.equal(byId.dated.totalCount, 1, 'Dated deployment counts its 1 observation')
+      assert.equal(byId.dateless.totalCount, 0, 'Dateless deployment lists with zero count')
+      assert(byId.dateless.periods.length > 0, 'Dateless deployment still gets period buckets')
+      byId.dateless.periods.forEach((p) => {
+        assert.equal(p.count, 0, 'Dateless deployment has no observations in any bucket')
       })
     })
   })
