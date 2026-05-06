@@ -12,6 +12,9 @@ const api = {
   selectDeepfauneDataset: async () => {
     return await electronAPI.ipcRenderer.invoke('import:select-deepfaune')
   },
+  selectServalDataset: async () => {
+    return await electronAPI.ipcRenderer.invoke('import:select-serval')
+  },
   updateStudy: async (id, update) => {
     return await electronAPI.ipcRenderer.invoke('studies:update', id, update)
   },

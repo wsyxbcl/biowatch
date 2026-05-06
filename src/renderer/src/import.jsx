@@ -298,6 +298,16 @@ export default function Import({ studiesCount = 0 }) {
     navigate(`/study/${id}`)
   }
 
+  const handleServalCSV = async () => {
+    const result = await window.api.selectServalDataset()
+    if (!result?.id) return
+
+    const { id, path } = result
+    console.log('Serval CSV select', path)
+    await queryClient.invalidateQueries({ queryKey: ['studies'] })
+    navigate(`/study/${id}`)
+  }
+
   const handleDemoDataset = async () => {
     try {
       setIsDemoImporting(true)
@@ -836,6 +846,16 @@ export default function Import({ studiesCount = 0 }) {
               description="Deepfaune predictions"
             >
               <Button variant="outline" size="sm" className="shrink-0" onClick={handleDeepfauneCSV}>
+                Select
+              </Button>
+            </SourceRow>
+
+            <SourceRow
+              icon={FileSpreadsheet}
+              title="Serval CSV"
+              description="Serval tags.csv with Biowatch-compatible taglist"
+            >
+              <Button variant="outline" size="sm" className="shrink-0" onClick={handleServalCSV}>
                 Select
               </Button>
             </SourceRow>

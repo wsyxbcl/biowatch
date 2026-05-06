@@ -26,6 +26,7 @@ export const importerNames = /** @type {const} */ ([
   'camtrap/datapackage',
   'wildlife/folder',
   'deepfaune/csv',
+  'serval/csv',
   'local/images',
   'local/ml_run',
   'gbif/dataset',

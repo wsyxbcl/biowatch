@@ -16,6 +16,9 @@ extraResources:
     filter: ['*.py']
   - from: 'src/main/database/migrations'
     to: 'database/migrations'
+  - from: 'resources/taxonomy'
+    to: 'taxonomy'
+    filter: ['serval-taglist.csv']
 asarUnpack:
   - resources/**
   - node_modules/ffmpeg-static/**
