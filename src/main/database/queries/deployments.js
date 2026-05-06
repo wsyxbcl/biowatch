@@ -570,8 +570,10 @@ export async function getDeploymentsActivity(dbPath, periodCount) {
     // Transform aggregated data to expected format
     const allCounts = []
     const deploymentsResult = aggregatedData.map((row) => {
+      let totalCount = 0
       const deploymentPeriods = periods.map((period, i) => {
         const count = row[`period_${i}`] || 0
+        totalCount += count
         if (count > 0) {
           allCounts.push(count)
         }
@@ -590,7 +592,8 @@ export async function getDeploymentsActivity(dbPath, periodCount) {
         deploymentEnd: row.deploymentEnd,
         latitude: row.latitude,
         longitude: row.longitude,
-        periods: deploymentPeriods
+        periods: deploymentPeriods,
+        totalCount
       }
     })
 

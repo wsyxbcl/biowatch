@@ -21,11 +21,7 @@ const SectionHeader = memo(function SectionHeader({
     onSectionClick(group)
   }, [group, onSectionClick])
 
-  // In the no-timestamps path the aggregated periods are empty, so fall back
-  // to summing each child's totalCount.
-  const total = hasTimestamps
-    ? group.aggregatedPeriods.reduce((sum, p) => sum + (p.count || 0), 0)
-    : group.deployments.reduce((sum, d) => sum + (d.totalCount || 0), 0)
+  const total = group.deployments.reduce((sum, d) => sum + (d.totalCount || 0), 0)
 
   return (
     <div

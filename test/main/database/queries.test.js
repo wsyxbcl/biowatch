@@ -340,6 +340,17 @@ describe('Database Query Functions Tests', () => {
         assert(deployment.deploymentID, 'Deployment should have ID')
         assert(deployment.locationName, 'Deployment should have location name')
         assert(Array.isArray(deployment.periods), 'Deployment should have periods array')
+        assert.equal(
+          typeof deployment.totalCount,
+          'number',
+          'Deployment should have numeric totalCount'
+        )
+        const periodSum = deployment.periods.reduce((s, p) => s + p.count, 0)
+        assert.equal(
+          deployment.totalCount,
+          periodSum,
+          'totalCount should equal sum of period counts'
+        )
 
         deployment.periods.forEach((period) => {
           assert(period.start, 'Period should have start date')
@@ -458,6 +469,75 @@ describe('Database Query Functions Tests', () => {
       assert.equal(byId.NB46.totalCount, 1, 'NB46 should report its 1 observation')
       result.deployments.forEach((d) => {
         assert.deepEqual(d.periods, [], 'periods should be empty without a date range')
+      })
+    })
+
+    test('lists dateless deployments alongside timestamped ones', async () => {
+      // Mixed shape: at least one deployment has dates so the global
+      // MIN/MAX is non-null and we go through the timestamped branch, but a
+      // dateless deployment should still appear in the list (with empty
+      // sparkline / zero total).
+      const manager = await createImageDirectoryDatabase(testDbPath)
+
+      await insertDeployments(manager, {
+        dated: {
+          deploymentID: 'dated',
+          locationID: 'dated',
+          locationName: 'Dated Site',
+          deploymentStart: DateTime.fromISO('2024-01-01T00:00:00Z'),
+          deploymentEnd: DateTime.fromISO('2024-01-31T23:59:59Z'),
+          latitude: 0,
+          longitude: 0
+        },
+        dateless: {
+          deploymentID: 'dateless',
+          locationID: 'dateless',
+          locationName: 'Dateless Site',
+          deploymentStart: null,
+          deploymentEnd: null,
+          latitude: null,
+          longitude: null
+        }
+      })
+
+      await insertMedia(manager, {
+        'd1.jpg': {
+          mediaID: 'd1',
+          deploymentID: 'dated',
+          timestamp: DateTime.fromISO('2024-01-15T12:00:00Z'),
+          filePath: 'a/d1.jpg',
+          fileName: 'd1.jpg',
+          importFolder: 'a',
+          folderName: 'a'
+        }
+      })
+
+      await insertObservations(manager, [
+        {
+          observationID: 'obs-dated',
+          mediaID: 'd1',
+          deploymentID: 'dated',
+          eventID: 'e1',
+          eventStart: DateTime.fromISO('2024-01-15T12:00:00Z'),
+          eventEnd: DateTime.fromISO('2024-01-15T12:00:30Z'),
+          scientificName: 'Panthera leo',
+          commonName: 'Lion',
+          classificationProbability: 0.9,
+          count: 1
+        }
+      ])
+
+      const result = await getDeploymentsActivity(testDbPath)
+
+      assert.equal(result.hasTimestamps, true, 'Mixed case takes the timestamped branch')
+      assert.equal(result.deployments.length, 2, 'Both deployments should be listed')
+
+      const byId = Object.fromEntries(result.deployments.map((d) => [d.deploymentID, d]))
+      assert.equal(byId.dated.totalCount, 1, 'Dated deployment counts its 1 observation')
+      assert.equal(byId.dateless.totalCount, 0, 'Dateless deployment lists with zero count')
+      assert(byId.dateless.periods.length > 0, 'Dateless deployment still gets period buckets')
+      byId.dateless.periods.forEach((p) => {
+        assert.equal(p.count, 0, 'Dateless deployment has no observations in any bucket')
       })
     })
   })

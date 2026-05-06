@@ -452,11 +452,7 @@ const DeploymentRow = memo(function DeploymentRow({
   indented = false
 }) {
   const handleRowClick = useCallback(() => onSelect(location), [location, onSelect])
-  // Prefer the backend-provided totalCount (used in the no-timestamps path
-  // where periods is empty); fall back to summing periods for the legacy
-  // shape so unchanged callers keep working.
-  const total =
-    location.totalCount ?? (location.periods || []).reduce((sum, p) => sum + (p.count || 0), 0)
+  const total = location.totalCount ?? 0
 
   return (
     <div
@@ -557,6 +553,10 @@ function LocationsList({
   const [sparklineMode, setSparklineMode] = useSparklineMode(studyId)
 
   useEffect(() => {
+    // timelineRef lives inside the date-axis header, which is unmounted in
+    // no-timestamps mode. Reattaching when hasTimestamps flips back to true
+    // (e.g. study switch without a full LocationsList remount) ensures the
+    // observer picks up the freshly-mounted header.
     const tNode = timelineRef.current
     const cNode = containerRef.current
     const sNode = sparklineRulerRef.current
@@ -577,7 +577,7 @@ function LocationsList({
     ro.observe(cNode)
     ro.observe(sNode)
     return () => ro.disconnect()
-  }, [])
+  }, [hasTimestamps])
 
   // Track hover at the list level instead of per-row, so scrolling between
   // rows doesn't cause mouseLeave→mouseMove flicker.
