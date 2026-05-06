@@ -1,11 +1,10 @@
 import fs from 'fs'
 import path from 'path'
-import crypto from 'crypto'
 import csv from 'csv-parser'
 import { DateTime } from 'luxon'
-import { and, eq, gte, lte, sql, isNull, inArray } from 'drizzle-orm'
+import { and, eq, gte, lte, sql, isNull } from 'drizzle-orm'
 import {
-  getDrizzleDb,
+  getStudyDatabase,
   deployments,
   media,
   observations,
@@ -13,6 +12,8 @@ import {
 } from '../../../database/index.js'
 import log from '../../logger.js'
 import { getBiowatchDataPath } from '../../paths.js'
+import { normalizeScientificName } from '../../../../shared/commonNames/normalize.js'
+import { sanitizeDescription } from '../sanitizeDescription.js'
 
 /**
  * Import CamTrapDP dataset from a directory into a SQLite database
@@ -62,8 +63,10 @@ export async function importCamTrapDatasetWithPath(
     fs.mkdirSync(dbDir, { recursive: true })
   }
 
-  // Get Drizzle database connection
-  const db = await getDrizzleDb(id, dbPath)
+  // Get database manager and enable import mode PRAGMAs
+  const manager = await getStudyDatabase(id, dbPath)
+  const db = manager.getDb()
+  manager.setImportMode()
 
   // Get dataset name from datapackage.json
   let data
@@ -105,6 +108,8 @@ export async function importCamTrapDatasetWithPath(
 
     log.info(`Found ${existingFiles.length} CamTrapDP CSV files to import`)
 
+    const signal = options.signal || null
+
     // Process each CSV file in dependency order
     for (let fileIndex = 0; fileIndex < existingFiles.length; fileIndex++) {
       const { file, table, name } = existingFiles[fileIndex]
@@ -128,18 +133,32 @@ export async function importCamTrapDatasetWithPath(
       const columns = await getCSVColumns(filePath)
       log.debug(`Found ${columns.length} columns in ${file}`)
 
+      if (signal?.aborted) {
+        throw new DOMException('Import cancelled', 'AbortError')
+      }
+
       // Insert data using Drizzle with progress callback
-      await insertCSVData(db, filePath, table, name, columns, directoryPath, (batchProgress) => {
-        if (onProgress) {
-          onProgress({
-            currentFile: file,
-            fileIndex,
-            totalFiles: existingFiles.length,
-            phase: 'inserting',
-            ...batchProgress
-          })
-        }
-      })
+      await insertCSVData(
+        db,
+        manager,
+        filePath,
+        table,
+        name,
+        columns,
+        directoryPath,
+        (batchProgress) => {
+          if (onProgress) {
+            onProgress({
+              currentFile: file,
+              fileIndex,
+              totalFiles: existingFiles.length,
+              phase: 'inserting',
+              ...batchProgress
+            })
+          }
+        },
+        signal
+      )
 
       log.info(`Successfully imported ${file} into ${name} table`)
     }
@@ -172,7 +191,7 @@ export async function importCamTrapDatasetWithPath(
       id,
       name: options.nameOverride || data.name || null,
       title: data.title || null,
-      description: data.description || null,
+      description: sanitizeDescription(data.description),
       created: new Date().toISOString(),
       importerName: 'camtrap/datapackage',
       contributors: data.contributors || null,
@@ -191,6 +210,8 @@ export async function importCamTrapDatasetWithPath(
     log.error('Error importing dataset:', error)
     console.error('Error importing dataset:', error)
     throw error
+  } finally {
+    manager.resetImportMode()
   }
 }
 
@@ -221,89 +242,164 @@ async function getCSVColumns(filePath) {
 }
 
 /**
- * Insert CSV data into a Drizzle schema table
+ * Convert a JavaScript value to a SQLite-compatible value.
+ * SQLite only accepts: numbers, strings, bigints, buffers, and null.
+ * @param {any} value - JavaScript value to convert
+ * @returns {number|string|bigint|Buffer|null} SQLite-compatible value
+ */
+function toSqliteValue(value) {
+  if (value === undefined) return null
+  if (value === null) return null
+  if (typeof value === 'boolean') return value ? 1 : 0
+  if (typeof value === 'object') return JSON.stringify(value)
+  return value
+}
+
+/**
+ * Create a transaction-wrapped bulk inserter for high-performance batch inserts.
+ * Uses raw prepared statements instead of Drizzle ORM for maximum speed.
+ * @param {import('better-sqlite3').Database} sqlite - Raw better-sqlite3 connection
+ * @param {string} tableName - Name of the table to insert into
+ * @param {string[]} columns - Array of column names
+ * @returns {Function} Transaction-wrapped inserter function
+ */
+function createBulkInserter(sqlite, tableName, columns) {
+  const placeholders = columns.map(() => '?').join(', ')
+  const insertSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`
+  const stmt = sqlite.prepare(insertSql)
+
+  return sqlite.transaction((rows) => {
+    for (const row of rows) {
+      stmt.run(...columns.map((col) => toSqliteValue(row[col])))
+    }
+  })
+}
+
+/**
+ * Count rows in a CSV file via a fast newline-only scan (no parsing).
+ * Subtracts 1 for the header line.
+ * @param {string} filePath - Path to the CSV file
+ * @param {AbortSignal} signal - Optional abort signal for cancellation
+ * @returns {Promise<number>}
+ */
+async function countCsvRows(filePath, signal = null) {
+  return new Promise((resolve, reject) => {
+    const stream = fs.createReadStream(filePath)
+    let count = 0
+    if (signal) {
+      signal.addEventListener(
+        'abort',
+        () => stream.destroy(new DOMException('Import cancelled', 'AbortError')),
+        { once: true }
+      )
+    }
+    stream.on('data', (chunk) => {
+      for (let i = 0; i < chunk.length; i++) {
+        if (chunk[i] === 0x0a) count++
+      }
+    })
+    stream.on('end', () => resolve(Math.max(0, count - 1)))
+    stream.on('error', reject)
+  })
+}
+
+/**
+ * Insert CSV data into a Drizzle schema table.
+ * Streams rows and inserts batches as they fill (O(batchSize) memory).
+ * Uses raw prepared statements with transaction wrapping for maximum speed.
  * @param {Object} db - Drizzle database instance
+ * @param {Object} manager - StudyDatabaseManager instance (for raw SQLite access)
  * @param {string} filePath - Path to the CSV file
  * @param {Object} table - Drizzle table schema
  * @param {string} tableName - Name of the table
  * @param {string[]} columns - Array of column names from CSV
  * @param {string} directoryPath - Path to the CamTrapDP directory
  * @param {function} onProgress - Optional callback for progress updates
+ * @param {AbortSignal} signal - Optional abort signal for cancellation
  * @returns {Promise<void>}
  */
 async function insertCSVData(
   db,
+  manager,
   filePath,
   table,
   tableName,
   columns,
   directoryPath,
-  onProgress = null
+  onProgress = null,
+  signal = null
 ) {
   log.debug(`Beginning data insertion from ${filePath} to table ${tableName}`)
+  log.debug(`directoryPath: ${directoryPath}`)
 
-  return new Promise((resolve, reject) => {
-    const stream = fs.createReadStream(filePath).pipe(csv())
-    const rows = []
-    let rowCount = 0
+  const sqlite = manager.getSqlite()
+  const totalRows = await countCsvRows(filePath, signal)
+  log.debug(`Pre-scanned ${totalRows} rows in ${filePath}`)
 
-    log.debug(`directoryPath: ${directoryPath}`)
+  if (onProgress) {
+    onProgress({ insertedRows: 0, totalRows, batchNumber: 0 })
+  }
 
-    stream.on('data', (row) => {
-      // Transform CSV row data to match schema fields
-      const transformedRow = transformRowToSchema(row, tableName, columns, directoryPath)
+  const stream = fs.createReadStream(filePath).pipe(csv())
+  const pathCache = {} // caches file path resolution strategy (probed on first media row)
+  const batchSize = 2000
+  let batch = []
+  let inserter = null
+  let insertedRows = 0
+  let batchNumber = 0
+
+  try {
+    for await (const row of stream) {
+      if (signal?.aborted) {
+        throw new DOMException('Import cancelled', 'AbortError')
+      }
+
+      const transformedRow = transformRowToSchema(row, tableName, columns, directoryPath, pathCache)
       if (transformedRow) {
-        rows.push(transformedRow)
-        rowCount++
-      }
-    })
-
-    stream.on('end', async () => {
-      try {
-        if (rows.length > 0) {
-          // Use Drizzle batch inserts (transactions temporarily disabled for compatibility)
-          log.debug(`Starting bulk insert of ${rows.length} rows`)
-
-          // Insert in batches for better performance
-          const batchSize = 1000
-          const totalBatches = Math.ceil(rows.length / batchSize)
-
-          for (let i = 0; i < rows.length; i += batchSize) {
-            const batch = rows.slice(i, i + batchSize)
-            await db.insert(table).values(batch)
-
-            const insertedRows = Math.min(i + batchSize, rows.length)
-            const batchNumber = Math.floor(i / batchSize) + 1
-
-            log.debug(`Inserted batch ${batchNumber}/${totalBatches} into ${tableName}`)
-
-            // Report progress after each batch
-            if (onProgress) {
-              onProgress({
-                insertedRows,
-                totalRows: rows.length,
-                batchNumber,
-                totalBatches
-              })
-            }
-          }
-
-          log.info(`Completed insertion of ${rowCount} rows into ${tableName}`)
-        } else {
-          log.warn(`No valid rows found in ${filePath} for table ${tableName}`)
+        // Create bulk inserter on first row (need column names from transformed data)
+        if (!inserter) {
+          inserter = createBulkInserter(sqlite, tableName, Object.keys(transformedRow))
         }
-        resolve()
-      } catch (error) {
-        log.error(`Error during bulk insert for ${tableName}:`, error)
-        reject(error)
+        batch.push(transformedRow)
       }
-    })
 
-    stream.on('error', (error) => {
-      log.error(`Error reading CSV file ${filePath}:`, error)
-      reject(error)
-    })
-  })
+      if (batch.length >= batchSize) {
+        inserter(batch)
+        insertedRows += batch.length
+        batchNumber++
+        batch = []
+
+        log.debug(`Inserted batch ${batchNumber} into ${tableName} (${insertedRows} rows so far)`)
+
+        if (onProgress) {
+          onProgress({ insertedRows, totalRows, batchNumber })
+        }
+      }
+    }
+
+    // Insert remaining rows
+    if (batch.length > 0) {
+      inserter(batch)
+      insertedRows += batch.length
+      batchNumber++
+    }
+
+    // Final emission: snap totalRows to insertedRows so the bar reaches 100%
+    // even if some CSV rows were filtered by transformRowToSchema or the
+    // newline pre-count was slightly off.
+    if (onProgress) {
+      onProgress({ insertedRows, totalRows: insertedRows, batchNumber })
+    }
+
+    if (insertedRows > 0) {
+      log.info(`Completed insertion of ${insertedRows} rows into ${tableName}`)
+    } else {
+      log.warn(`No valid rows found in ${filePath} for table ${tableName}`)
+    }
+  } catch (error) {
+    log.error(`Error during insert for ${tableName}:`, error)
+    throw error
+  }
 }
 
 /**
@@ -314,13 +410,13 @@ async function insertCSVData(
  * @param {string} directoryPath - Path to the CamTrapDP directory
  * @returns {Object|null} - Transformed row data or null if invalid
  */
-function transformRowToSchema(row, tableName, columns, directoryPath) {
+function transformRowToSchema(row, tableName, columns, directoryPath, pathCache) {
   try {
     switch (tableName) {
       case 'deployments':
         return transformDeploymentRow(row)
       case 'media':
-        return transformMediaRow(row, directoryPath)
+        return transformMediaRow(row, directoryPath, pathCache)
       case 'observations':
         return transformObservationRow(row)
       default:
@@ -376,7 +472,7 @@ function transformDeploymentRow(row) {
 /**
  * Transform media CSV row to media schema
  */
-function transformMediaRow(row, directoryPath) {
+function transformMediaRow(row, directoryPath, pathCache) {
   const mediaID = row.mediaID || row.media_id
 
   // Skip rows without required primary key
@@ -405,7 +501,7 @@ function transformMediaRow(row, directoryPath) {
     mediaID,
     deploymentID: row.deploymentID || row.deployment_id || null,
     timestamp: transformDateField(row.timestamp),
-    filePath: transformFilePathField(row.filePath || row.file_path, directoryPath),
+    filePath: transformFilePathField(row.filePath || row.file_path, directoryPath, pathCache),
     fileName: row.fileName || row.file_name || path.basename(row.filePath || row.file_path || ''),
     fileMediatype: row.fileMediatype || row.file_mediatype || null,
     exifData,
@@ -432,12 +528,17 @@ function transformObservationRow(row) {
     eventID: row.eventID || row.event_id || null,
     eventStart: transformDateField(row.eventStart || row.event_start),
     eventEnd: transformDateField(row.eventEnd || row.event_end),
-    scientificName: row.scientificName || row.scientific_name || null,
+    scientificName: normalizeScientificName(row.scientificName || row.scientific_name),
+    // Convention: observationType='blank' rows MUST have null/empty
+    // scientificName. The Overview-tab species DISTINCT query (queries/
+    // overview.js) drops the observationType filter for index-coverage perf
+    // and relies on this — if a future importer produces blank-type rows
+    // with a populated scientificName, threatenedCount/speciesCount will
+    // double-count those rows.
     observationType: row.observationType || row.observation_type || null,
     commonName: row.commonName || row.common_name || null,
     classificationProbability: parseFloat(row.classificationProbability) || null,
     count: parseInt(row.count) || null,
-    prediction: row.prediction || null,
     lifeStage: row.lifeStage || row.life_stage || null,
     age: row.age || null,
     sex: row.sex || null,
@@ -498,7 +599,7 @@ function parseFloatOrNull(value) {
  * Transform file path field to absolute path
  * Handles cross-platform path separators and smart detection for file location
  */
-function transformFilePathField(filePath, directoryPath) {
+function transformFilePathField(filePath, directoryPath, pathCache) {
   if (!filePath) return null
 
   // If it's already an absolute path or URL, return as is
@@ -510,16 +611,26 @@ function transformFilePathField(filePath, directoryPath) {
   // Handle both forward and backward slashes from different OS exports
   const normalizedPath = filePath.split(/[\\/]/).join(path.sep)
 
-  // Smart detection: try camtrap directory first, then fall back to parent
+  // Use cached strategy if available (probed on first media row)
+  if (pathCache && pathCache.strategy !== undefined) {
+    if (pathCache.strategy === 'direct') {
+      return path.join(directoryPath, normalizedPath)
+    }
+    return path.join(path.dirname(directoryPath), normalizedPath)
+  }
+
+  // Probe: try camtrap directory first, then fall back to parent
   // This handles both:
   // 1. Re-imported exports where media is in media/ subfolder (new behavior)
   // 2. External datasets where media is in sibling directory (backward compat)
   const directPath = path.join(directoryPath, normalizedPath)
   if (fs.existsSync(directPath)) {
+    if (pathCache) pathCache.strategy = 'direct'
     return directPath
   }
 
   // Fall back to parent directory (original behavior for backward compatibility)
+  if (pathCache) pathCache.strategy = 'parent'
   const parentDir = path.dirname(directoryPath)
   return path.join(parentDir, normalizedPath)
 }
@@ -541,42 +652,10 @@ function transformFilePathField(filePath, directoryPath) {
  * @returns {Promise<{expanded: number, created: number}>} - Count of observations expanded and created
  */
 export async function expandObservationsToMedia(db, onProgress = null) {
-  const BATCH_SIZE = 1000
-  const DELETE_BATCH_SIZE = 500 // SQLite has 999 parameter limit
-
-  // 1. Single JOIN query to get ALL observation-media pairs at once
-  // This replaces N individual SELECT queries with 1 query
-  log.info('Finding observation-media pairs with single JOIN query...')
-
-  const pairs = await db
-    .select({
-      // Observation fields
-      observationID: observations.observationID,
-      deploymentID: observations.deploymentID,
-      eventID: observations.eventID,
-      eventStart: observations.eventStart,
-      eventEnd: observations.eventEnd,
-      scientificName: observations.scientificName,
-      observationType: observations.observationType,
-      commonName: observations.commonName,
-      classificationProbability: observations.classificationProbability,
-      count: observations.count,
-      lifeStage: observations.lifeStage,
-      age: observations.age,
-      sex: observations.sex,
-      behavior: observations.behavior,
-      bboxX: observations.bboxX,
-      bboxY: observations.bboxY,
-      bboxWidth: observations.bboxWidth,
-      bboxHeight: observations.bboxHeight,
-      detectionConfidence: observations.detectionConfidence,
-      modelOutputID: observations.modelOutputID,
-      classificationMethod: observations.classificationMethod,
-      classifiedBy: observations.classifiedBy,
-      classificationTimestamp: observations.classificationTimestamp,
-      // New mediaID from JOIN
-      newMediaID: media.mediaID
-    })
+  // 1. Count how many pairs will be created (for logging/progress)
+  log.info('Counting observation-media pairs...')
+  const countResult = await db
+    .select({ count: sql`COUNT(*)` })
     .from(observations)
     .innerJoin(
       media,
@@ -588,79 +667,118 @@ export async function expandObservationsToMedia(db, onProgress = null) {
     )
     .where(isNull(observations.mediaID))
 
-  if (pairs.length === 0) {
+  const pairCount = countResult[0].count
+  if (pairCount === 0) {
     log.info('No observation-media pairs found - skipping expansion step')
     return { expanded: 0, created: 0 }
   }
 
-  // Get unique original observation IDs for deletion
-  const originalObsIDs = [...new Set(pairs.map((p) => p.observationID))]
+  // Count original observations that will be expanded
+  const origCountResult = await db
+    .select({ count: sql`COUNT(DISTINCT ${observations.observationID})` })
+    .from(observations)
+    .innerJoin(
+      media,
+      and(
+        eq(observations.deploymentID, media.deploymentID),
+        gte(media.timestamp, observations.eventStart),
+        lte(media.timestamp, sql`COALESCE(${observations.eventEnd}, ${observations.eventStart})`)
+      )
+    )
+    .where(isNull(observations.mediaID))
 
-  log.info(
-    `Found ${pairs.length} observation-media pairs from ${originalObsIDs.length} original observations`
-  )
+  const originalCount = origCountResult[0].count
 
-  // 2. Build new observations array in memory
-  const newObservations = pairs.map((pair) => ({
-    observationID: crypto.randomUUID(),
-    mediaID: pair.newMediaID,
-    deploymentID: pair.deploymentID,
-    eventID: pair.eventID,
-    eventStart: pair.eventStart,
-    eventEnd: pair.eventEnd,
-    scientificName: pair.scientificName,
-    observationType: pair.observationType,
-    commonName: pair.commonName,
-    classificationProbability: pair.classificationProbability,
-    count: pair.count,
-    lifeStage: pair.lifeStage,
-    age: pair.age,
-    sex: pair.sex,
-    behavior: pair.behavior,
-    bboxX: pair.bboxX,
-    bboxY: pair.bboxY,
-    bboxWidth: pair.bboxWidth,
-    bboxHeight: pair.bboxHeight,
-    detectionConfidence: pair.detectionConfidence,
-    modelOutputID: pair.modelOutputID,
-    classificationMethod: pair.classificationMethod,
-    classifiedBy: pair.classifiedBy,
-    classificationTimestamp: pair.classificationTimestamp
-  }))
+  log.info(`Found ${pairCount} observation-media pairs from ${originalCount} original observations`)
 
-  // 3. Batch insert new observations
-  log.info(`Inserting ${newObservations.length} new observations in batches of ${BATCH_SIZE}...`)
-
-  for (let i = 0; i < newObservations.length; i += BATCH_SIZE) {
-    const batch = newObservations.slice(i, i + BATCH_SIZE)
-    await db.insert(observations).values(batch)
-
-    // Report progress after each batch
-    if (onProgress) {
-      onProgress({
-        currentFile: 'Linking observations to media...',
-        fileIndex: 0,
-        totalFiles: 1,
-        totalRows: newObservations.length,
-        insertedRows: Math.min(i + BATCH_SIZE, newObservations.length),
-        phase: 'expanding'
-      })
-    }
+  if (onProgress) {
+    onProgress({
+      currentFile: 'Linking observations to media...',
+      fileIndex: 0,
+      totalFiles: 1,
+      totalRows: pairCount,
+      insertedRows: 0,
+      phase: 'expanding'
+    })
   }
 
-  // 4. Batch delete original observations (SQLite has 999 parameter limit)
-  log.info(
-    `Deleting ${originalObsIDs.length} original observations in batches of ${DELETE_BATCH_SIZE}...`
-  )
+  // 2. INSERT INTO ... SELECT — expand observations to media entirely in SQL
+  // This avoids materializing millions of rows in JS memory
+  log.info(`Inserting ${pairCount} new observations via INSERT INTO...SELECT...`)
 
-  for (let i = 0; i < originalObsIDs.length; i += DELETE_BATCH_SIZE) {
-    const batch = originalObsIDs.slice(i, i + DELETE_BATCH_SIZE)
-    await db.delete(observations).where(inArray(observations.observationID, batch))
+  await db.run(sql`
+    INSERT INTO observations (
+      observationID, mediaID, deploymentID, eventID, eventStart, eventEnd,
+      scientificName, observationType, commonName, classificationProbability,
+      count, lifeStage, age, sex, behavior,
+      bboxX, bboxY, bboxWidth, bboxHeight,
+      detectionConfidence, modelOutputID,
+      classificationMethod, classifiedBy, classificationTimestamp
+    )
+    SELECT
+      lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' ||
+        substr(hex(randomblob(2)),2) || '-' ||
+        substr('89ab', abs(random()) % 4 + 1, 1) ||
+        substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6))),
+      m.mediaID,
+      o.deploymentID,
+      o.eventID,
+      o.eventStart,
+      o.eventEnd,
+      o.scientificName,
+      o.observationType,
+      o.commonName,
+      o.classificationProbability,
+      o.count,
+      o.lifeStage,
+      o.age,
+      o.sex,
+      o.behavior,
+      o.bboxX,
+      o.bboxY,
+      o.bboxWidth,
+      o.bboxHeight,
+      o.detectionConfidence,
+      o.modelOutputID,
+      o.classificationMethod,
+      o.classifiedBy,
+      o.classificationTimestamp
+    FROM observations o
+    INNER JOIN media m
+      ON o.deploymentID = m.deploymentID
+      AND m.timestamp >= o.eventStart
+      AND m.timestamp <= COALESCE(o.eventEnd, o.eventStart)
+    WHERE o.mediaID IS NULL
+  `)
+
+  // 3. Delete only the original observations that were actually expanded (had matching media)
+  log.info(`Deleting ${originalCount} original event-based observations...`)
+
+  await db.run(sql`
+    DELETE FROM observations
+    WHERE mediaID IS NULL
+      AND EXISTS (
+        SELECT 1 FROM media m
+        WHERE m.deploymentID = observations.deploymentID
+          AND m.timestamp >= observations.eventStart
+          AND m.timestamp <= COALESCE(observations.eventEnd, observations.eventStart)
+      )
+  `)
+
+  if (onProgress) {
+    onProgress({
+      currentFile: 'Linking observations to media...',
+      fileIndex: 0,
+      totalFiles: 1,
+      totalRows: pairCount,
+      insertedRows: pairCount,
+      phase: 'expanding'
+    })
   }
 
   log.info(
-    `Expanded ${originalObsIDs.length} event-based observations into ${newObservations.length} media-linked observations`
+    `Expanded ${originalCount} event-based observations into ${pairCount} media-linked observations`
   )
 
-  return { expanded: originalObsIDs.length, created: newObservations.length }
+  return { expanded: originalCount, created: pairCount }
 }

@@ -5,6 +5,297 @@ All notable changes to Biowatch will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.7] - 2026-05-05
+
+### Added
+
+- AI Models tab redesigned in Settings as a split / always-stacked view: new `ModelCard` with all download states, `MapPane` with region overlays + worldwide chip, `SpeciesPanel` with species chip and grouped variants, `CustomModelCard` slot for user models, and an intro copy explaining how to pick a model
+- Region registry with colors and per-region GeoJSON; hand-traced Europe MultiPolygon (mainland + Scandinavia + British Isles, including Finland, Corsica, Sardinia) and a broadened Himalayas (Tien Shan, Pamir, Hindu Kush, Karakoram, Kashmir, Ladakh); Manas region broadened
+- Per-model species data files (`speciesnet`, `deepfaune`, `manas`) and `region` + `species_count` fields on `mlmodels`; SpeciesNet species list populated with 2,493 entries for search
+- Map interactivity in the AI Models tab: auto-fit on region selection, full-width zoom for world view, species hovercards on the species panel
+- Undo/redo for annotation edits: `UndoProvider` + `useUndo` wired through the four observation mutations (create, delete, classification, bbox), with bounded per-study stacks, bbox-pulse animation on undo/redo, and failed operations surfaced as a sonner toast
+- `observations:restore` IPC and `restoreObservation` query backing the undo path; `createObservation` now accepts optional `observationID` and `eventID` for restore-with-same-id behavior; `getMediaBboxes` returns `mediaID`/`deploymentID`/`eventID`/`eventStart` for undo
+- `SpeciesPicker` browse mode opens the dropdown on bbox-label click
+
+### Changed
+
+- Old `models.jsx` removed; `MlZoo` is now the AI Models tab
+- `ModelCard` chrome toned down to match the app palette; Download/Delete moved to the top-right of the card header; Worldwide chip pinned top-right to clear zoom controls
+- AI Models species search caps results at 50
+
+### Fixed
+
+- AI Models: species hovercard suppressed when no Wikipedia info exists; search hidden when the species list is empty; browser tooltip dropped from region chips
+- Annotation undo: optimistic bbox patch held until the canonical `bboxes` prop catches up (no flicker); bboxes cache patched synchronously; queries invalidated after every undo/redo; pre-state read from the live `bboxes` array; undo stack cleared on study switch; failed undo/redo rolls back navigation and surfaces a buffer pulse; empty-fields restore rejected with a clear error; `delete_` inverse collapsed to a single IPC
+- `BehaviorSelector`: nested `<button>` removed for DOM validity; mirrors external value changes when the dropdown is closed
+- `EditableBbox`: keep local override until the bbox prop catches up
+- Truncated duplicate `bbox-pulse` keyframes block in CSS
+
+### Removed
+
+- Arrow-key bbox nudge in `EditableBbox`
+
+### Chore
+
+- Documentation updated for the AI Models tab split-view structure, the undo system, the `observations:restore` IPC, and `observationID` reuse
+
+## [1.8.6] - 2026-05-04
+
+### Added
+
+- Deployments tab list revamp: compact 40px rows (lat/lon dropped from row), location-based grouping with always-expanded `SectionHeader` (click flies map to group bounds), interleaved alphabetical sort, and a per-deployment `Sparkline` (bars / line / heatmap) toggled via `SparklineToggle` with localStorage persistence
+- `LocationPopover` for inline lat/lon editing on the Deployments detail pane, with a coordinate paste parser and a top-right "Place on map" affordance
+- Deployments timeline hover crosshair showing the date range under the cursor, plus a floating observation-count pill anchored to the cursor for the selected row
+- Activity tab: common names rendered alongside scientific names on the map, with a React hovercard
+- `Vehicle` pseudo-species entry in the species filter (Library + Deployments) alongside `Blank`, with a new `VEHICLE_SENTINEL` constant + `isVehicle` helper and a `getVehicleMediaCount` query/IPC
+- Mouse-wheel chevron centering on the Overview carousels (vertical-center on the image)
+
+### Changed
+
+- Overview tab: all sections fit at default viewport, tightened for small screens
+- Scientific-name display normalized to ICZN binomial form across the UI
+- Empty-species observations labeled `Blank` / `Vehicle` (instead of `—`); `getBlankMediaCount` redefined as "media without animal/vehicle observations"; gallery labels vehicle media as `Vehicle`; annotation rail labels `Vehicle` via `observationType` on `media-bboxes`
+- Deployments detail pane: name editor is underline-only with auto-save on blur/Enter (check/cancel icons dropped); name column tightened from 200px to 140px to free sparkline width; row hover deepened to gray-100/200 for heatmap contrast
+- `groupDeploymentsByLocation` extracted into a util; `scientific→common` map builder extracted into a shared util
+
+### Fixed
+
+- Sequences: deterministic dedup, `VEHICLE_SENTINEL` handling, and `EXISTS` probe for blank/vehicle classification
+- Sequences: tiebreak by `fileName` instead of `filePath` for stable ordering
+- `media-bboxes`: include `observationType` so the annotation rail can label vehicles correctly
+- Gallery: vehicle media labeled `Vehicle` instead of `Blank`
+
+### Performance
+
+- `observationType` index added; blank-media query now uses a covering index
+- `getBlankMediaCount` runs in the sequences worker
+
+### Chore
+
+- Drop redundant `observationType != 'blank'` proxy filter in queries
+- Document blank/vehicle pseudo-species semantics; document new deployments components in architecture overview
+
+## [1.8.5] - 2026-05-02
+
+### Added
+
+- Deployments tab inline media workspace: selected deployment opens an inline `Gallery` pane below the list/map with `?deploymentID` URL state, `Esc` to close, and click-selected-row to toggle off; `sequences:get-paginated` gains an optional `deploymentID` filter
+- Species filter popover on the Deployments detail pane, scoped to species present at the deployment, showing common name + scientific + count with hover card on filter rows
+- Inline-edit deployment name from the detail pane header
+- IUCN Red List CTA on threatened-species hover with rationale text and accent-border palette; new IUCN link-id builder script and bundled IDs for 2k+ species
+- Hover card on study list rows in the sidebar showing stats, description, and contributors
+- Mouse-wheel scrolling on the Overview best captures and featured species carousels
+- Description sanitization for Wildlife Insights and Camtrap DP imports (strips DocBook tags via new `sanitizeDescription` helper)
+- Reusable `Gallery` extracted into a shared module with `DeploymentMediaGallery` wrapper and embedded mode (no controls / outer border)
+
+### Changed
+
+- Overview tab revamp: KPI tiles (Deployments, Observations, Media) navigate to their tabs and are center-aligned with bottom-anchored sub details and compact formatting (e.g. 1.1k camera-days); description column fills the column height and "Show more" opens a modal with inline edit; vertical resize handle and map grows with panel height; "Cameras" tile renamed to "Deployments"; best captures and featured species cards bumped to w-56/h-40
+- Overview tab max width capped at 1950px and aligned left on wide screens
+- Deployments tab: list moved left of the map; subtle fade+slide animation on detail-pane open/close; thin resize handles; map matches Overview's `rounded-xl` + `shadow-md` and is capped at 500px tall; detail-pane header padding aligned with list-row padding (`px-2`); `'— media'` suffix dropped; widened vertical-handle margin
+- Media modal: zoom control moved into the top toolbar
+- Species filter sorts non-species entries to the bottom; common names capitalized
+- Sequence grouping `eventID` included in the no-species select
+
+### Fixed
+
+- Overview: threatened-species popover stays open when clicking inside its hover-card tooltip; hover card skipped on best captures lacking a Wikipedia image and blurb; domestic species excluded from the Featured species fallback; Span and threatened popovers portaled so panel overflow no longer clips them; IUCN legend stays aligned with the NE badge and uses a 2-col grid on narrow widths
+- Media modal: "No detections" badge dropped from the copy
+- Media: `ImageModal` raised above Leaflet map controls
+- Deployments: selection preserved when entering place mode on the active row
+
+### Chore
+
+- Expand species dictionary and blurbs
+
+## [1.8.4] - 2026-04-30
+
+### Added
+
+- Media modal revamp: persistent right-side `ObservationRail` (replaces the bbox popover) with collapsed/expanded `ObservationRow` inline editor, `AddObservationMenu` (Draw / Whole-image), and `BboxLabelMinimal` species-only image label
+- Reusable monochrome UI components extracted from the media editor: `SpeciesPicker`, `BehaviorSelector`, `LifeStageSelector`, `SexSelector`
+- Keyboard shortcuts: `?` toggles the shortcuts panel, `Ctrl+arrow` navigates sequences, `Tab`/`Shift+Tab` cycle observations even when the species picker is focused
+- Whole-image observation creation wired from the rail menu
+- Best-captures modal aligned with the media-modal chrome
+- Media grid cell: timestamp overlay and slim footer for `ThumbnailCard` and `SequenceCard`, with new `formatGridTimestamp` utility and `getSpeciesCountsFromSequence` helper for ×N counts
+- `getMediaMode` helper to keep the whole-image vs. bbox observation-mode invariant in one place
+
+### Changed
+
+- Image viewer area uses a black background; detection chrome and palette aligned across modal and gallery thumbnails
+- "Mark as blank" surfaced as an inline link for whole-image observations only; Delete is the consistent path for marking media blank
+- Species results float as an absolute dropdown (no more row jumping) and stay hidden until the user searches
+- Shortcuts panel pinned in the rail above observations with lightened `kbd` styling; arrow glyphs replaced with text words for portability
+- `Tab` / `Shift+Tab` relabelled "next / previous observation"; next/previous chevrons moved to the top toolbar; redundant top-bar draw button removed
+- Keyboard-shortcuts info icon moved to the top toolbar next to Heart / Eye
+- Files tab: long import paths truncate from the start so the filename stays visible
+- Study bar: tab labels hidden below the `lg` breakpoint, with compact tabs forced while an import is running
+- Deployments timeline adapts to screen width
+
+### Fixed
+
+- Sequence species counts use max-per-frame instead of summing across frames (bursts no longer inflate counts)
+- Clicking outside the modal always closes it (no deselect-first dance); clicking empty image area deselects the current observation
+- Empty-state flash suppressed in the rail during media navigation
+- Auto-select scoping (only in whole-image mode), IME handling in the species picker, label fallback, and assorted dead-code cleanup from review
+
+### Chore
+
+- Bump `pytest` in `python-environments/common` (dependabot)
+
+## [1.8.3] - 2026-04-28
+
+### Added
+
+- Settings → Info tab redesigned with about blurb, last 3 release notes parsed from `CHANGELOG.md`, disk-usage breakdown (AI Models, Studies, Logs) with reveal-in-folder, support/links section, and a license summary with bundled-text modal
+- `CHANGELOG.md` bundled with the packaged app so release notes are available offline
+
+### Changed
+
+- Create-study page restructured into tiered sources: slim recommended hero, primary slim rows, "Online datasets" section, and a collapsed "More import formats" disclosure
+- AI Models table width capped on wide screens
+
+### Fixed
+
+- Long dataset names truncate correctly in the import slim row selects (`min-w-0` lets `flex-1` shrink below content width)
+
+## [1.8.2] - 2026-04-28
+
+### Added
+
+- Resizable map/list split on the Deployments tab with persisted layout
+
+### Changed
+
+- Study settings page redesigned with a minimalistic rule-divided layout
+- Edge-to-edge light blue hover style on species list rows
+- Dropped sequence-grouping slider description in study settings
+
+### Fixed
+
+- Deployment rows cap height and truncate long names to keep the table tidy
+
+## [1.8.1] - 2026-04-28
+
+### Added
+
+- Species tooltip with blurb, IUCN Red List badge, Wikipedia fallback image, and Wikipedia link
+- Species-info module with GBIF and Wikipedia response parsers, species-candidate pre-filter, pure synchronous resolver, and build script CLI; ships initial `data.json` covering 2054 species
+- Inline IUCN Red List badge in species list rows
+- "Show more" toggle on tooltip blurb (default 5 lines)
+- Species hover tooltip shown whenever any image (study or Wikipedia) is available
+
+### Changed
+
+- Species hover migrated from Tooltip to HoverCard
+- Wikipedia fallback images letterboxed on black to avoid awkward crops
+- Inline IUCN badge aligned to the right of the row, left of the count
+
+### Fixed
+
+- HoverCard closes on scroll instead of riding with the row
+- Inline IUCN badge hidden on media and activity sidebars
+- Species-info build flushes progress every 25 entries and on SIGTERM; atomic `data.json` writes (temp + rename) so SIGKILL can't corrupt the file
+- Species-info rejects unknown IUCN codes, maps verbose IUCN strings to codes, and hardens rate-limit handling
+- Wikipedia thumbnail cache shared app-wide instead of per-study
+
+## [1.8.0] - 2026-04-27
+
+### Added
+
+- Common-name dictionary built from SpeciesNet, DeepFaune, and Manas label snapshots, with GBIF English-detection scorer and `extras.json` overrides
+- `useCommonName` hook + `resolveCommonName` helper, used across Overview, Species Distribution, and Media tabs
+- Common-name-first species row with in-study dot badge in the Media species picker
+- Fuzzy species search via Fuse.js with debounced `dictionarySearch`, arrow-key navigation, and Enter-to-select
+- Custom-species chip and delete mode in ObservationEditor; Enter commits custom species in zero-results state
+- Per-frame bbox overlay for videos in the media modal, with `getVideoFrameDetections` IPC and bbox toggle for videos with detections
+- Deployment marker clustering on the Overview map
+- GBIF import progress with pre-counted CSV rows so `current/total` reflects real progress
+
+### Changed
+
+- Kruger demo dataset rewritten with real scientific names and `commonName` column
+- GBIF dataset titles improved; unavailable datasets hidden in importer
+- Species hover tooltip and best-captures carousel show common names
+- Species list rows truncate long names with ellipsis
+- Common-name dictionary values lowercased at build time
+- Worker thread takes over sequence pagination, best-media selection, deployments activity, and SQL-aggregated species counts on Overview
+- SQL fast-paths for sequence-aware weekly/daily/hourly aggregations and heatmap
+- Indefinite caching for blank-media count, species distribution, best-media carousel/tooltip, and sequence-aware activity queries
+- Sequence-gap slider commits on release instead of every drag tick; sequence-aware queries gated on resolved gap
+- Overview map switched to lightweight deployments query
+- FFmpeg ffmpeg-static now unpacked in the packaged app
+
+### Fixed
+
+- Cache invalidation for species/count queries on delete and import complete; sequence-aware heatmap invalidates on class edit; best-media cache gaps closed
+- Heatmap routes unparseable timestamps through the null-timestamp branch
+- Deployments map keyed by `deploymentID` instead of `locationID`; un-deduped and renamed `getDeployments` → `getDeploymentLocations`
+- Daily activity falls back to `fullExtent` when `dateRange` is null
+- Species dropdown anchored over media to prevent clipping
+- Backspace/Delete no longer bubble out of the species editor
+- Video class is editable and grid/filter stay in sync
+- `ThumbnailBboxOverlay` skips bbox-less observations
+- bbox queries select `commonName` so labels prefer it
+- GBIF cache scoping tightened; lint unblocked in CI
+- Create Release workflow has write permissions
+
+## [1.7.2] - 2026-04-01
+
+### Added
+
+- Video timestamp extraction with layered fallback chain (FFmpeg metadata, filename parsing, mtime)
+- SQLite-backed persistent job queue for async ML inference work
+- Queue consumer, server manager, and inference consumer for ML pipeline
+- Queue scheduler wired to app, replacing old importer IPC handlers
+- Documentation website with MkDocs Material
+- CI docs build check for website changes
+
+### Changed
+
+- Move sequence computations to worker threads to unblock main thread
+- Cache FFmpeg binary path resolution across batch imports
+- Read only container header in FFmpeg timestamp extraction
+- Extract prediction utilities to break circular dependency
+- Bump pygments, requests, picomatch, pyasn1, brace-expansion dependencies
+
+### Fixed
+
+- Replace dynamic import of ffmpeg.js with static import
+- Add non-digit anchors to filename timestamp regexes
+- Use local-time getFullYear() in isValidTimestamp for consistency
+- Parse FFmpeg creation_time as UTC instead of local time
+- Restore speed and ETA in queue-based import status
+- Store importPath in modelRuns for provenance tracking
+- Include cancelled jobs in queue status totals
+- Reset scheduler state when consumer exits
+- Await consumer teardown in QueueScheduler.stopStudy
+
+## [1.7.1] - 2026-03-19
+
+### Added
+
+- Unit tests for detection_utils functions
+
+### Changed
+
+- Register local-file as a privileged scheme with startup helper
+- Bump python common environment to 0.1.4
+- Bump torch from 2.6.0 to 2.7.0
+- Bump speciesnet from 5.0.0 to 5.0.3
+- Extract shared detection functions into detection_utils module
+- Rename video_utils.py to utils.py and use safe_imread in all servers
+- Remove importer after completion
+
+### Fixed
+
+- Unpack ffmpeg-static in electron app package
+- Skip duplicate media on re-import to prevent UNIQUE constraint errors
+- Stream local-file responses and support suffix byte ranges
+- Fallback to a free port when preferred port is occupied
+- Handle error predictions in speciesnet parseScientificName
+- Skip macOS resource fork files and handle corrupt images gracefully
+
 ## [1.7.0] - 2026-02-09
 
 ### Added
@@ -274,6 +565,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Activity heatmaps
 - Overview statistics
 
+[1.8.7]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.6...v1.8.7
+[1.8.6]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.5...v1.8.6
+[1.8.5]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.4...v1.8.5
+[1.8.4]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.3...v1.8.4
+[1.8.3]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.2...v1.8.3
+[1.8.2]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.1...v1.8.2
+[1.8.1]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.0...v1.8.1
+[1.8.0]: https://github.com/earthtoolsmaker/biowatch/compare/v1.7.2...v1.8.0
+[1.7.2]: https://github.com/earthtoolsmaker/biowatch/compare/v1.7.1...v1.7.2
+[1.7.1]: https://github.com/earthtoolsmaker/biowatch/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/earthtoolsmaker/biowatch/compare/v1.6.1...v1.7.0
 [1.6.1]: https://github.com/earthtoolsmaker/biowatch/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/earthtoolsmaker/biowatch/compare/v1.5.0...v1.6.0

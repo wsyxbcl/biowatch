@@ -7,7 +7,7 @@ files:
   - '!**/.vscode/*'
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!python-environments/*'
 extraResources:
@@ -16,6 +16,9 @@ extraResources:
     filter: ['*.py']
   - from: 'src/main/database/migrations'
     to: 'database/migrations'
+  - from: 'resources/taxonomy'
+    to: 'taxonomy'
+    filter: ['serval-taglist.csv']
 asarUnpack:
   - resources/**
   - node_modules/ffmpeg-static/**
@@ -73,5 +76,6 @@ publish:
   provider: github
   owner: earthtoolsmaker
   repo: biowatch
+  releaseType: release
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/

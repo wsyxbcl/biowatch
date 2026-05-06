@@ -83,6 +83,15 @@ const filesToProcess = [
 ]
 ```
 
+**Description sanitization.** Camtrap DP packages generated from GBIF/EML
+metadata frequently contain DocBook inline markup (`<emphasis>`, `<para>`,
+`<ulink url="…"><citetitle>…</citetitle></ulink>`, etc.) in the `description`
+field. On import the description passes through
+`src/main/services/import/sanitizeDescription.js`, which strips tags, decodes
+common HTML entities, and rewrites `<ulink>` as `text (url)` so URLs survive
+in the plain-text value stored in `studies.description`. The same helper is
+applied to the Wildlife Insights `description` field as a no-op safety net.
+
 ## Wildlife Insights Import
 
 **Format detection:** Looks for `projects.csv` in directory.
@@ -275,6 +284,18 @@ Most complex import pipeline with streaming ML inference.
 
 **Key file:** `src/main/services/import/importer.js`
 
+### Video Timestamp Extraction
+
+For images, timestamps are extracted from EXIF metadata (`DateTimeOriginal`, `CreateDate`, `MediaCreateDate`) using the `exifr` library. However, `exifr` does not support video container formats (MP4, MOV, AVI), so a dedicated fallback chain is used for video files:
+
+1. **FFmpeg container metadata** — Reads `creation_time` from the video container using the bundled FFmpeg binary
+2. **Filename pattern parsing** — Recognizes common camera trap naming conventions (e.g., `RCNX0001_20240315_143022.MP4`, `VID_20240315_143022.mp4`)
+3. **File modification time** — Last resort fallback using filesystem mtime. Note: mtime may be unreliable when files are copied from SD cards. FAT32/exFAT (common on camera trap SD cards) stores timestamps at 2-second resolution in local time without timezone info, so copying across timezones can shift the time. Some copy tools or SD card readers may also reset timestamps entirely. This is why mtime is used only as a last resort.
+
+Each extracted timestamp is validated to reject known-bad values: QuickTime epoch (1904-01-01), Unix epoch (1970-01-01), pre-2000 dates, and future dates. The source of the extracted timestamp is stored in `exifData.timestampSource` for auditability.
+
+**Key file:** `src/main/services/import/timestamp.js`
+
 ### Prediction Flow
 
 ```javascript
@@ -423,6 +444,22 @@ function generateDataPackage(studyId, studyName, metadata) {
 }
 ```
 
+## Activity Map PNG Export
+
+Saves the Activity tab's species distribution map (Leaflet basemap + pie chart markers + legend) as a PNG file. Triggered from a right-click context menu on the map.
+
+**Flow:**
+
+1. Renderer (`src/renderer/src/activity.jsx` → `SpeciesMap`) listens for Leaflet's `contextmenu` event via a `useMapEvents` controller.
+2. Right-click renders a small fixed-position menu (`src/renderer/src/ui/ActivityMapContextMenu.jsx`) with **Save map as PNG…**.
+3. On click, `html-to-image` rasterises `map.getContainer()` at `pixelRatio: 2` with a filter that strips the zoom and layer-toggle controls (attribution stays for OSM/Esri compliance).
+4. The base64 PNG data URL is sent to main via `window.api.exportActivityMapPng({ dataUrl, defaultFilename })`.
+5. Main (`src/main/ipc/activity.js`) shows `dialog.showSaveDialog`, then `fs.promises.writeFile`s the decoded buffer.
+
+**Default filename:** `activity-map-<study-slug>-<YYYY-MM-DD>.png`, written to the OS Downloads folder unless the user picks elsewhere.
+
+**Tile CORS:** both `<TileLayer>` components in `SpeciesMap` set `crossOrigin=""` so the Esri World_Imagery and OSM tiles can be rendered onto the canvas without tainting it.
+
 ## Image Directory Export
 
 Organizes images into species-named folders.
@@ -548,6 +585,8 @@ Remote images from GBIF, Agouti, and LILA imports are cached to disk for offline
 
 ## Cancellation
 
+### Export Cancellation
+
 Exports support cancellation:
 
 ```javascript
@@ -560,6 +599,29 @@ if (activeExport.isCancelled) {
 }
 ```
 
+### Import Cancellation (GBIF & LILA)
+
+GBIF and LILA imports support cancellation via `AbortController`. When cancelled, the partially created study database is deleted.
+
+```javascript
+// Cancel active GBIF import (datasetKey must match the active import)
+await window.api.cancelGbifImport(datasetKey)
+
+// Cancel active LILA import (datasetId must match the active import)
+await window.api.cancelLilaImport(datasetId)
+```
+
+The cancellation signal (`AbortSignal`) is threaded through the entire pipeline:
+- **Downloads**: Aborts the fetch reader loop in `downloadFileWithRetry`
+- **Extraction**: Destroys the unzipper read stream in `extractZip`
+- **Database imports**: Checked between batch inserts (every 1000-2000 rows)
+
+On cancellation:
+1. The active operation throws an `AbortError`
+2. The study database is closed and its directory is deleted
+3. Temporary download/extraction files are cleaned up
+4. A `stage: 'cancelled'` progress event is sent to the renderer
+
 ---
 
 ## Key Files
@@ -571,6 +633,7 @@ if (activeExport.isCancelled) {
 | `src/main/services/import/parsers/deepfaune.js` | DeepFaune CSV import |
 | `src/main/services/import/parsers/lila.js` | LILA dataset import (COCO Camera Traps) |
 | `src/main/services/import/importer.js` | Image folder import with ML |
+| `src/main/services/import/timestamp.js` | Video timestamp extraction with fallback chain |
 | `src/main/services/import/index.js` | Re-exports all import functions |
 | `src/main/services/export/exporter.js` | All export functionality |
 | `src/main/services/download.ts` | File download with retry |

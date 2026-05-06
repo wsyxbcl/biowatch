@@ -1,6 +1,49 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import * as HoverCard from '@radix-ui/react-hover-card'
 import { ChevronLeft, ChevronRight, CameraOff, X, Heart, Play, Loader2 } from 'lucide-react'
+import { useCommonName } from '../utils/commonNames'
+import { formatScientificName } from '../utils/scientificName'
+import DeploymentLinkPill from '../media/DeploymentLinkPill'
+import SpeciesTooltipContent from './SpeciesTooltipContent'
+import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
+import { useHorizontalWheelScroll } from '../hooks/useHorizontalWheelScroll'
+
+function toTitleCase(str) {
+  return str.replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/**
+ * Renders the common name (title-cased) for a carousel thumbnail label.
+ * Falls back to the scientific name when no common name resolves.
+ */
+function SpeciesThumbnailLabel({ scientificName }) {
+  const common = useCommonName(scientificName)
+  if (!scientificName) return <>Unknown species</>
+  if (common && common !== scientificName) return <>{toTitleCase(common)}</>
+  return <>{formatScientificName(scientificName)}</>
+}
+
+/**
+ * Renders "Common name (Scientific name)" when a common name resolves,
+ * otherwise just the scientific name. Empty input renders "Blank" — matching
+ * the convention used in BboxLabel/SpeciesLabel for unidentified observations.
+ */
+function SpeciesHeading({ scientificName, tone = 'light' }) {
+  const common = useCommonName(scientificName)
+  const sciClass =
+    tone === 'dark' ? 'italic text-gray-300 font-normal' : 'italic text-gray-500 font-normal'
+  if (!scientificName) return <>Blank</>
+  if (common && common !== scientificName) {
+    return (
+      <>
+        {toTitleCase(common)}{' '}
+        <span className={sciClass}>({formatScientificName(scientificName)})</span>
+      </>
+    )
+  }
+  return <>{formatScientificName(scientificName)}</>
+}
 
 /**
  * Constructs a file URL for the local file or cached-image protocol
@@ -107,88 +150,117 @@ function ImageViewerModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[1001]"
+      className="fixed inset-0 z-[1001] flex items-center justify-center bg-black/85 p-4"
       onClick={handleClose}
     >
-      {/* Close button */}
-      <button
-        onClick={handleClose}
-        className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
-        aria-label="Close"
-      >
-        <X size={24} />
-      </button>
-
-      {/* Favorite button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          favoriteMutation.mutate({ mediaID: media.mediaID, favorite: !isFavorite })
-        }}
-        className={`absolute top-4 right-16 z-10 p-2 rounded-full transition-colors ${
-          isFavorite
-            ? 'bg-red-500 text-white hover:bg-red-600'
-            : 'bg-black/50 hover:bg-black/70 text-white'
-        }`}
-        aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-        title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-      >
-        <Heart size={24} fill={isFavorite ? 'currentColor' : 'none'} />
-      </button>
-
-      {/* Previous button */}
-      {hasPrevious && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onPrevious()
-          }}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
-          aria-label="Previous image"
+      <div className="relative max-w-7xl w-full h-full flex items-center justify-center">
+        <div
+          className="bg-white rounded-lg overflow-hidden shadow-2xl max-h-[90vh] flex flex-col max-w-full"
+          onClick={(e) => e.stopPropagation()}
         >
-          <ChevronLeft size={28} />
-        </button>
-      )}
+          {/* Top toolbar */}
+          <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-gray-200 bg-white">
+            <div className="flex items-center gap-2 min-w-0 flex-1 text-xs text-gray-500">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onPrevious()
+                }}
+                disabled={!hasPrevious}
+                className="w-8 h-8 rounded-md flex items-center justify-center text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                aria-label="Previous image"
+                title="Previous (←)"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onNext()
+                }}
+                disabled={!hasNext}
+                className="w-8 h-8 rounded-md flex items-center justify-center text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                aria-label="Next image"
+                title="Next (→)"
+              >
+                <ChevronRight size={18} />
+              </button>
+              <span className="truncate">
+                {media.timestamp ? new Date(media.timestamp).toLocaleString() : 'No timestamp'}
+              </span>
+            </div>
 
-      {/* Next button */}
-      {hasNext && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onNext()
-          }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
-          aria-label="Next image"
-        >
-          <ChevronRight size={28} />
-        </button>
-      )}
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  favoriteMutation.mutate({ mediaID: media.mediaID, favorite: !isFavorite })
+                }}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                  isFavorite
+                    ? 'text-red-600 bg-red-50 hover:bg-red-100'
+                    : 'text-gray-500 hover:bg-gray-100'
+                }`}
+                aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
+              </button>
 
-      {/* Image container */}
-      <div
-        className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {imageError ? (
-          <div className="flex flex-col items-center justify-center bg-gray-800 rounded-lg p-16">
-            <CameraOff size={48} className="text-gray-400 mb-4" />
-            <p className="text-gray-400">Image not available</p>
+              <div className="w-px h-5 bg-gray-200 mx-1" />
+
+              <button
+                onClick={handleClose}
+                className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                aria-label="Close modal"
+                title="Close (Esc)"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
-        ) : (
-          <img
-            src={constructImageUrl(media.filePath, studyId)}
-            alt={media.scientificName || 'Wildlife'}
-            className="max-w-full max-h-[90vh] object-contain rounded-lg"
-            onError={() => setImageError(true)}
-          />
-        )}
 
-        {/* Species info overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 rounded-b-lg">
-          <p className="text-white text-lg font-medium">{media.scientificName || 'No species'}</p>
-          {media.timestamp && (
-            <p className="text-white/70 text-sm">{new Date(media.timestamp).toLocaleString()}</p>
-          )}
+          {/* Media area */}
+          <div className="flex-1 min-h-0 flex items-center justify-center bg-black overflow-hidden relative">
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-black/60 text-white text-sm pointer-events-none">
+              <SpeciesHeading scientificName={media.scientificName} tone="dark" />
+            </div>
+            {imageError ? (
+              <div className="flex flex-col items-center justify-center bg-gray-800 text-gray-400 aspect-[4/3] min-w-[70vw] max-h-[calc(90vh-152px)]">
+                <CameraOff size={128} />
+                <span className="mt-4 text-lg font-medium">Image not available</span>
+                {media.fileName && <span className="mt-2 text-sm">{media.fileName}</span>}
+              </div>
+            ) : (
+              <img
+                src={constructImageUrl(media.filePath, studyId)}
+                alt={media.scientificName || 'Wildlife'}
+                className="max-w-full max-h-[calc(90vh-152px)] w-auto h-auto object-contain"
+                onError={() => setImageError(true)}
+              />
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="px-4 py-2.5 bg-gray-50 flex-shrink-0 border-t border-gray-200">
+            <div className="flex items-center gap-3 min-w-0">
+              {media.fileName && (
+                <span className="font-mono text-[11px] text-gray-400 truncate min-w-0 flex-1">
+                  {media.fileName}
+                </span>
+              )}
+              {media.deploymentID && (
+                <DeploymentLinkPill
+                  studyId={studyId}
+                  deploymentID={media.deploymentID}
+                  locationName={media.locationName}
+                  locationID={media.locationID}
+                  interactive={true}
+                  onNavigate={handleClose}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -350,129 +422,156 @@ function VideoViewerModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[1001]"
+      className="fixed inset-0 z-[1001] flex items-center justify-center bg-black/85 p-4"
       onClick={handleClose}
     >
-      {/* Close button */}
-      <button
-        onClick={handleClose}
-        className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
-        aria-label="Close"
-      >
-        <X size={24} />
-      </button>
-
-      {/* Favorite button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          favoriteMutation.mutate({ mediaID: media.mediaID, favorite: !isFavorite })
-        }}
-        className={`absolute top-4 right-16 z-10 p-2 rounded-full transition-colors ${
-          isFavorite
-            ? 'bg-red-500 text-white hover:bg-red-600'
-            : 'bg-black/50 hover:bg-black/70 text-white'
-        }`}
-        aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-        title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-      >
-        <Heart size={24} fill={isFavorite ? 'currentColor' : 'none'} />
-      </button>
-
-      {/* Previous button */}
-      {hasPrevious && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onPrevious()
-          }}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
-          aria-label="Previous video"
+      <div className="relative max-w-7xl w-full h-full flex items-center justify-center">
+        <div
+          className="bg-white rounded-lg overflow-hidden shadow-2xl max-h-[90vh] flex flex-col max-w-full"
+          onClick={(e) => e.stopPropagation()}
         >
-          <ChevronLeft size={28} />
-        </button>
-      )}
+          {/* Top toolbar */}
+          <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-gray-200 bg-white">
+            <div className="flex items-center gap-2 min-w-0 flex-1 text-xs text-gray-500">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onPrevious()
+                }}
+                disabled={!hasPrevious}
+                className="w-8 h-8 rounded-md flex items-center justify-center text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                aria-label="Previous video"
+                title="Previous (←)"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onNext()
+                }}
+                disabled={!hasNext}
+                className="w-8 h-8 rounded-md flex items-center justify-center text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                aria-label="Next video"
+                title="Next (→)"
+              >
+                <ChevronRight size={18} />
+              </button>
+              <span className="truncate">
+                {media.timestamp ? new Date(media.timestamp).toLocaleString() : 'No timestamp'}
+              </span>
+            </div>
 
-      {/* Next button */}
-      {hasNext && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onNext()
-          }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
-          aria-label="Next video"
-        >
-          <ChevronRight size={28} />
-        </button>
-      )}
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  favoriteMutation.mutate({ mediaID: media.mediaID, favorite: !isFavorite })
+                }}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                  isFavorite
+                    ? 'text-red-600 bg-red-50 hover:bg-red-100'
+                    : 'text-gray-500 hover:bg-gray-100'
+                }`}
+                aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
+              </button>
 
-      {/* Video container */}
-      <div
-        className="relative max-w-[90vw] max-h-[90vh] flex items-center justify-center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Transcoding states */}
-        {transcodeState === 'checking' ? (
-          <div className="flex flex-col items-center justify-center p-8 text-gray-400 min-h-[300px]">
-            <Loader2 size={48} className="animate-spin text-blue-500" />
-            <span className="mt-4 text-lg font-medium">Checking video format...</span>
+              <div className="w-px h-5 bg-gray-200 mx-1" />
+
+              <button
+                onClick={handleClose}
+                className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                aria-label="Close modal"
+                title="Close (Esc)"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
-        ) : transcodeState === 'transcoding' ? (
-          <div className="flex flex-col items-center justify-center p-8 text-gray-400 min-h-[300px]">
-            <div className="relative">
-              <Loader2 size={64} className="animate-spin text-blue-500" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-sm font-bold text-blue-400">{transcodeProgress}%</span>
+
+          {/* Media area */}
+          <div className="flex-1 min-h-0 flex items-center justify-center bg-black overflow-hidden relative">
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-black/60 text-white text-sm pointer-events-none">
+              <SpeciesHeading scientificName={media.scientificName} tone="dark" />
+            </div>
+            {transcodeState === 'checking' ? (
+              <div className="flex flex-col items-center justify-center p-8 text-gray-400 min-h-[300px]">
+                <Loader2 size={48} className="animate-spin text-blue-500" />
+                <span className="mt-4 text-lg font-medium">Checking video format...</span>
               </div>
-            </div>
-            <span className="mt-4 text-lg font-medium">Converting video...</span>
-            <span className="mt-2 text-sm text-gray-500">
-              This format requires conversion for browser playback
-            </span>
-            <div className="mt-4 w-64 h-2 bg-gray-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-blue-500 transition-all duration-300"
-                style={{ width: `${transcodeProgress}%` }}
+            ) : transcodeState === 'transcoding' ? (
+              <div className="flex flex-col items-center justify-center p-8 text-gray-400 min-h-[300px]">
+                <div className="relative">
+                  <Loader2 size={64} className="animate-spin text-blue-500" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-bold text-blue-400">{transcodeProgress}%</span>
+                  </div>
+                </div>
+                <span className="mt-4 text-lg font-medium">Converting video...</span>
+                <span className="mt-2 text-sm text-gray-500">
+                  This format requires conversion for browser playback
+                </span>
+                <div className="mt-4 w-64 h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 transition-all duration-300"
+                    style={{ width: `${transcodeProgress}%` }}
+                  />
+                </div>
+                <span className="mt-2 text-xs text-gray-500">{media.fileName}</span>
+              </div>
+            ) : transcodeState === 'error' ? (
+              <div className="flex flex-col items-center justify-center p-8 text-gray-400 min-h-[300px]">
+                <Play size={64} className="text-red-400" />
+                <span className="mt-4 text-lg font-medium text-red-400">Conversion failed</span>
+                <span className="mt-2 text-sm text-gray-500">{transcodeError}</span>
+                <span className="mt-1 text-xs text-gray-500">{media.fileName}</span>
+              </div>
+            ) : videoError && transcodeState !== 'ready' ? (
+              <div className="flex flex-col items-center justify-center p-8 text-gray-400 min-h-[300px]">
+                <Play size={64} />
+                <span className="mt-4 text-lg font-medium">Video</span>
+                <span className="mt-2 text-sm text-gray-500">Format not supported by browser</span>
+                <span className="mt-1 text-xs text-gray-500">{media.fileName}</span>
+              </div>
+            ) : (
+              <video
+                key={transcodedUrl || media.filePath}
+                src={transcodedUrl || constructImageUrl(media.filePath, studyId)}
+                className="max-w-full max-h-[calc(90vh-152px)] w-auto h-auto object-contain"
+                controls
+                autoPlay
+                onError={() => {
+                  if (transcodeState === 'idle' || transcodeState === 'ready') {
+                    setVideoError(true)
+                  }
+                }}
               />
-            </div>
-            <span className="mt-2 text-xs text-gray-500">{media.fileName}</span>
+            )}
           </div>
-        ) : transcodeState === 'error' ? (
-          <div className="flex flex-col items-center justify-center p-8 text-gray-400 min-h-[300px]">
-            <Play size={64} className="text-red-400" />
-            <span className="mt-4 text-lg font-medium text-red-400">Conversion failed</span>
-            <span className="mt-2 text-sm text-gray-500">{transcodeError}</span>
-            <span className="mt-1 text-xs text-gray-500">{media.fileName}</span>
-          </div>
-        ) : videoError && transcodeState !== 'ready' ? (
-          <div className="flex flex-col items-center justify-center p-8 text-gray-400 min-h-[300px]">
-            <Play size={64} />
-            <span className="mt-4 text-lg font-medium">Video</span>
-            <span className="mt-2 text-sm text-gray-500">Format not supported by browser</span>
-            <span className="mt-1 text-xs text-gray-500">{media.fileName}</span>
-          </div>
-        ) : (
-          <video
-            key={transcodedUrl || media.filePath}
-            src={transcodedUrl || constructImageUrl(media.filePath, studyId)}
-            className="max-w-full max-h-[calc(90vh-120px)] w-auto h-auto object-contain rounded-lg"
-            controls
-            autoPlay
-            onError={() => {
-              if (transcodeState === 'idle' || transcodeState === 'ready') {
-                setVideoError(true)
-              }
-            }}
-          />
-        )}
 
-        {/* Species info overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 rounded-b-lg">
-          <p className="text-white text-lg font-medium">{media.scientificName || 'No species'}</p>
-          {media.timestamp && (
-            <p className="text-white/70 text-sm">{new Date(media.timestamp).toLocaleString()}</p>
-          )}
+          {/* Footer */}
+          <div className="px-4 py-2.5 bg-gray-50 flex-shrink-0 border-t border-gray-200">
+            <div className="flex items-center gap-3 min-w-0">
+              {media.fileName && (
+                <span className="font-mono text-[11px] text-gray-400 truncate min-w-0 flex-1">
+                  {media.fileName}
+                </span>
+              )}
+              {media.deploymentID && (
+                <DeploymentLinkPill
+                  studyId={studyId}
+                  deploymentID={media.deploymentID}
+                  locationName={media.locationName}
+                  locationID={media.locationID}
+                  interactive={true}
+                  onNavigate={handleClose}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -482,10 +581,15 @@ function VideoViewerModal({
 /**
  * Individual media card for the carousel (supports both images and videos)
  */
-function MediaCard({ media, onClick, studyId }) {
+function MediaCard({ media, onClick, studyId, scrollSignal }) {
   const [imageError, setImageError] = useState(false)
   const [thumbnailUrl, setThumbnailUrl] = useState(null)
   const [isExtractingThumbnail, setIsExtractingThumbnail] = useState(false)
+  const [hoverOpen, setHoverOpen] = useState(false)
+
+  useEffect(() => {
+    if (scrollSignal > 0) setHoverOpen(false)
+  }, [scrollSignal])
 
   const isVideo = isVideoMedia(media)
 
@@ -530,79 +634,108 @@ function MediaCard({ media, onClick, studyId }) {
     }
   }, [isVideo, media?.filePath, media?.mediaID, studyId])
 
-  return (
-    <div
-      className="flex-shrink-0 w-48 h-36 rounded-lg overflow-hidden cursor-pointer border border-gray-200 shadow-sm hover:shadow-md transition-shadow relative bg-gray-100"
+  const cardButton = (
+    <button
+      type="button"
       onClick={() => onClick(media)}
+      className="flex-shrink-0 w-56 rounded-lg overflow-hidden cursor-pointer border border-gray-200 shadow hover:shadow-md transition-shadow text-left bg-white"
     >
-      {isVideo ? (
-        <>
-          {/* Video placeholder background */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-gray-400">
-            {isExtractingThumbnail ? (
-              <>
-                <Loader2 size={32} className="animate-spin" />
-                <span className="text-xs mt-1">Loading...</span>
-              </>
-            ) : (
-              <>
-                <Play size={32} />
-                <span className="text-xs mt-1">Video</span>
-              </>
-            )}
-          </div>
+      <div className="relative w-full h-40 bg-gray-100">
+        {isVideo ? (
+          <>
+            {/* Video placeholder background */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-gray-400">
+              {isExtractingThumbnail ? (
+                <>
+                  <Loader2 size={28} className="animate-spin" />
+                  <span className="text-xs mt-1">Loading...</span>
+                </>
+              ) : (
+                <>
+                  <Play size={28} />
+                  <span className="text-xs mt-1">Video</span>
+                </>
+              )}
+            </div>
 
-          {/* Show extracted thumbnail for unsupported formats */}
-          {thumbnailUrl ? (
+            {/* Show extracted thumbnail for unsupported formats */}
+            {thumbnailUrl ? (
+              <img
+                src={thumbnailUrl}
+                alt={media.fileName || `Video ${media.mediaID}`}
+                className="relative z-10 w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              /* Video element - overlays placeholder when it loads successfully */
+              <video
+                src={constructImageUrl(media.filePath, studyId)}
+                className={`relative z-10 w-full h-full object-cover ${imageError ? 'hidden' : ''}`}
+                onError={() => setImageError(true)}
+                muted
+                preload="metadata"
+              />
+            )}
+
+            {/* Video indicator badge */}
+            <div className="absolute bottom-1.5 right-1.5 z-20 bg-black/70 text-white px-1.5 py-0.5 rounded text-xs flex items-center gap-1">
+              <Play size={11} />
+            </div>
+          </>
+        ) : (
+          <>
             <img
-              src={thumbnailUrl}
-              alt={media.fileName || `Video ${media.mediaID}`}
-              className="relative z-10 w-full h-full object-cover"
+              src={constructImageUrl(media.filePath, studyId)}
+              alt={media.scientificName || 'Wildlife'}
+              className={`w-full h-full object-cover ${imageError ? 'hidden' : ''}`}
+              onError={() => setImageError(true)}
               loading="lazy"
             />
-          ) : (
-            /* Video element - overlays placeholder when it loads successfully */
-            <video
-              src={constructImageUrl(media.filePath, studyId)}
-              className={`relative z-10 w-full h-full object-cover ${imageError ? 'hidden' : ''}`}
-              onError={() => setImageError(true)}
-              muted
-              preload="metadata"
-            />
-          )}
+            {imageError && (
+              <div className="absolute inset-0 flex items-center justify-center text-gray-300">
+                <CameraOff size={24} />
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
-          {/* Video indicator badge */}
-          <div className="absolute bottom-8 right-2 z-20 bg-black/70 text-white px-1.5 py-0.5 rounded text-xs flex items-center gap-1">
-            <Play size={12} />
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Image thumbnail */}
-          <img
-            src={constructImageUrl(media.filePath, studyId)}
-            alt={media.scientificName || 'Wildlife'}
-            className={`w-full h-full object-cover ${imageError ? 'hidden' : ''}`}
-            onError={() => setImageError(true)}
-            loading="lazy"
-          />
-
-          {/* Error fallback */}
-          {imageError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
-              <CameraOff size={24} className="text-gray-400" />
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Species label */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 z-20">
-        <p className="text-white text-xs font-medium truncate">
-          {media.scientificName || 'Unknown species'}
+      <div className="px-2 py-1.5">
+        <p className="text-xs font-medium text-gray-900 truncate capitalize">
+          <SpeciesThumbnailLabel scientificName={media.scientificName} />
         </p>
       </div>
-    </div>
+    </button>
+  )
+
+  // No species attached → no hover card (e.g., misc captures)
+  if (!media.scientificName) return cardButton
+
+  // No Wikipedia image and no blurb → skip the hover card; the name + IUCN badge
+  // alone aren't worth the popup (e.g., Impala/Roan in Nkhotakota).
+  const info = resolveSpeciesInfo(media.scientificName)
+  if (!info?.imageUrl && !info?.blurb) return cardButton
+
+  return (
+    <HoverCard.Root open={hoverOpen} onOpenChange={setHoverOpen} openDelay={200} closeDelay={120}>
+      <HoverCard.Trigger asChild>{cardButton}</HoverCard.Trigger>
+      <HoverCard.Portal>
+        <HoverCard.Content
+          side="top"
+          sideOffset={8}
+          align="center"
+          avoidCollisions={true}
+          collisionPadding={16}
+          className="z-[10000]"
+        >
+          <SpeciesTooltipContent
+            imageData={{ scientificName: media.scientificName }}
+            studyId={studyId}
+            size="lg"
+          />
+        </HoverCard.Content>
+      </HoverCard.Portal>
+    </HoverCard.Root>
   )
 }
 
@@ -613,10 +746,11 @@ function MediaCard({ media, onClick, studyId }) {
  * @param {Object} props
  * @param {string} props.studyId - Study ID to fetch media for
  */
-export default function BestMediaCarousel({ studyId, isRunning }) {
+export default function BestMediaCarousel({ studyId, isRunning, renderEmpty }) {
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(null)
+  const [scrollSignal, setScrollSignal] = useState(0)
   const carouselRef = useRef(null)
   const queryClient = useQueryClient()
 
@@ -633,9 +767,20 @@ export default function BestMediaCarousel({ studyId, isRunning }) {
       return response.data
     },
     enabled: !!studyId,
-    staleTime: 60000, // Cache for 1 minute
+    // Study data is immutable outside of explicit user actions, so keep the
+    // cache indefinitely. Invalidation is covered by:
+    //   - favorite toggle: onClose handlers in this file + favoriteMutation
+    //     onSettled in media.jsx
+    //   - observation create / update / delete / bbox edit in media.jsx
+    //     (each mutation's onSuccess/onSettled invalidates ['bestMedia', studyId])
+    //   - import completion: useImportStatus hook invalidates on
+    //     isRunning true -> false with done === total
+    // so navigating away and back never triggers a refetch in the steady state.
+    staleTime: Infinity,
     refetchInterval: isRunning ? 5000 : false // Poll every 5s during ML run
   })
+
+  useHorizontalWheelScroll(carouselRef)
 
   // Check scroll state when media changes or on resize
   useEffect(() => {
@@ -648,13 +793,18 @@ export default function BestMediaCarousel({ studyId, isRunning }) {
       setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 5)
     }
 
+    const onScroll = () => {
+      checkScroll()
+      setScrollSignal((s) => s + 1)
+    }
+
     const container = carouselRef.current
-    container.addEventListener('scroll', checkScroll)
+    container.addEventListener('scroll', onScroll)
     checkScroll()
     window.addEventListener('resize', checkScroll)
 
     return () => {
-      container?.removeEventListener('scroll', checkScroll)
+      container?.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', checkScroll)
     }
   }, [bestMedia])
@@ -669,20 +819,21 @@ export default function BestMediaCarousel({ studyId, isRunning }) {
     })
   }
 
-  // Hide carousel while loading, on error, or if no data
-  if (isLoading || error || bestMedia.length === 0) {
+  // Hide carousel while loading or on error.
+  if (isLoading || error) {
     return null
+  }
+  if (bestMedia.length === 0) {
+    return renderEmpty ? renderEmpty() : null
   }
 
   return (
     <>
       <div className="relative">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Best Captures</h3>
-
         {/* Left scroll button */}
         {canScrollLeft && (
           <button
-            className="absolute left-0 top-1/2 translate-y-1 z-10 bg-white/90 rounded-full p-1 shadow-md border border-gray-200"
+            className="absolute left-0 top-[5.75rem] -translate-y-1/2 z-10 bg-white/90 rounded-full p-1 shadow-md border border-gray-200"
             onClick={() => scroll('left')}
             aria-label="Scroll left"
           >
@@ -693,7 +844,7 @@ export default function BestMediaCarousel({ studyId, isRunning }) {
         {/* Right scroll button */}
         {canScrollRight && (
           <button
-            className="absolute right-0 top-1/2 translate-y-1 z-10 bg-white/90 rounded-full p-1 shadow-md border border-gray-200"
+            className="absolute right-0 top-[5.75rem] -translate-y-1/2 z-10 bg-white/90 rounded-full p-1 shadow-md border border-gray-200"
             onClick={() => scroll('right')}
             aria-label="Scroll right"
           >
@@ -703,18 +854,18 @@ export default function BestMediaCarousel({ studyId, isRunning }) {
 
         {/* Left fade effect */}
         {canScrollLeft && (
-          <div className="absolute left-0 top-6 bottom-0 w-12 bg-gradient-to-r from-white to-transparent z-[1] pointer-events-none" />
+          <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent z-[1] pointer-events-none" />
         )}
 
         {/* Right fade effect */}
         {canScrollRight && (
-          <div className="absolute right-0 top-6 bottom-0 w-12 bg-gradient-to-l from-white to-transparent z-[1] pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent z-[1] pointer-events-none" />
         )}
 
         {/* Carousel container */}
         <div
           ref={carouselRef}
-          className="flex gap-4 overflow-x-auto scrollbar-hide"
+          className="flex gap-4 overflow-x-auto scrollbar-hide py-3"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {bestMedia.map((media, index) => (
@@ -723,6 +874,7 @@ export default function BestMediaCarousel({ studyId, isRunning }) {
               media={media}
               onClick={() => setSelectedIndex(index)}
               studyId={studyId}
+              scrollSignal={scrollSignal}
             />
           ))}
         </div>

@@ -176,6 +176,25 @@ describe('Metadata Zod Validation', () => {
       assert.equal(result.success, true, 'Should accept metadata with null fields')
     })
 
+    test('should accept Serval CSV importer metadata', () => {
+      const servalMetadata = {
+        id: 'test-serval-uuid',
+        name: 'serval-tags',
+        title: null,
+        description: null,
+        created: '2024-01-15T10:30:00.000Z',
+        importerName: 'serval/csv',
+        contributors: null,
+        updatedAt: null,
+        startDate: null,
+        endDate: null,
+        sequenceGap: null
+      }
+
+      const result = metadataSchema.safeParse(servalMetadata)
+      assert.equal(result.success, true, 'Should accept Serval CSV importer metadata')
+    })
+
     test('should reject invalid date format for startDate', () => {
       const invalidStartDate = {
         id: 'test-uuid-123',

@@ -8,6 +8,7 @@ import Import from './import'
 import Study from './study'
 import SettingsPage from './settings'
 import DeleteStudyModal from './DeleteStudyModal'
+import StudyHoverCard from './ui/StudyHoverCard'
 import { useEffect, useState, useRef } from 'react'
 
 // Create a client outside the component to avoid recreation
@@ -97,6 +98,13 @@ function AppContent() {
   const [searchQuery, setSearchQuery] = useState('')
   const renameInputRef = useRef(null)
 
+  const [showSkeleton, setShowSkeleton] = useState(true)
+  const skeletonShownAt = useRef(Date.now())
+
+  // Bumped on every sidebar scroll — child hover cards watch this and close
+  // so the card doesn't drift while its anchor row scrolls.
+  const [scrollSignal, setScrollSignal] = useState(0)
+
   const { data: studies = [], isLoading } = useQuery({
     queryKey: ['studies'],
     queryFn: async () => {
@@ -114,6 +122,22 @@ function AppContent() {
       alert('Failed to load studies: ' + error.message)
     }
   })
+
+  useEffect(() => {
+    if (isLoading) return
+    const elapsed = Date.now() - skeletonShownAt.current
+    // Fast load (< 300ms): hide skeleton immediately, user never saw it
+    if (elapsed < 300) {
+      setShowSkeleton(false)
+      return
+    }
+    // Slow load: keep skeleton visible for at least 1s total
+    const remaining = Math.max(0, 1000 - elapsed)
+    const hideTimer = setTimeout(() => {
+      setShowSkeleton(false)
+    }, remaining)
+    return () => clearTimeout(hideTimer)
+  }, [isLoading])
 
   useEffect(() => {
     if (isLoading) {
@@ -196,15 +220,6 @@ function AppContent() {
       window.electron.ipcRenderer.removeListener('importer:error', handleImporterError)
     }
   }, [])
-
-  const onNewStudy = (study) => {
-    const isValid = study && study.id && study.name && study.data && study.path
-    if (!isValid) {
-      console.warn('Invalid study data', study)
-    }
-    // Invalidate the query to refetch studies
-    queryClient.invalidateQueries(['studies'])
-  }
 
   // Context menu handlers
   const handleContextMenu = (e, study) => {
@@ -332,7 +347,7 @@ function AppContent() {
           </div>
 
           {/* Search - only show when there are studies */}
-          {studies.length > 0 && (
+          {!isLoading && studies.length > 0 && (
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               <input
@@ -348,65 +363,94 @@ function AppContent() {
         </div>
 
         {/* Studies List */}
-        <div className="flex-1 overflow-y-auto">
-          {filteredStudies.length === 0 && !searchQuery && (
-            <div className="flex items-center h-full pb-20">
-              <div className="p-4 text-center flex items-center flex-col">
-                <div className="p-3 bg-blue-50 rounded-full w-fit mx-auto mb-3">
-                  <FolderPlus className="h-6 w-6 text-blue-500" />
+        <div
+          className="flex-1 overflow-y-auto scrollbar-hide"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          onScroll={() => setScrollSignal((s) => s + 1)}
+        >
+          {showSkeleton && (
+            <div className="p-2 space-y-1">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-2.5 rounded-lg">
+                  <div
+                    className="h-4 bg-gray-200 rounded animate-pulse flex-1"
+                    style={{ maxWidth: `${70 - i * 10}%` }}
+                  />
                 </div>
-                <p className="text-sm font-medium text-gray-700 mb-1">No studies yet</p>
-                <p className="text-xs text-gray-500 mb-4">
-                  Create your first study to start analyzing wildlife data
-                </p>
-                <NavLink
-                  to="/import"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Create Study
-                </NavLink>
-              </div>
+              ))}
             </div>
           )}
-          <div data-testid="studies-list" className="p-2">
-            {filteredStudies.map((study) => (
-              <div
-                key={study.id}
-                data-testid={`study-item-${study.id}`}
-                onContextMenu={(e) => handleContextMenu(e, study)}
-              >
-                {renamingStudyId === study.id ? (
-                  <input
-                    ref={renameInputRef}
-                    type="text"
-                    value={renameValue}
-                    onChange={(e) => setRenameValue(e.target.value)}
-                    onKeyDown={handleRenameKeyDown}
-                    onBlur={saveRename}
-                    className="w-full px-3 py-2.5 rounded-lg text-sm border border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-1"
-                  />
-                ) : (
+          {!isLoading &&
+            filteredStudies.length === 0 &&
+            !searchQuery &&
+            location.pathname !== '/import' && (
+              <div className="flex items-center h-full pb-20">
+                <div className="p-4 text-center flex items-center flex-col">
+                  <div className="p-3 bg-blue-50 rounded-full w-fit mx-auto mb-3">
+                    <FolderPlus className="h-6 w-6 text-blue-500" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-700 mb-1">No studies yet</p>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Create your first study to start analyzing wildlife data
+                  </p>
                   <NavLink
-                    to={`/study/${study.id}`}
-                    className={({ isActive }) =>
-                      `w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-all group mb-1 ${
-                        isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
-                      }`
-                    }
+                    to="/import"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                   >
-                    <span className="flex-1 text-left truncate">{study.name}</span>
-                    <ChevronRight
-                      className={`h-4 w-4 flex-shrink-0 transition-opacity ${
-                        location.pathname.includes(`/study/${study.id}`)
-                          ? 'opacity-100'
-                          : 'opacity-0 group-hover:opacity-50'
-                      }`}
-                    />
+                    <Plus className="h-3.5 w-3.5" />
+                    Create Study
                   </NavLink>
-                )}
+                </div>
               </div>
-            ))}
+            )}
+          <div data-testid="studies-list" className="p-2">
+            {filteredStudies.map((study) => {
+              const isCurrentStudy = location.pathname.includes(`/study/${study.id}`)
+              const showHoverCard =
+                renamingStudyId !== study.id && !isCurrentStudy && contextMenu === null
+              const navLink = (
+                <NavLink
+                  to={`/study/${study.id}`}
+                  className={({ isActive }) =>
+                    `w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-all group mb-1 ${
+                      isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                    }`
+                  }
+                >
+                  <span className="flex-1 text-left truncate">{study.name}</span>
+                  <ChevronRight
+                    className={`h-4 w-4 flex-shrink-0 transition-opacity ${
+                      isCurrentStudy ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+                    }`}
+                  />
+                </NavLink>
+              )
+              return (
+                <div
+                  key={study.id}
+                  data-testid={`study-item-${study.id}`}
+                  onContextMenu={(e) => handleContextMenu(e, study)}
+                >
+                  {renamingStudyId === study.id ? (
+                    <input
+                      ref={renameInputRef}
+                      type="text"
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onKeyDown={handleRenameKeyDown}
+                      onBlur={saveRename}
+                      className="w-full px-3 py-2.5 rounded-lg text-sm border border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-1"
+                    />
+                  ) : showHoverCard ? (
+                    <StudyHoverCard study={study} scrollSignal={scrollSignal}>
+                      {navLink}
+                    </StudyHoverCard>
+                  ) : (
+                    navLink
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
 
@@ -428,10 +472,7 @@ function AppContent() {
       <main className="ml-64 relative flex w-[calc(100%-16rem)] flex-1 bg-transparent pt-3 pr-3">
         <div className="flex-col bg-white shadow w-full rounded-xl overflow-hidden">
           <Routes>
-            <Route
-              path="/import"
-              element={<Import onNewStudy={onNewStudy} studiesCount={studies.length} />}
-            />
+            <Route path="/import" element={<Import studiesCount={studies.length} />} />
             <Route path="/study/:id/*" element={<Study />} />
             <Route path="/settings/*" element={<SettingsPage />} />
             <Route path="*" element={null} />

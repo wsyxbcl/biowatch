@@ -42,17 +42,20 @@ System architecture and design patterns for Biowatch.
 ## Process Model
 
 ### Renderer Process
+
 - **Technology**: React 18 + React Router 7 + TailwindCSS 4
 - **State**: TanStack Query for server state
 - **Entry**: `src/renderer/src/base.jsx`
 - **Communication**: Calls `window.api.*` methods exposed by preload
 
 ### Preload Script
+
 - **Purpose**: Secure bridge between renderer and main process
 - **Entry**: `src/preload/index.js`
 - **Pattern**: Wraps `ipcRenderer.invoke()` calls into a clean API
 
 ### Main Process
+
 - **Technology**: Node.js + Electron
 - **Entry**: `src/main/index.js`
 - **Responsibilities**:
@@ -63,6 +66,7 @@ System architecture and design patterns for Biowatch.
   - Auto-updates
 
 ### Python ML Servers
+
 - **Technology**: FastAPI with conda environment
 - **Pattern**: Spawned as child processes, communicate via HTTP
 - **Endpoint**: `POST /predict` for inference
@@ -89,6 +93,7 @@ src/
 │   │   ├── sequences.js     # Sequence-aware counting handlers
 │   │   ├── study.js         # Study management handlers
 │   │   ├── import.js        # Import handlers
+│   │   ├── queue.js         # Queue status/pause/resume handlers
 │   │   ├── files.js         # File operation handlers
 │   │   ├── dialog.js        # Dialog handlers
 │   │   └── shell.js         # Shell operation handlers
@@ -98,9 +103,17 @@ src/
 │   │   ├── extractor.js     # Metadata extraction
 │   │   ├── study.js         # Study metadata management
 │   │   ├── download.ts      # File download utilities
+│   │   ├── ffmpeg.js        # Shared FFmpeg binary path resolution
+│   │   ├── queue.js          # Persistent job queue service
+│   │   ├── queue-consumer.js # Base consumer (poll/claim/process loop)
+│   │   ├── queue-scheduler.js# Singleton: ties consumers to active study
+│   │   ├── server-manager.js # ML server lifecycle (one at a time)
+│   │   ├── inference-consumer.js # ML inference consumer
+│   │   ├── prediction.js    # Prediction utilities (insert, stream, EXIF)
 │   │   ├── import/          # Data importers
 │   │   │   ├── index.js     # Importer exports
-│   │   │   ├── importer.js  # Image folder importer with ML
+│   │   │   ├── importer.js  # Media scanning + job enqueueing
+│   │   │   ├── timestamp.js # Video timestamp extraction (FFmpeg → filename → mtime)
 │   │   │   └── parsers/     # Format-specific parsers
 │   │   │       ├── camtrapDP.js      # CamTrap DP importer
 │   │   │       ├── wildlifeInsights.js # Wildlife Insights importer
@@ -148,25 +161,64 @@ src/
 │   ├── base.jsx             # App root, routing, layout
 │   ├── import.jsx           # Data import page
 │   ├── study.jsx            # Study overview/selection
-│   ├── deployments.jsx      # Map view
-│   ├── media.jsx            # Media browser
-│   ├── activity.jsx         # Temporal analysis
-│   ├── models.jsx           # ML model manager UI
+│   ├── deployments.jsx      # Map + deployment list + inline media pane on selection
+│   ├── deployments/         # Deployments-tab subcomponents
+│   │   ├── DeploymentDetailPane.jsx  # Bottom pane mounted when a deployment is selected
+│   │   ├── SectionHeader.jsx         # Always-expanded section header for co-located deployments
+│   │   ├── Sparkline.jsx             # Activity sparkline renderer (bars/line/heatmap)
+│   │   ├── SparklineToggle.jsx       # Sparkline mode toggle in timeline header
+│   │   ├── LocationPopover.jsx       # Lat/lon editing popover in detail pane header
+│   │   ├── coordinateParser.js       # Pure parser for "lat, lon" paste field
+│   │   ├── groupDeployments.js       # Pure helper grouping deployments by location
+│   │   └── urlState.js               # ?deploymentID=… URL state helpers
+│   ├── media.jsx            # Media tab outer shell (filters, timeline, radar)
+│   ├── media/               # Media subcomponents shared with the Deployments tab
+│   │   ├── Gallery.jsx               # Sequence grid + ImageModal + bbox editor
+│   │   └── DeploymentMediaGallery.jsx # Deployment-scoped wrapper around Gallery
+│   ├── activity.jsx         # Temporal analysis (right-click map → Save as PNG via html-to-image)
+│   ├── models/              # AI Models tab (split-view map + cards)
+│   │   ├── index.jsx                  # MlZoo top-level (responsive split/stacked)
+│   │   ├── MapPane.jsx                # Leaflet map + region overlays + worldwide chip
+│   │   ├── ModelListPane.jsx          # Ordered model cards + custom row
+│   │   ├── ModelCard.jsx              # One model card (Not / Downloading / Downloaded)
+│   │   ├── SpeciesPanel.jsx           # Per-model species browser (chips or grouped)
+│   │   ├── CustomModelCard.jsx        # "Custom model for your region" CTA
+│   │   ├── regions.js                 # Region color/label/geojson registry
+│   │   ├── speciesPanelHelpers.js     # Pure filter + class-summary helpers
+│   │   └── useResponsiveLayout.js     # split (≥900px) vs stacked (<900px)
 │   ├── settings.jsx         # Settings pages
 │   ├── export.jsx           # Export UI
 │   ├── files.jsx            # File statistics
+│   ├── overview.jsx         # Editorial showcase tab (header, KPI band, captures, species)
+│   ├── overview/            # Overview-tab subcomponents
+│   │   ├── EditorialHeader.jsx       # Title + description + byline + map slot
+│   │   ├── KpiBand.jsx, KpiTile.jsx  # 5-tile stats band
+│   │   ├── ContributorByline.jsx, ContributorsModal.jsx
+│   │   ├── BestCapturesSection.jsx   # Best media carousel + Featured species fallback
+│   │   ├── CommonSpeciesFallback.jsx # Wikipedia thumbnails when no scored media
+│   │   ├── SpeciesDistribution.jsx   # Full-width species list with IUCN legend
+│   │   ├── SpanPicker.jsx            # Two-calendar date-range picker
+│   │   └── utils/formatStats.js      # KPI formatters
 │   ├── ui/                  # Reusable components
+│   ├── undo/                # Undo/redo system for annotation edits
+│   │   ├── UndoManager.js   # Stack class with bounded history + pulse/error events
+│   │   ├── commands.js      # Command builders (create/delete/update-bbox/update-classification)
+│   │   └── context.jsx      # UndoProvider + useUndo hook
 │   └── hooks/               # Custom React hooks
+│       └── useSparklineMode.js # Sparkline display mode state (bars/line/heatmap)
 ├── preload/
 │   └── index.js             # IPC bridge API
 └── shared/
     ├── mlmodels.js          # Model zoo configuration
-    └── countries.js         # Country codes for geofencing
+    ├── countries.js         # Country codes for geofencing
+    ├── commonNames/         # Scientific → common name dictionary
+    └── speciesInfo/         # Per-species reference data (IUCN, blurb, image)
 ```
 
 ## Data Flow
 
 ### Import Flow
+
 ```
 User selects dataset
         │
@@ -192,6 +244,7 @@ User selects dataset
 ```
 
 ### Query Flow
+
 ```
 React Component
         │
@@ -222,37 +275,54 @@ React Component
 └─────────────────┘
 ```
 
-### ML Inference Flow
+### ML Inference Flow (Queue-Based)
+
 ```
-User starts model import
+User selects folder + model
         │
         ▼
 ┌─────────────────────┐
-│  model:start-http-  │
-│  server             │
+│   importer.js       │  Scan folder, insert media, enqueue jobs
+│   Importer.start()  │  into study.db `jobs` table
 └──────────┬──────────┘
            │
            ▼
 ┌─────────────────────┐
-│  Spawn Python       │
-│  FastAPI server     │
+│  QueueScheduler     │  Singleton: manages active study consumer
+│  (queue-scheduler)  │  Calls recoverStale() on start
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  InferenceConsumer  │  Polls jobs table: claimBatch → process → complete/fail
+│  (inference-consumer)│  Creates modelRuns record, handles abort
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  ServerManager      │  One ML server at a time, reuses across batches
+│  (server-manager)   │  Wraps startMLModelHTTPServer/stop
 └──────────┬──────────┘
            │ HTTP localhost:{port}
            ▼
 ┌─────────────────────┐      ┌─────────────────┐
-│   importer.js       │─────▶│  POST /predict  │
-│   stream images     │      │  { image_path } │
+│   getPredictions()  │─────▶│  POST /predict  │
+│   async generator   │      │  { filepaths }  │
 └──────────┬──────────┘      └────────┬────────┘
            │                          │
            │◀─────────────────────────┘
-           │  { predictions, bboxes }
+           │  Stream: { predictions, bboxes }
            ▼
 ┌─────────────────────┐
-│  Store in           │
-│  observations +     │
+│  insertPrediction() │  Per-image or insertVideoPredictions() per-video
+│  → observations +   │  Jobs marked complete/failed in `jobs` table
 │  modelOutputs       │
 └─────────────────────┘
 ```
+
+**Pause**: Instant — sets boolean flag, server stays running.
+**Resume**: Instant — clears flag (or cold-starts from modelRuns if app restarted).
+**Crash recovery**: `recoverStale()` resets `processing` → `pending` on next start.
 
 ## Study Isolation
 
@@ -270,12 +340,14 @@ biowatch-data/
 ```
 
 **Benefits**:
+
 - Complete data isolation between studies
 - Easy backup/restore (copy folder)
 - Independent migrations per study
 - No cross-study query complexity
 
 **Database path resolution**:
+
 ```javascript
 // src/main/services/paths.js
 function getStudyDatabasePath(userDataPath, studyId) {
@@ -289,30 +361,45 @@ function getStudyPath(userDataPath, studyId) {
 
 ## Key Files Reference
 
-| File | Purpose |
-|------|---------|
-| `src/main/index.js` | Minimal app entry point |
-| `src/main/app/lifecycle.js` | Window creation, app initialization |
-| `src/main/ipc/index.js` | Registers all IPC handlers |
-| `src/preload/index.js` | IPC bridge, exposes `window.api` |
-| `src/renderer/src/base.jsx` | React app root, routing |
-| `src/main/database/models.js` | Drizzle table definitions |
-| `src/main/database/validators.js` | Zod validation schemas |
-| `src/main/database/manager.js` | Database connection pooling |
-| `src/main/database/queries/` | Data query functions (split by domain) |
-| `src/shared/mlmodels.js` | Model zoo configuration |
-| `src/main/services/ml/server.ts` | ML server lifecycle (start/stop/health) |
-| `src/main/services/ml/download.ts` | ML model download and installation |
-| `src/main/ipc/ml.js` | ML model IPC handlers |
-| `src/main/services/import/importer.js` | Image import with ML inference |
-| `src/main/services/import/parsers/camtrapDP.js` | CamTrap DP format importer |
-| `src/main/services/import/parsers/wildlifeInsights.js` | Wildlife Insights format importer |
-| `src/main/services/import/parsers/deepfaune.js` | DeepFaune CSV format importer |
-| `src/main/services/export/exporter.js` | CamTrap DP exporter |
-| `src/main/services/sequences/` | Sequence grouping and counting logic |
-| `src/main/ipc/sequences.js` | Sequence-aware counting IPC handlers |
-| `src/main/services/cache/video.js` | Video format conversion for browser playback |
-| `src/main/utils/bbox.js` | Bbox format conversions |
+| File                                                   | Purpose                                               |
+| ------------------------------------------------------ | ----------------------------------------------------- |
+| `src/main/index.js`                                    | Minimal app entry point                               |
+| `src/main/app/lifecycle.js`                            | Window creation, app initialization                   |
+| `src/main/ipc/index.js`                                | Registers all IPC handlers                            |
+| `src/preload/index.js`                                 | IPC bridge, exposes `window.api`                      |
+| `src/renderer/src/base.jsx`                            | React app root, routing                               |
+| `src/renderer/src/deployments.jsx`                     | Deployments tab — map + list + inline media pane      |
+| `src/renderer/src/deployments/DeploymentDetailPane.jsx`| Bottom pane (header + close) mounted on selection     |
+| `src/renderer/src/deployments/urlState.js`             | `?deploymentID=…` URL state helpers                   |
+| `src/renderer/src/media.jsx`                           | Media tab — filters, timeline, daily-activity radar   |
+| `src/renderer/src/media/Gallery.jsx`                   | Shared sequence grid + ImageModal + bbox editor       |
+| `src/renderer/src/media/DeploymentMediaGallery.jsx`    | Deployment-scoped wrapper around Gallery              |
+| `src/main/database/models.js`                          | Drizzle table definitions                             |
+| `src/main/database/validators.js`                      | Zod validation schemas                                |
+| `src/main/database/manager.js`                         | Database connection pooling                           |
+| `src/main/database/queries/`                           | Data query functions (split by domain)                |
+| `src/shared/mlmodels.js`                               | Model zoo configuration                               |
+| `src/shared/commonNames/`                              | Scientific → common name dictionary + resolver        |
+| `src/shared/speciesInfo/`                              | IUCN status, Wikipedia blurb, fallback image (script-built) |
+| `src/main/services/ml/server.ts`                       | ML server lifecycle (start/stop/health)               |
+| `src/main/services/ml/download.ts`                     | ML model download and installation                    |
+| `src/main/ipc/ml.js`                                   | ML model IPC handlers                                 |
+| `src/main/services/queue.js`                           | Persistent job queue (enqueue, claim, complete, fail) |
+| `src/main/services/queue-consumer.js`                  | Base consumer class (poll loop, pause/resume)         |
+| `src/main/services/queue-scheduler.js`                 | Singleton scheduler (active study, status)            |
+| `src/main/services/server-manager.js`                  | ML server lifecycle (one server at a time)            |
+| `src/main/services/inference-consumer.js`              | ML inference consumer (streams predictions)           |
+| `src/main/ipc/queue.js`                                | Queue IPC handlers (status, pause, resume)            |
+| `src/main/services/import/importer.js`                 | Media scanning + job enqueueing                       |
+| `src/main/services/import/timestamp.js`                | Video timestamp extraction (FFmpeg -> filename -> mtime) |
+| `src/main/services/import/parsers/camtrapDP.js`        | CamTrap DP format importer                            |
+| `src/main/services/import/parsers/wildlifeInsights.js` | Wildlife Insights format importer                     |
+| `src/main/services/import/parsers/deepfaune.js`        | DeepFaune CSV format importer                         |
+| `src/main/services/export/exporter.js`                 | CamTrap DP exporter                                   |
+| `src/main/services/sequences/`                         | Sequence grouping and counting logic                  |
+| `src/main/ipc/sequences.js`                            | Sequence-aware counting IPC handlers                  |
+| `src/main/services/cache/video.js`                     | Video format conversion for browser playback          |
+| `src/main/utils/bbox.js`                               | Bbox format conversions                               |
 
 ## IPC Pattern
 
@@ -340,18 +427,18 @@ const { data } = await window.api.getSequences(studyId, { limit: 20 })
 
 ## Technology Stack
 
-| Layer | Technology |
-|-------|------------|
-| Desktop Runtime | Electron 34 |
-| Build Tool | electron-vite |
-| Frontend Framework | React 18 |
-| Routing | React Router 7 |
-| Styling | TailwindCSS 4 |
-| State Management | TanStack Query 5 |
-| Database | SQLite (better-sqlite3) |
-| ORM | Drizzle ORM |
-| ML Runtime | Python 3.11 + FastAPI |
-| ML Environment | Conda (packed) |
-| Icons | Lucide React |
-| Maps | Leaflet + react-leaflet |
-| Charts | Recharts |
+| Layer              | Technology              |
+| ------------------ | ----------------------- |
+| Desktop Runtime    | Electron 34             |
+| Build Tool         | electron-vite           |
+| Frontend Framework | React 18                |
+| Routing            | React Router 7          |
+| Styling            | TailwindCSS 4           |
+| State Management   | TanStack Query 5        |
+| Database           | SQLite (better-sqlite3) |
+| ORM                | Drizzle ORM             |
+| ML Runtime         | Python 3.11 + FastAPI   |
+| ML Environment     | Conda (packed)          |
+| Icons              | Lucide React            |
+| Maps               | Leaflet + react-leaflet |
+| Charts             | Recharts                |

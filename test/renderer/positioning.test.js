@@ -1,9 +1,6 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import {
-  computeBboxLabelPosition,
-  computeSelectorPosition
-} from '../../src/renderer/src/utils/positioning.js'
+import { computeBboxLabelPosition } from '../../src/renderer/src/utils/positioning.js'
 
 // Helper to extract numeric percentage value from string like "30%"
 function parsePercent(str) {
@@ -110,83 +107,5 @@ describe('computeBboxLabelPosition', () => {
     // Should be right-aligned
     assertPercentApprox(result.left, 86) // bboxX + bboxWidth
     assert.ok(result.transform.includes('translateX(-100%)'))
-  })
-})
-
-describe('computeSelectorPosition', () => {
-  const containerRect = {
-    top: 100,
-    bottom: 700,
-    left: 50,
-    right: 850,
-    height: 600,
-    width: 800
-  }
-
-  test('label at center - selector below label', () => {
-    const labelRect = { top: 300, bottom: 324, left: 200, right: 350 }
-    const result = computeSelectorPosition(labelRect, containerRect)
-
-    // y should be labelRect.bottom + MARGIN (8)
-    assert.equal(result.y, 332)
-    assert.equal(result.x, 200)
-    assert.equal(result.transform, 'none')
-  })
-
-  test('label near container bottom - selector above label', () => {
-    // Label positioned such that selector won't fit below
-    const labelRect = { top: 500, bottom: 524, left: 200, right: 350 }
-    const result = computeSelectorPosition(labelRect, containerRect)
-
-    // y should be labelRect.top - MARGIN (8)
-    assert.equal(result.y, 492)
-    assert.equal(result.transform, 'translateY(-100%)')
-  })
-
-  test('label near container right - selector clamped left', () => {
-    const labelRect = { top: 300, bottom: 324, left: 650, right: 800 }
-    const result = computeSelectorPosition(labelRect, containerRect)
-
-    // x should be clamped to containerRect.right - PADDING - selectorWidth
-    // 850 - 16 - 288 = 546
-    assert.equal(result.x, 546)
-  })
-
-  test('label near container left - selector clamped right', () => {
-    const labelRect = { top: 300, bottom: 324, left: 10, right: 160 }
-    const result = computeSelectorPosition(labelRect, containerRect)
-
-    // x should be clamped to containerRect.left + PADDING
-    // 50 + 16 = 66
-    assert.equal(result.x, 66)
-  })
-
-  test('very limited vertical space - selector centered', () => {
-    // Container is very short
-    const shortContainer = {
-      top: 100,
-      bottom: 200,
-      left: 50,
-      right: 850,
-      height: 100,
-      width: 800
-    }
-    const labelRect = { top: 140, bottom: 164, left: 200, right: 350 }
-    const result = computeSelectorPosition(labelRect, shortContainer)
-
-    // Should fallback to centered position
-    // y = containerRect.top + (containerRect.height - selectorHeight) / 2
-    // 100 + (100 - 320) / 2 = 100 + (-110) = -10 (centered, even if negative)
-    assert.equal(result.transform, 'none')
-  })
-
-  test('custom selector size', () => {
-    const labelRect = { top: 300, bottom: 324, left: 200, right: 350 }
-    const customSize = { width: 400, height: 200 }
-    const result = computeSelectorPosition(labelRect, containerRect, customSize)
-
-    // Should use the custom size for calculations
-    assert.equal(result.y, 332) // bottom + MARGIN
-    assert.equal(result.transform, 'none')
   })
 })

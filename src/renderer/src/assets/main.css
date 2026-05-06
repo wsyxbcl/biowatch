@@ -330,3 +330,34 @@ input::-webkit-inner-spin-button {
 .leaflet-tooltip.species-map-tooltip::before {
   display: none;
 }
+
+/* Push the hovercard sideways off the pie marker so it sits BESIDE the
+   camembert rather than overlapping its right or left half. The pie marker
+   scales up to 60px wide; 36px clears the largest pie with a small gap.
+   `direction: 'auto'` on the tooltip resolves to either 'right' or 'left'
+   based on map-center, so we cover both cases. */
+.leaflet-tooltip-right.species-map-tooltip {
+  margin-left: 36px;
+}
+.leaflet-tooltip-left.species-map-tooltip {
+  margin-left: -36px;
+}
+
+/* Brief outline pulse on a bbox after undo/redo so the user can see which
+   observation just changed. Rendered as a separate overlay <rect> so it
+   never interferes with the main rect's stroke styling. */
+@keyframes bbox-pulse {
+  0% {
+    stroke-opacity: 1;
+    stroke-width: 4;
+  }
+  100% {
+    stroke-opacity: 0;
+    stroke-width: 10;
+  }
+}
+
+.bbox--pulse {
+  animation: bbox-pulse 600ms ease-out 1;
+  pointer-events: none;
+}

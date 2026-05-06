@@ -2,6 +2,7 @@ import 'leaflet/dist/leaflet.css'
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router'
 import { modelZoo } from '../../shared/mlmodels.js'
+import { getGbifTitle, isGbifAvailable } from '../../shared/gbifTitles.js'
 import { useQueryClient } from '@tanstack/react-query'
 import CountryPickerModal from './CountryPickerModal.jsx'
 import GbifImportProgress from './GbifImportProgress.jsx'
@@ -9,12 +10,40 @@ import DemoImportProgress from './DemoImportProgress.jsx'
 import LilaImportProgress from './LilaImportProgress.jsx'
 import CamtrapDPImportProgress from './CamtrapDPImportProgress.jsx'
 import { toast } from 'sonner'
-import { Database, FolderOpen, Camera, FileSpreadsheet, Globe, Sparkles } from 'lucide-react'
+import {
+  Database,
+  FolderOpen,
+  Camera,
+  FileSpreadsheet,
+  Globe,
+  Sparkles,
+  ChevronDown,
+  ChevronRight
+} from 'lucide-react'
 import { Button } from './ui/button.jsx'
 import { Card, CardContent } from './ui/card.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.jsx'
 
-export default function Import({ onNewStudy, studiesCount = 0 }) {
+function SourceRow({ icon: Icon, title, description, children, className = '' }) {
+  return (
+    <Card className={`shadow-none hover:border-blue-500/30 transition-colors ${className}`}>
+      <CardContent className="p-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="size-8 rounded-md bg-gray-100 flex items-center justify-center shrink-0">
+            <Icon className="size-4 text-gray-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-sm font-medium leading-tight">{title}</h4>
+            {description && <p className="text-xs text-gray-500 truncate mt-0.5">{description}</p>}
+          </div>
+          {children}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function Import({ studiesCount = 0 }) {
   const navigate = useNavigate()
   const isFirstTimeUser = studiesCount === 0
   const [selectedModel, setSelectedModel] = useState(modelZoo[0]?.reference || null)
@@ -22,6 +51,7 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
   const [installedEnvironments, setInstalledEnvironments] = useState([])
   const [showCountryPicker, setShowCountryPicker] = useState(false)
   const [pendingDirectoryPath, setPendingDirectoryPath] = useState(null)
+  const [showMoreFormats, setShowMoreFormats] = useState(false)
   const queryClient = useQueryClient()
 
   // GBIF import progress state
@@ -94,9 +124,10 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
       try {
         const response = await fetch('https://api.gbif.org/v1/dataset/search?q=CAMTRAP_DP')
         const data = await response.json()
-        setGbifDatasets(data.results || [])
-        if (data.results && data.results.length > 0) {
-          setSelectedGbifDataset(data.results[0])
+        const available = (data.results || []).filter((d) => isGbifAvailable(d.key))
+        setGbifDatasets(available)
+        if (available.length > 0) {
+          setSelectedGbifDataset(available[0])
         }
       } catch (error) {
         console.error('Failed to fetch GBIF datasets:', error)
@@ -235,12 +266,11 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
       }
 
       // Brief delay to show completion state, then navigate
-      setTimeout(async () => {
-        setIsCamtrapDPImporting(false)
-        setCamtrapDPImportProgress(null)
-        await queryClient.invalidateQueries({ queryKey: ['studies'] })
-        navigate(`/study/${result.id}`)
-      }, 800)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setIsCamtrapDPImporting(false)
+      setCamtrapDPImportProgress(null)
+      await queryClient.invalidateQueries({ queryKey: ['studies'] })
+      navigate(`/study/${result.id}`)
     } catch (error) {
       console.error('Failed to import CamTrap DP dataset:', error)
       // Error state is already set via IPC progress event
@@ -253,26 +283,28 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
   }
 
   const handleWildlifeInsights = async () => {
-    const { data, id, path } = await window.api.selectWildlifeDataset()
+    const { id, path } = await window.api.selectWildlifeDataset()
     console.log('Wildlife Insights select', path)
     if (!id) return
-    onNewStudy({ id, name: data.name, data, path })
+    await queryClient.invalidateQueries({ queryKey: ['studies'] })
     navigate(`/study/${id}`)
   }
 
   const handleDeepfauneCSV = async () => {
-    const { data, id, path } = await window.api.selectDeepfauneDataset()
+    const { id, path } = await window.api.selectDeepfauneDataset()
     console.log('Deepfaune CSV select', path)
     if (!id) return
-    onNewStudy({ id, name: data.name, data, path })
+    await queryClient.invalidateQueries({ queryKey: ['studies'] })
     navigate(`/study/${id}`)
   }
 
   const handleServalCSV = async () => {
-    const { data, id, path } = await window.api.selectServalDataset()
+    const result = await window.api.selectServalDataset()
+    if (!result?.id) return
+
+    const { id, path } = result
     console.log('Serval CSV select', path)
-    if (!id) return
-    onNewStudy({ id, name: data.name, data, path })
+    await queryClient.invalidateQueries({ queryKey: ['studies'] })
     navigate(`/study/${id}`)
   }
 
@@ -286,7 +318,7 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
         datasetTitle: 'Demo Dataset'
       })
 
-      const { data, id, path } = await window.api.downloadDemoDataset()
+      const { data, id } = await window.api.downloadDemoDataset()
 
       if (!id) {
         setIsDemoImporting(false)
@@ -297,13 +329,11 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
       console.log('Demo dataset downloaded:', data, id)
 
       // Brief delay to show completion state, then navigate
-      setTimeout(async () => {
-        setIsDemoImporting(false)
-        setDemoImportProgress(null)
-        await queryClient.invalidateQueries({ queryKey: ['studies'] })
-        onNewStudy({ id, name: data.name, data, path })
-        navigate(`/study/${id}`)
-      }, 800)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setIsDemoImporting(false)
+      setDemoImportProgress(null)
+      await queryClient.invalidateQueries({ queryKey: ['studies'] })
+      navigate(`/study/${id}`)
     } catch (error) {
       console.error('Failed to import demo dataset:', error)
       // Error state is already set via IPC progress event
@@ -337,7 +367,7 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
       )
       // Errors (e.g., ML server failed to start) are handled via IPC event in base.jsx
       if (!id) return
-      queryClient.invalidateQueries(['studies'])
+      await queryClient.invalidateQueries({ queryKey: ['studies'] })
       navigate(`/study/${id}`)
     }
   }
@@ -358,7 +388,7 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
     // Errors (e.g., ML server failed to start) are handled via IPC event in base.jsx
     if (!id) return
 
-    queryClient.invalidateQueries(['studies'])
+    await queryClient.invalidateQueries({ queryKey: ['studies'] })
     navigate(`/study/${id}`)
   }
 
@@ -377,24 +407,23 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
         stageName: 'Starting import...'
       })
 
-      const { data, id, path } = await window.api.importGbifDataset(key)
+      const result = await window.api.importGbifDataset(key)
 
-      if (!id) {
+      if (!result || !result.id) {
         setIsGbifImporting(false)
         setGbifImportProgress(null)
         return
       }
 
+      const { data, id } = result
       console.log('GBIF dataset imported:', data, id)
 
       // Brief delay to show completion state, then navigate
-      setTimeout(async () => {
-        setIsGbifImporting(false)
-        setGbifImportProgress(null)
-        await queryClient.invalidateQueries({ queryKey: ['studies'] })
-        onNewStudy({ id, name: data.name, data, path })
-        navigate(`/study/${id}`)
-      }, 800)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setIsGbifImporting(false)
+      setGbifImportProgress(null)
+      await queryClient.invalidateQueries({ queryKey: ['studies'] })
+      navigate(`/study/${id}`)
     } catch (error) {
       console.error('Failed to import GBIF dataset:', error)
       // Error state is already set via IPC progress event
@@ -402,7 +431,12 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
     }
   }
 
-  const handleCancelGbifImport = () => {
+  const handleCancelGbifImport = async () => {
+    try {
+      await window.api.cancelGbifImport(selectedGbifDataset?.key)
+    } catch (e) {
+      console.error('Error cancelling GBIF import:', e)
+    }
     setIsGbifImporting(false)
     setGbifImportProgress(null)
   }
@@ -417,31 +451,35 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
         datasetTitle: 'LILA Dataset'
       })
 
-      const { data, id, path } = await window.api.importLilaDataset(datasetId)
+      const result = await window.api.importLilaDataset(datasetId)
 
-      if (!id) {
+      if (!result || !result.id) {
         setIsLilaImporting(false)
         setLilaImportProgress(null)
         return
       }
 
+      const { data, id } = result
       console.log('LILA dataset imported:', data, id)
 
       // Brief delay to show completion state, then navigate
-      setTimeout(async () => {
-        setIsLilaImporting(false)
-        setLilaImportProgress(null)
-        await queryClient.invalidateQueries({ queryKey: ['studies'] })
-        onNewStudy({ id, name: data.name, data, path })
-        navigate(`/study/${id}`)
-      }, 800)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      setIsLilaImporting(false)
+      setLilaImportProgress(null)
+      await queryClient.invalidateQueries({ queryKey: ['studies'] })
+      navigate(`/study/${id}`)
     } catch (error) {
       console.error('Failed to import LILA dataset:', error)
       // Error state is already set via IPC progress event
     }
   }
 
-  const handleCancelLilaImport = () => {
+  const handleCancelLilaImport = async () => {
+    try {
+      await window.api.cancelLilaImport(selectedLilaDataset?.id)
+    } catch (e) {
+      console.error('Error cancelling LILA import:', e)
+    }
     setIsLilaImporting(false)
     setLilaImportProgress(null)
   }
@@ -457,494 +495,372 @@ export default function Import({ onNewStudy, studiesCount = 0 }) {
     await handleLilaImport(selectedLilaDataset.id)
   }
 
+  const hasInstalledModels = getCompletelyInstalledModels().length > 0
+
+  const modelSelect = (
+    <Select
+      value={selectedModel ? `${selectedModel.id}-${selectedModel.version}` : ''}
+      onValueChange={(value) => {
+        const [id, version] = value.split('-')
+        const model = modelZoo.find((m) => m.reference.id === id && m.reference.version === version)
+        if (model && isModelCompletelyInstalled(model.reference)) {
+          setSelectedModel(model.reference)
+        }
+      }}
+    >
+      <SelectTrigger className="w-full sm:max-w-lg bg-white border-gray-200">
+        <SelectValue>
+          {selectedModel
+            ? (() => {
+                const model = modelZoo.find(
+                  (m) =>
+                    m.reference.id === selectedModel.id &&
+                    m.reference.version === selectedModel.version
+                )
+                return model ? `${model.name} v${model.reference.version}` : ''
+              })()
+            : 'Select a model'}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {modelZoo.map((model) => {
+          const modelInstalled = isModelInstalled(model.reference)
+          const envInstalled = isEnvironmentInstalled(model.pythonEnvironment)
+          const completelyInstalled = modelInstalled && envInstalled
+
+          let statusText = ''
+          if (!modelInstalled) {
+            statusText = ' (not installed)'
+          } else if (!envInstalled) {
+            statusText = ' (environment missing)'
+          }
+
+          return (
+            <SelectItem
+              key={`${model.reference.id}-${model.reference.version}`}
+              value={`${model.reference.id}-${model.reference.version}`}
+              disabled={!completelyInstalled}
+              className={!completelyInstalled ? 'opacity-50 cursor-not-allowed' : ''}
+            >
+              {model.name} v{model.reference.version}
+              {statusText}
+            </SelectItem>
+          )
+        })}
+      </SelectContent>
+    </Select>
+  )
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-4xl mx-auto p-8">
         {/* Header */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="size-10 rounded-xl bg-blue-50 flex items-center justify-center">
-              <Database className="size-5 text-blue-600" />
-            </div>
-            <h1 className="text-2xl font-semibold">
-              {studiesCount === 0 ? 'Create Your First Study' : 'Create New Study'}
-            </h1>
-          </div>
-          <p className="text-gray-500">
-            Choose a data source below. Each study organizes your camera trap data with automatic
-            species detection and visualizations.
-          </p>
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold mb-1">
+            {studiesCount === 0 ? 'Create Your First Study' : 'Create New Study'}
+          </h1>
+          <p className="text-sm text-gray-500">Choose a data source below.</p>
         </div>
 
-        {/* Primary Import - Featured */}
+        {/* Hero — recommended path (lighter treatment) */}
         {isFirstTimeUser ? (
-          /* First-time user: Show Demo Dataset as featured */
-          <Card className="mb-8 border-2 border-blue-500/20 bg-linear-to-br from-blue-50/50 to-blue-100/30 shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex gap-5 items-start">
-                <div className="size-14 rounded-2xl bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-lg">
-                  <Sparkles className="size-7 text-white" />
+          <Card className="mb-3 shadow-none border-l-[3px] border-l-blue-500">
+            <CardContent className="p-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="size-9 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
+                  <Sparkles className="size-4 text-blue-600" />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-xl font-semibold">Demo Dataset</h3>
-                    <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-xs border border-blue-500/20">
-                      Recommended
-                    </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium">Demo Dataset</h3>
+                    <span className="text-xs text-blue-600">Recommended</span>
                   </div>
-                  <div className="flex gap-3 items-center">
-                    <p className="text-sm text-gray-600">
-                      Explore all features with sample camera trap data. Perfect for getting
-                      started.
-                    </p>
-                    <Button
-                      onClick={handleDemoDataset}
-                      data-testid="import-demo-btn"
-                      className="shrink-0 w-40 ml-auto"
-                    >
-                      Get Started
-                    </Button>
-                  </div>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Explore all features with sample camera trap data.
+                  </p>
                 </div>
+                <Button
+                  onClick={handleDemoDataset}
+                  data-testid="import-demo-btn"
+                  className="shrink-0"
+                >
+                  Get Started
+                </Button>
               </div>
             </CardContent>
           </Card>
         ) : (
-          /* Returning user: Show Images Directory as featured */
-          <Card className="mb-8 border-2 border-blue-500/20 bg-linear-to-br from-blue-50/50 to-blue-100/30 shadow-lg">
-            <CardContent className="p-6">
-              <div className="flex gap-5 items-stretch mb-5">
-                <div className="size-14 rounded-2xl bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-lg self-center">
-                  <FolderOpen className="size-7 text-white" />
+          <Card className="mb-3 shadow-none border-l-[3px] border-l-blue-500">
+            <CardContent className="p-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="size-9 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
+                  <FolderOpen className="size-4 text-blue-600" />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-xl font-semibold">Images Directory</h3>
-                    <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-xs border border-blue-500/20">
-                      Recommended
-                    </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium">Images Directory</h3>
+                    <span className="text-xs text-blue-600">Recommended</span>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    Import images and automatically detect and classify species using AI models.
-                    {getCompletelyInstalledModels().length === 0 &&
-                      ' To import from an images folder, you need to install an AI model first.'}
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Import images and detect species using AI models.
+                    {!hasInstalledModels && ' Install an AI model to get started.'}
                   </p>
                 </div>
-                {getCompletelyInstalledModels().length === 0 && (
-                  <Button
-                    onClick={() => navigate('/settings/ml_zoo')}
-                    className="h-11 px-6 shrink-0 self-end"
-                  >
+                {!hasInstalledModels && (
+                  <Button onClick={() => navigate('/settings/ml_zoo')} className="shrink-0">
                     Install AI Models
                   </Button>
                 )}
               </div>
-
-              {getCompletelyInstalledModels().length === 0 ? null : (
-                /* Some models installed - show dropdown matching GBIF/LILA style */
-                <>
-                  <p className="text-sm text-gray-500 mb-3">
-                    Choose a model to classify your images.
-                  </p>
-                  <div className="flex gap-3 items-center">
-                    <Select
-                      value={selectedModel ? `${selectedModel.id}-${selectedModel.version}` : ''}
-                      onValueChange={(value) => {
-                        const [id, version] = value.split('-')
-                        const model = modelZoo.find(
-                          (m) => m.reference.id === id && m.reference.version === version
-                        )
-                        if (model && isModelCompletelyInstalled(model.reference)) {
-                          setSelectedModel(model.reference)
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-full max-w-lg bg-white border-gray-200  h-11">
-                        <SelectValue>
-                          {selectedModel
-                            ? (() => {
-                                const model = modelZoo.find(
-                                  (m) =>
-                                    m.reference.id === selectedModel.id &&
-                                    m.reference.version === selectedModel.version
-                                )
-                                return model ? `${model.name} v${model.reference.version}` : ''
-                              })()
-                            : 'Select a model'}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {modelZoo.map((model) => {
-                          const modelInstalled = isModelInstalled(model.reference)
-                          const envInstalled = isEnvironmentInstalled(model.pythonEnvironment)
-                          const completelyInstalled = modelInstalled && envInstalled
-
-                          let statusText = ''
-                          if (!modelInstalled) {
-                            statusText = ' (not installed)'
-                          } else if (!envInstalled) {
-                            statusText = ' (environment missing)'
-                          }
-
-                          return (
-                            <SelectItem
-                              key={`${model.reference.id}-${model.reference.version}`}
-                              value={`${model.reference.id}-${model.reference.version}`}
-                              disabled={!completelyInstalled}
-                              className={
-                                !completelyInstalled ? 'opacity-50 cursor-not-allowed' : ''
-                              }
-                            >
-                              {model.name} v{model.reference.version}
-                              {statusText}
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectContent>
-                    </Select>
-                    <Button onClick={handleImportImages} className="shrink-0 w-40 ml-auto !h-11">
-                      <FolderOpen className="size-4 mr-2" />
-                      Select Folder
-                    </Button>
-                  </div>
-                </>
+              {hasInstalledModels && (
+                <div className="flex flex-col sm:flex-row gap-2 mt-3 sm:items-center">
+                  {modelSelect}
+                  <Button onClick={handleImportImages} className="shrink-0 sm:ml-auto sm:w-40">
+                    <FolderOpen className="size-4 mr-2" />
+                    Select Folder
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
         )}
 
-        {/* Alternative Import Methods */}
-        <div className="mb-3">
-          <h4 className="text-sm font-medium text-gray-500">Alternative Import Formats</h4>
-        </div>
-
-        <div className="space-y-3">
-          {/* First-time user: Images Directory as alternative; Returning user: Demo Dataset as alternative */}
+        {/* Tier 1 — primary alternates */}
+        <div className="space-y-2">
           {isFirstTimeUser ? (
-            /* Images Directory Card - for first-time users */
-            <Card className="group hover:border-blue-500/20 transition-all hover:shadow-md">
-              <CardContent className="p-5">
-                <div
-                  className={`flex ${getCompletelyInstalledModels().length === 0 ? 'items-center' : 'items-start'} gap-4`}
-                >
-                  <div className="size-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
-                    <FolderOpen className="size-5 text-gray-500 group-hover:text-blue-600 transition-colors" />
+            // Images Directory as alternate for first-time users
+            <Card className="shadow-none hover:border-blue-500/30 transition-colors">
+              <CardContent className="p-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="size-8 rounded-md bg-gray-100 flex items-center justify-center shrink-0">
+                    <FolderOpen className="size-4 text-gray-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="mb-1 font-medium">Images Directory</h4>
-                    {getCompletelyInstalledModels().length === 0 ? (
-                      <p className="text-sm text-gray-500">
-                        Import images and classify species using AI
-                      </p>
-                    ) : (
-                      <>
-                        <p className="text-sm text-gray-500 mb-3">
-                          Choose a model to classify your images.
-                        </p>
-                        <div className="flex gap-3">
-                          <Select
-                            value={
-                              selectedModel ? `${selectedModel.id}-${selectedModel.version}` : ''
-                            }
-                            onValueChange={(value) => {
-                              const [id, version] = value.split('-')
-                              const model = modelZoo.find(
-                                (m) => m.reference.id === id && m.reference.version === version
-                              )
-                              if (model && isModelCompletelyInstalled(model.reference)) {
-                                setSelectedModel(model.reference)
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="w-full max-w-lg bg-white border-gray-200">
-                              <SelectValue>
-                                {selectedModel
-                                  ? (() => {
-                                      const model = modelZoo.find(
-                                        (m) =>
-                                          m.reference.id === selectedModel.id &&
-                                          m.reference.version === selectedModel.version
-                                      )
-                                      return model
-                                        ? `${model.name} v${model.reference.version}`
-                                        : ''
-                                    })()
-                                  : 'Select a model'}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {modelZoo.map((model) => {
-                                const modelInstalled = isModelInstalled(model.reference)
-                                const envInstalled = isEnvironmentInstalled(model.pythonEnvironment)
-                                const completelyInstalled = modelInstalled && envInstalled
-
-                                let statusText = ''
-                                if (!modelInstalled) {
-                                  statusText = ' (not installed)'
-                                } else if (!envInstalled) {
-                                  statusText = ' (environment missing)'
-                                }
-
-                                return (
-                                  <SelectItem
-                                    key={`${model.reference.id}-${model.reference.version}`}
-                                    value={`${model.reference.id}-${model.reference.version}`}
-                                    disabled={!completelyInstalled}
-                                    className={
-                                      !completelyInstalled ? 'opacity-50 cursor-not-allowed' : ''
-                                    }
-                                  >
-                                    {model.name} v{model.reference.version}
-                                    {statusText}
-                                  </SelectItem>
-                                )
-                              })}
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            variant="outline"
-                            className="shrink-0 w-40 ml-auto"
-                            onClick={handleImportImages}
-                          >
-                            Select Folder
-                          </Button>
-                        </div>
-                      </>
-                    )}
+                    <h4 className="text-sm font-medium leading-tight">Images Directory</h4>
+                    <p className="text-xs text-gray-500 truncate mt-0.5">
+                      {hasInstalledModels
+                        ? 'Import images and classify species using AI'
+                        : 'Install an AI model to import an images folder'}
+                    </p>
                   </div>
-                  {getCompletelyInstalledModels().length === 0 && (
+                  {!hasInstalledModels ? (
                     <Button
                       variant="outline"
-                      className="shrink-0 w-40"
+                      size="sm"
+                      className="shrink-0"
                       onClick={() => navigate('/settings/ml_zoo')}
                     >
                       Install AI Models
                     </Button>
+                  ) : (
+                    <div className="flex flex-1 sm:flex-none sm:basis-auto basis-full min-w-[240px] gap-2 sm:ml-auto">
+                      <div className="flex-1 min-w-0">{modelSelect}</div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0"
+                        onClick={handleImportImages}
+                      >
+                        Select Folder
+                      </Button>
+                    </div>
                   )}
                 </div>
               </CardContent>
             </Card>
           ) : (
-            /* Demo Dataset Card - for returning users */
-            <Card className="group hover:border-blue-500/20 transition-all hover:shadow-md">
-              <CardContent className="p-5">
-                <div className="flex items-center gap-4">
-                  <div className="size-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
-                    <Sparkles className="size-5 text-gray-500 group-hover:text-blue-600 transition-colors" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="mb-1 font-medium">Demo Dataset</h4>
-                    <p className="text-sm text-gray-500">Explore features with sample data</p>
-                  </div>
+            // Demo Dataset as alternate for returning users
+            <SourceRow
+              icon={Sparkles}
+              title="Demo Dataset"
+              description="Explore features with sample data"
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={handleDemoDataset}
+                data-testid="import-demo-btn"
+              >
+                Select
+              </Button>
+            </SourceRow>
+          )}
+
+          <SourceRow icon={Camera} title="Camtrap DP" description="Camera Trap Data Package format">
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+              onClick={handleCamTrapDP}
+              data-testid="import-camtrap-btn"
+            >
+              Select
+            </Button>
+          </SourceRow>
+        </div>
+
+        {/* Tier 2 — Online datasets */}
+        <h4 className="text-xs font-medium text-gray-500 mt-6 mb-2 uppercase tracking-wide">
+          Online datasets
+        </h4>
+        <div className="space-y-2">
+          <Card className="shadow-none hover:border-blue-500/30 transition-colors">
+            <CardContent className="p-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="size-8 rounded-md bg-gray-100 flex items-center justify-center shrink-0">
+                  <Globe className="size-4 text-gray-500" />
+                </div>
+                <h4 className="text-sm font-medium leading-tight">GBIF</h4>
+                <div className="flex flex-1 basis-full sm:basis-auto min-w-[240px] gap-2 sm:ml-auto">
+                  <Select
+                    value={selectedGbifDataset?.key || ''}
+                    onValueChange={(value) => {
+                      const dataset = gbifDatasets.find((d) => d.key === value)
+                      setSelectedGbifDataset(dataset || null)
+                    }}
+                    disabled={loadingGbifDatasets}
+                  >
+                    <SelectTrigger className="flex-1 min-w-0 bg-white border-gray-200">
+                      <SelectValue className="truncate">
+                        {loadingGbifDatasets
+                          ? 'Loading datasets...'
+                          : gbifDatasets.length === 0
+                            ? 'No datasets available'
+                            : selectedGbifDataset
+                              ? getGbifTitle(selectedGbifDataset.key, selectedGbifDataset.title)
+                              : 'Select a dataset'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {!loadingGbifDatasets &&
+                        gbifDatasets.length > 0 &&
+                        gbifDatasets.map((dataset) => (
+                          <SelectItem key={dataset.key} value={dataset.key}>
+                            {getGbifTitle(dataset.key, dataset.title)}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
                   <Button
                     variant="outline"
-                    className="shrink-0 w-40"
-                    onClick={handleDemoDataset}
-                    data-testid="import-demo-btn"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={handleGbifDataset}
+                    disabled={!selectedGbifDataset || loadingGbifDatasets}
                   >
                     Select
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Camtrap DP Card */}
-          <Card className="group hover:border-blue-500/20 transition-all hover:shadow-md">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="size-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
-                  <Camera className="size-5 text-gray-500 group-hover:text-blue-600 transition-colors" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="mb-1 font-medium">Camtrap DP</h4>
-                  <p className="text-sm text-gray-500">Camera Trap Data Package format</p>
-                </div>
-                <Button
-                  variant="outline"
-                  className="shrink-0 w-40"
-                  onClick={handleCamTrapDP}
-                  data-testid="import-camtrap-btn"
-                >
-                  Select
-                </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Wildlife Insights Card */}
-          <Card className="group hover:border-blue-500/20 transition-all hover:shadow-md">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="size-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
-                  <Camera className="size-5 text-gray-500 group-hover:text-blue-600 transition-colors" />
+          <Card className="shadow-none hover:border-blue-500/30 transition-colors">
+            <CardContent className="p-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="size-8 rounded-md bg-gray-100 flex items-center justify-center shrink-0">
+                  <Database className="size-4 text-gray-500" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="mb-1 font-medium">Wildlife Insights</h4>
-                  <p className="text-sm text-gray-500">
-                    Wildlife Insights downloaded archive or directory
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  className="shrink-0 w-40"
-                  onClick={handleWildlifeInsights}
-                  data-testid="import-wildlife-btn"
-                >
-                  Select
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Deepfaune CSV Card */}
-          <Card className="group hover:border-blue-500/20 transition-all hover:shadow-md">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="size-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
-                  <FileSpreadsheet className="size-5 text-gray-500 group-hover:text-blue-600 transition-colors" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="mb-1 font-medium">Deepfaune CSV</h4>
-                  <p className="text-sm text-gray-500">Deepfaune predictions</p>
-                </div>
-                <Button variant="outline" className="shrink-0 w-40" onClick={handleDeepfauneCSV}>
-                  Select
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Serval CSV Card */}
-          <Card className="group hover:border-blue-500/20 transition-all hover:shadow-md">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4">
-                <div className="size-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
-                  <FileSpreadsheet className="size-5 text-gray-500 group-hover:text-blue-600 transition-colors" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="mb-1 font-medium">Serval CSV</h4>
-                  <p className="text-sm text-gray-500">Serval results</p>
-                </div>
-                <Button variant="outline" className="shrink-0 w-40" onClick={handleServalCSV}>
-                  Select
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* GBIF Dataset Card */}
-          <Card className="group hover:border-blue-500/20 transition-all hover:shadow-md">
-            <CardContent className="p-5">
-              <div className="flex items-start gap-4">
-                <div className="size-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
-                  <Globe className="size-5 text-gray-500 group-hover:text-blue-600 transition-colors" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="mb-1 font-medium">GBIF Dataset</h4>
-                  <p className="text-sm text-gray-500 mb-3">Published Camera Trap format</p>
-                  <div className="@container">
-                    <div className="flex flex-wrap gap-3">
-                      <Select
-                        value={selectedGbifDataset?.key || ''}
-                        onValueChange={(value) => {
-                          const dataset = gbifDatasets.find((d) => d.key === value)
-                          setSelectedGbifDataset(dataset || null)
-                        }}
-                        disabled={loadingGbifDatasets}
-                      >
-                        <SelectTrigger className="w-full max-w-60 bg-white border-gray-200">
-                          <SelectValue className="truncate">
-                            {loadingGbifDatasets
-                              ? 'Loading datasets...'
-                              : gbifDatasets.length === 0
-                                ? 'No datasets available'
-                                : selectedGbifDataset?.title || 'Select a dataset'}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {!loadingGbifDatasets &&
-                            gbifDatasets.length > 0 &&
-                            gbifDatasets.map((dataset) => (
-                              <SelectItem key={dataset.key} value={dataset.key}>
-                                {dataset.title}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="outline"
-                        className="shrink-0 w-full sm:w-40 @md:ml-auto"
-                        onClick={handleGbifDataset}
-                        disabled={!selectedGbifDataset || loadingGbifDatasets}
-                      >
-                        Select
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* LILA Dataset Card */}
-          <Card className="group hover:border-blue-500/20 transition-all hover:shadow-md">
-            <CardContent className="p-5">
-              <div className="flex items-start gap-4">
-                <div className="size-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
-                  <Database className="size-5 text-gray-500 group-hover:text-blue-600 transition-colors" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="mb-1 font-medium">LILA Dataset</h4>
-                  <p className="text-sm text-gray-500 mb-3">
-                    LILA camera trap datasets (remote access)
-                  </p>
-                  <div className="@container">
-                    <div className="flex flex-wrap gap-3">
-                      <Select
-                        value={selectedLilaDataset?.id || ''}
-                        onValueChange={(value) => {
-                          const dataset = lilaDatasets.find((d) => d.id === value)
-                          setSelectedLilaDataset(dataset || null)
-                        }}
-                        disabled={loadingLilaDatasets}
-                      >
-                        <SelectTrigger className="w-full max-w-60 bg-white border-gray-200">
-                          <SelectValue className="truncate">
-                            {loadingLilaDatasets
-                              ? 'Loading datasets...'
-                              : lilaDatasets.length === 0
-                                ? 'No datasets available'
-                                : selectedLilaDataset
-                                  ? `${selectedLilaDataset.name} (${selectedLilaDataset.imageCount?.toLocaleString()} images)`
-                                  : 'Select a dataset'}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {!loadingLilaDatasets &&
-                            lilaDatasets.length > 0 &&
-                            lilaDatasets.map((dataset) => (
-                              <SelectItem key={dataset.id} value={dataset.id}>
-                                {dataset.name} ({dataset.imageCount?.toLocaleString()} images)
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="outline"
-                        className="shrink-0 w-full sm:w-40 @md:ml-auto"
-                        onClick={handleLilaDataset}
-                        disabled={!selectedLilaDataset || loadingLilaDatasets}
-                      >
-                        Select
-                      </Button>
-                    </div>
-                  </div>
+                <h4 className="text-sm font-medium leading-tight">LILA</h4>
+                <div className="flex flex-1 basis-full sm:basis-auto min-w-[240px] gap-2 sm:ml-auto">
+                  <Select
+                    value={selectedLilaDataset?.id || ''}
+                    onValueChange={(value) => {
+                      const dataset = lilaDatasets.find((d) => d.id === value)
+                      setSelectedLilaDataset(dataset || null)
+                    }}
+                    disabled={loadingLilaDatasets}
+                  >
+                    <SelectTrigger className="flex-1 min-w-0 bg-white border-gray-200">
+                      <SelectValue className="truncate">
+                        {loadingLilaDatasets
+                          ? 'Loading datasets...'
+                          : lilaDatasets.length === 0
+                            ? 'No datasets available'
+                            : selectedLilaDataset
+                              ? `${selectedLilaDataset.name} (${selectedLilaDataset.imageCount?.toLocaleString()} images)`
+                              : 'Select a dataset'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {!loadingLilaDatasets &&
+                        lilaDatasets.length > 0 &&
+                        lilaDatasets.map((dataset) => (
+                          <SelectItem key={dataset.id} value={dataset.id}>
+                            {dataset.name} ({dataset.imageCount?.toLocaleString()} images)
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={handleLilaDataset}
+                    disabled={!selectedLilaDataset || loadingLilaDatasets}
+                  >
+                    Select
+                  </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Tier 3 — More import formats (collapsed) */}
+        <button
+          type="button"
+          onClick={() => setShowMoreFormats((v) => !v)}
+          className="flex items-center gap-1 mt-4 mb-2 text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors uppercase tracking-wide"
+        >
+          {showMoreFormats ? (
+            <ChevronDown className="size-3.5" />
+          ) : (
+            <ChevronRight className="size-3.5" />
+          )}
+          More import formats
+        </button>
+
+        {showMoreFormats && (
+          <div className="space-y-2">
+            <SourceRow
+              icon={Camera}
+              title="Wildlife Insights"
+              description="Wildlife Insights downloaded archive or directory"
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={handleWildlifeInsights}
+                data-testid="import-wildlife-btn"
+              >
+                Select
+              </Button>
+            </SourceRow>
+
+            <SourceRow
+              icon={FileSpreadsheet}
+              title="Deepfaune CSV"
+              description="Deepfaune predictions"
+            >
+              <Button variant="outline" size="sm" className="shrink-0" onClick={handleDeepfauneCSV}>
+                Select
+              </Button>
+            </SourceRow>
+
+            <SourceRow
+              icon={FileSpreadsheet}
+              title="Serval CSV"
+              description="Serval tags.csv with Biowatch-compatible taglist"
+            >
+              <Button variant="outline" size="sm" className="shrink-0" onClick={handleServalCSV}>
+                Select
+              </Button>
+            </SourceRow>
+          </div>
+        )}
       </div>
 
       <CountryPickerModal

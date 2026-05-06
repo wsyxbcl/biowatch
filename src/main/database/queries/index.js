@@ -13,21 +13,27 @@ export {
 
 // Deployments
 export {
-  getDeployments,
+  getDeploymentLocations,
+  getAllDeployments,
   getLocationsActivity,
   insertDeployments,
-  getDeploymentsActivity
+  getDeploymentsActivity,
+  getSpeciesForDeployment
 } from './deployments.js'
 
 // Species
 export {
   getSpeciesDistribution,
   getBlankMediaCount,
+  getVehicleMediaCount,
   getDistinctSpecies,
   getSpeciesDistributionByMedia,
   getSpeciesTimeseriesByMedia,
   getSpeciesHeatmapDataByMedia,
-  getSpeciesDailyActivityByMedia
+  getSequenceAwareSpeciesCountsSQL,
+  getSequenceAwareTimeseriesSQL,
+  getSequenceAwareHeatmapSQL,
+  getSequenceAwareDailyActivitySQL
 } from './species.js'
 
 // Media
@@ -36,6 +42,7 @@ export {
   getMediaBboxes,
   getMediaBboxesBatch,
   checkMediaHaveBboxes,
+  getVideoFrameDetections,
   updateMediaTimestamp,
   insertMedia,
   updateMediaFavorite,
@@ -48,6 +55,7 @@ export {
   updateObservationBbox,
   deleteObservation,
   createObservation,
+  restoreObservation,
   insertObservations
 } from './observations.js'
 
@@ -61,3 +69,6 @@ export {
 
 // Sequences
 export { getMediaForSequencePagination, hasTimestampedMedia } from './sequences.js'
+
+// Overview stats
+export { getOverviewStats } from './overview.js'

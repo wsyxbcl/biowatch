@@ -1,0 +1,2 @@
+CREATE INDEX `idx_observations_observationType` ON `observations` (`observationType`);--> statement-breakpoint
+CREATE INDEX `idx_observations_blank_cover` ON `observations` (`mediaID`,`scientificName`,`observationType`);

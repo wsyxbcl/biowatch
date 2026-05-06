@@ -13,25 +13,13 @@ import { extname } from 'path'
 import { Readable } from 'stream'
 import { getCachedImage, getMimeType, saveImageToCache } from '../services/cache/image.js'
 
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'local-file',
-    privileges: {
-      standard: true,
-      secure: true,
-      supportFetchAPI: true,
-      stream: true
-    }
-  },
-  {
-    scheme: 'cached-image',
-    privileges: {
-      standard: true,
-      secure: true,
-      supportFetchAPI: true
-    }
-  }
-])
+function createWebFileStream(filePath, options = undefined) {
+  return Readable.toWeb(createReadStream(filePath, options))
+}
+
+// In-memory cache of file paths known to be missing (404).
+// Avoids repeated synchronous existsSync() calls for the same missing paths.
+const missingPathCache = new Set()
 
 function parseSingleRange(rangeHeader, fileSize) {
   if (!rangeHeader) return null
@@ -51,11 +39,7 @@ function parseSingleRange(rangeHeader, fileSize) {
   if (startStr === '') {
     const suffixLength = Number.parseInt(endStr, 10)
     if (!Number.isFinite(suffixLength) || suffixLength <= 0) return { error: 'invalid' }
-    if (suffixLength >= fileSize) {
-      start = 0
-    } else {
-      start = fileSize - suffixLength
-    }
+    start = suffixLength >= fileSize ? 0 : fileSize - suffixLength
     end = fileSize - 1
   } else {
     start = Number.parseInt(startStr, 10)
@@ -73,10 +57,6 @@ function parseSingleRange(rangeHeader, fileSize) {
   end = Math.min(end, fileSize - 1)
 
   return { start, end }
-}
-
-function createWebFileStream(filePath, options = undefined) {
-  return Readable.toWeb(createReadStream(filePath, options))
 }
 
 /**
@@ -106,12 +86,22 @@ export function registerLocalFileProtocol() {
     const url = new URL(request.url)
     const filePath = url.searchParams.get('path')
 
-    log.info('=== local-file protocol request ===')
-    log.info('File path:', filePath)
+    log.debug('=== local-file protocol request ===')
+    log.debug('File path:', filePath)
+
+    if (!filePath) {
+      return new Response('File not found', { status: 404 })
+    }
+
+    // Fast path: skip filesystem check for known-missing files
+    if (missingPathCache.has(filePath)) {
+      return new Response('File not found', { status: 404 })
+    }
 
     // Check if file exists
-    if (!filePath || !existsSync(filePath)) {
-      log.error('File not found:', filePath)
+    if (!existsSync(filePath)) {
+      log.warn('File not found (caching 404):', filePath)
+      missingPathCache.add(filePath)
       return new Response('File not found', { status: 404 })
     }
 
@@ -154,7 +144,7 @@ export function registerLocalFileProtocol() {
         const { start, end } = parsedRange
         const chunkSize = end - start + 1
 
-        log.info(`Range request: bytes=${start}-${end}/${fileSize}`)
+        log.debug(`Range request: bytes=${start}-${end}/${fileSize}`)
 
         return new Response(createWebFileStream(filePath, { start, end }), {
           status: 206,
@@ -168,7 +158,7 @@ export function registerLocalFileProtocol() {
       }
 
       // Non-range request: return full file
-      log.info(`Full file request: ${fileSize} bytes`)
+      log.debug(`Full file request: ${fileSize} bytes`)
 
       return new Response(createWebFileStream(filePath), {
         status: 200,

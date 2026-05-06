@@ -33,8 +33,17 @@ const api = {
   getBlankMediaCount: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('species:get-blank-count', studyId)
   },
-  getDeployments: async (studyId) => {
-    return await electronAPI.ipcRenderer.invoke('deployments:get', studyId)
+  getVehicleMediaCount: async (studyId) => {
+    return await electronAPI.ipcRenderer.invoke('species:get-vehicle-count', studyId)
+  },
+  getDeploymentLocations: async (studyId) => {
+    return await electronAPI.ipcRenderer.invoke('deployments:get-locations', studyId)
+  },
+  getAllDeployments: async (studyId) => {
+    return await electronAPI.ipcRenderer.invoke('deployments:get-all', studyId)
+  },
+  getDeploymentSpecies: async (studyId, deploymentID) => {
+    return await electronAPI.ipcRenderer.invoke('deployments:get-species', studyId, deploymentID)
   },
   deleteStudyDatabase: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('study:delete-database', studyId)
@@ -51,8 +60,8 @@ const api = {
   getLocationsActivity: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('locations:get-activity', studyId)
   },
-  getDeploymentsActivity: async (studyId) => {
-    return await electronAPI.ipcRenderer.invoke('deployments:get-activity', studyId)
+  getDeploymentsActivity: async (studyId, periodCount) => {
+    return await electronAPI.ipcRenderer.invoke('deployments:get-activity', studyId, periodCount)
   },
   getMediaBboxes: async (studyId, mediaID, includeWithoutBbox = false) => {
     return await electronAPI.ipcRenderer.invoke(
@@ -65,6 +74,13 @@ const api = {
   getMediaBboxesBatch: async (studyId, mediaIDs) => {
     return await electronAPI.ipcRenderer.invoke('media:get-bboxes-batch', studyId, mediaIDs)
   },
+  getVideoFrameDetections: async (studyId, mediaID) => {
+    return await electronAPI.ipcRenderer.invoke(
+      'media:get-video-frame-detections',
+      studyId,
+      mediaID
+    )
+  },
   checkMediaHaveBboxes: async (studyId, mediaIDs) => {
     return await electronAPI.ipcRenderer.invoke('media:have-bboxes', studyId, mediaIDs)
   },
@@ -73,6 +89,9 @@ const api = {
   },
   getBestImagePerSpecies: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('species:get-best-images', studyId)
+  },
+  getOverviewStats: async (studyId) => {
+    return await electronAPI.ipcRenderer.invoke('overview:get-stats', studyId)
   },
   // Sequence-aware species distribution APIs (pre-computed in main thread)
   // gapSeconds is fetched from study metadata in the backend
@@ -256,6 +275,12 @@ const api = {
   importLilaDataset: async (datasetId) => {
     return await electronAPI.ipcRenderer.invoke('import:lila-dataset', datasetId)
   },
+  cancelGbifImport: async (datasetKey) => {
+    return await electronAPI.ipcRenderer.invoke('import:cancel-gbif', datasetKey)
+  },
+  cancelLilaImport: async (datasetId) => {
+    return await electronAPI.ipcRenderer.invoke('import:cancel-lila', datasetId)
+  },
   // LILA import progress events
   onLilaImportProgress: (callback) => {
     const handler = (_event, data) => callback(data)
@@ -296,6 +321,15 @@ const api = {
   // Create new observation with bbox
   createObservation: async (studyId, observationData) => {
     return await electronAPI.ipcRenderer.invoke('observations:create', studyId, observationData)
+  },
+  // Restore observation to a prior state (used by undo, no auto-stamping)
+  restoreObservation: async (studyId, observationID, fields) => {
+    return await electronAPI.ipcRenderer.invoke(
+      'observations:restore',
+      studyId,
+      observationID,
+      fields
+    )
   },
   // Get distinct species for dropdown
   getDistinctSpecies: async (studyId) => {
@@ -351,6 +385,28 @@ const api = {
   // Diagnostics
   exportDiagnostics: async () => {
     return await electronAPI.ipcRenderer.invoke('diagnostics:export')
+  },
+
+  // Activity tab — export the rendered Leaflet map as a PNG file
+  exportActivityMapPng: async ({ dataUrl, defaultFilename }) => {
+    return await electronAPI.ipcRenderer.invoke('activity:export-map-png', {
+      dataUrl,
+      defaultFilename
+    })
+  },
+
+  // Settings → Info tab
+  getChangelog: async (limit = 3) => {
+    return await electronAPI.ipcRenderer.invoke('info:get-changelog', limit)
+  },
+  getStorageUsage: async () => {
+    return await electronAPI.ipcRenderer.invoke('info:get-storage-usage')
+  },
+  getLicenseText: async () => {
+    return await electronAPI.ipcRenderer.invoke('info:get-license-text')
+  },
+  openPath: async (filePath) => {
+    return await electronAPI.ipcRenderer.invoke('shell:open-path', filePath)
   },
 
   // Remote image caching (for GBIF/Agouti imported images)

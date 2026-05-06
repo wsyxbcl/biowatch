@@ -507,54 +507,54 @@ describe('groupMediaIntoSequences', () => {
   })
 
   describe('same timestamp ordering', () => {
-    test('items with same timestamp are ordered by filePath ascending', () => {
+    test('items with same timestamp are ordered by fileName ascending', () => {
       const media = [
         {
           mediaID: 'c',
           timestamp: baseTime.toISOString(),
-          filePath: 'KRU_S1/IMAG0445.JPG',
+          fileName: 'IMAG0445.JPG',
           deploymentID: 'dep1'
         },
         {
           mediaID: 'a',
           timestamp: baseTime.toISOString(),
-          filePath: 'KRU_S1/IMAG0443.JPG',
+          fileName: 'IMAG0443.JPG',
           deploymentID: 'dep1'
         },
         {
           mediaID: 'b',
           timestamp: baseTime.toISOString(),
-          filePath: 'KRU_S1/IMAG0444.JPG',
+          fileName: 'IMAG0444.JPG',
           deploymentID: 'dep1'
         }
       ]
       const { sequences } = groupMediaIntoSequences(media, 60)
 
       assert.equal(sequences.length, 1)
-      // Should be ordered: 443, 444, 445 (by filePath)
-      assert.equal(sequences[0].items[0].filePath, 'KRU_S1/IMAG0443.JPG')
-      assert.equal(sequences[0].items[1].filePath, 'KRU_S1/IMAG0444.JPG')
-      assert.equal(sequences[0].items[2].filePath, 'KRU_S1/IMAG0445.JPG')
+      // Should be ordered: 443, 444, 445 (by fileName)
+      assert.equal(sequences[0].items[0].fileName, 'IMAG0443.JPG')
+      assert.equal(sequences[0].items[1].fileName, 'IMAG0444.JPG')
+      assert.equal(sequences[0].items[2].fileName, 'IMAG0445.JPG')
     })
 
-    test('sequence id uses first item by filePath when timestamps match', () => {
+    test('sequence id uses first item by fileName when timestamps match', () => {
       const media = [
         {
           mediaID: 'c',
           timestamp: baseTime.toISOString(),
-          filePath: 'KRU_S1/IMAG0445.JPG',
+          fileName: 'IMAG0445.JPG',
           deploymentID: 'dep1'
         },
         {
           mediaID: 'a',
           timestamp: baseTime.toISOString(),
-          filePath: 'KRU_S1/IMAG0443.JPG',
+          fileName: 'IMAG0443.JPG',
           deploymentID: 'dep1'
         }
       ]
       const { sequences } = groupMediaIntoSequences(media, 60)
 
-      // 'a' has the earliest filePath, so it should be the sequence ID
+      // 'a' has the earliest fileName, so it should be the sequence ID
       assert.equal(sequences[0].id, 'a')
     })
 
@@ -563,27 +563,27 @@ describe('groupMediaIntoSequences', () => {
         {
           mediaID: 'm3',
           timestamp: baseTime.toISOString(),
-          filePath: 'KRU_S1/7/7_R1/KRU_S1_7_R1_IMAG0445.JPG',
+          fileName: 'KRU_S1_7_R1_IMAG0445.JPG',
           deploymentID: 'dep1'
         },
         {
           mediaID: 'm2',
           timestamp: baseTime.toISOString(),
-          filePath: 'KRU_S1/7/7_R1/KRU_S1_7_R1_IMAG0444.JPG',
+          fileName: 'KRU_S1_7_R1_IMAG0444.JPG',
           deploymentID: 'dep1'
         },
         {
           mediaID: 'm1',
           timestamp: baseTime.toISOString(),
-          filePath: 'KRU_S1/7/7_R1/KRU_S1_7_R1_IMAG0443.JPG',
+          fileName: 'KRU_S1_7_R1_IMAG0443.JPG',
           deploymentID: 'dep1'
         }
       ]
       const { sequences } = groupMediaIntoSequences(media, 60)
 
-      assert.equal(sequences[0].items[0].filePath, 'KRU_S1/7/7_R1/KRU_S1_7_R1_IMAG0443.JPG')
-      assert.equal(sequences[0].items[1].filePath, 'KRU_S1/7/7_R1/KRU_S1_7_R1_IMAG0444.JPG')
-      assert.equal(sequences[0].items[2].filePath, 'KRU_S1/7/7_R1/KRU_S1_7_R1_IMAG0445.JPG')
+      assert.equal(sequences[0].items[0].fileName, 'KRU_S1_7_R1_IMAG0443.JPG')
+      assert.equal(sequences[0].items[1].fileName, 'KRU_S1_7_R1_IMAG0444.JPG')
+      assert.equal(sequences[0].items[2].fileName, 'KRU_S1_7_R1_IMAG0445.JPG')
     })
 
     test('user example: KRU_S1_44_R1 files ordered correctly', () => {
@@ -591,47 +591,73 @@ describe('groupMediaIntoSequences', () => {
         {
           mediaID: 'm3',
           timestamp: baseTime.toISOString(),
-          filePath: 'KRU_S1/44/44_R1/KRU_S1_44_R1_IMAG0058.JPG',
+          fileName: 'KRU_S1_44_R1_IMAG0058.JPG',
           deploymentID: 'dep1'
         },
         {
           mediaID: 'm2',
           timestamp: baseTime.toISOString(),
-          filePath: 'KRU_S1/44/44_R1/KRU_S1_44_R1_IMAG0057.JPG',
+          fileName: 'KRU_S1_44_R1_IMAG0057.JPG',
           deploymentID: 'dep1'
         },
         {
           mediaID: 'm1',
           timestamp: baseTime.toISOString(),
-          filePath: 'KRU_S1/44/44_R1/KRU_S1_44_R1_IMAG0056.JPG',
+          fileName: 'KRU_S1_44_R1_IMAG0056.JPG',
           deploymentID: 'dep1'
         }
       ]
       const { sequences } = groupMediaIntoSequences(media, 60)
 
       // Should be 56, 57, 58
-      assert.equal(sequences[0].items[0].filePath, 'KRU_S1/44/44_R1/KRU_S1_44_R1_IMAG0056.JPG')
-      assert.equal(sequences[0].items[1].filePath, 'KRU_S1/44/44_R1/KRU_S1_44_R1_IMAG0057.JPG')
-      assert.equal(sequences[0].items[2].filePath, 'KRU_S1/44/44_R1/KRU_S1_44_R1_IMAG0058.JPG')
+      assert.equal(sequences[0].items[0].fileName, 'KRU_S1_44_R1_IMAG0056.JPG')
+      assert.equal(sequences[0].items[1].fileName, 'KRU_S1_44_R1_IMAG0057.JPG')
+      assert.equal(sequences[0].items[2].fileName, 'KRU_S1_44_R1_IMAG0058.JPG')
     })
 
-    test('mixed timestamps still sorted correctly with filePath tiebreaker', () => {
+    test('mixed timestamps still sorted correctly with fileName tiebreaker', () => {
       const time1 = baseTime.toISOString()
       const time2 = new Date(baseTime.getTime() + 1000).toISOString()
       const media = [
-        { mediaID: 'm4', timestamp: time2, filePath: 'D.JPG', deploymentID: 'dep1' },
-        { mediaID: 'm2', timestamp: time1, filePath: 'B.JPG', deploymentID: 'dep1' },
-        { mediaID: 'm3', timestamp: time2, filePath: 'C.JPG', deploymentID: 'dep1' },
-        { mediaID: 'm1', timestamp: time1, filePath: 'A.JPG', deploymentID: 'dep1' }
+        { mediaID: 'm4', timestamp: time2, fileName: 'D.JPG', deploymentID: 'dep1' },
+        { mediaID: 'm2', timestamp: time1, fileName: 'B.JPG', deploymentID: 'dep1' },
+        { mediaID: 'm3', timestamp: time2, fileName: 'C.JPG', deploymentID: 'dep1' },
+        { mediaID: 'm1', timestamp: time1, fileName: 'A.JPG', deploymentID: 'dep1' }
       ]
       const { sequences } = groupMediaIntoSequences(media, 60)
 
       // All within 60s, so one sequence
       // Order: A.JPG (time1), B.JPG (time1), C.JPG (time2), D.JPG (time2)
-      assert.equal(sequences[0].items[0].filePath, 'A.JPG')
-      assert.equal(sequences[0].items[1].filePath, 'B.JPG')
-      assert.equal(sequences[0].items[2].filePath, 'C.JPG')
-      assert.equal(sequences[0].items[3].filePath, 'D.JPG')
+      assert.equal(sequences[0].items[0].fileName, 'A.JPG')
+      assert.equal(sequences[0].items[1].fileName, 'B.JPG')
+      assert.equal(sequences[0].items[2].fileName, 'C.JPG')
+      assert.equal(sequences[0].items[3].fileName, 'D.JPG')
+    })
+
+    test('Agouti-style filePath (random UUID) does not affect order — fileName wins', () => {
+      // Regression: GMU8 Leuven items had filePath like
+      //   https://multimedia.agouti.eu/assets/<random-uuid>/file
+      // so localeCompare on filePath produced UUID order, not filename order.
+      const media = [
+        {
+          mediaID: 'a',
+          timestamp: baseTime.toISOString(),
+          filePath: 'https://multimedia.agouti.eu/assets/d0f01610-zzz/file',
+          fileName: '20180601125157-101RECNX_IMG_0317.JPG',
+          deploymentID: 'dep1'
+        },
+        {
+          mediaID: 'b',
+          timestamp: baseTime.toISOString(),
+          filePath: 'https://multimedia.agouti.eu/assets/d58f72fa-aaa/file',
+          fileName: '20180601125157-101RECNX_IMG_0316.JPG',
+          deploymentID: 'dep1'
+        }
+      ]
+      const { sequences } = groupMediaIntoSequences(media, 60)
+
+      assert.equal(sequences[0].items[0].fileName, '20180601125157-101RECNX_IMG_0316.JPG')
+      assert.equal(sequences[0].items[1].fileName, '20180601125157-101RECNX_IMG_0317.JPG')
     })
   })
 
@@ -957,17 +983,17 @@ describe('groupMediaByEventID', () => {
   })
 
   describe('same timestamp ordering', () => {
-    test('items with same timestamp are ordered by filePath ascending', () => {
+    test('items with same timestamp are ordered by fileName ascending', () => {
       const media = [
-        { mediaID: 'c', timestamp: baseTime.toISOString(), eventID: 'e1', filePath: 'C.JPG' },
-        { mediaID: 'a', timestamp: baseTime.toISOString(), eventID: 'e1', filePath: 'A.JPG' },
-        { mediaID: 'b', timestamp: baseTime.toISOString(), eventID: 'e1', filePath: 'B.JPG' }
+        { mediaID: 'c', timestamp: baseTime.toISOString(), eventID: 'e1', fileName: 'C.JPG' },
+        { mediaID: 'a', timestamp: baseTime.toISOString(), eventID: 'e1', fileName: 'A.JPG' },
+        { mediaID: 'b', timestamp: baseTime.toISOString(), eventID: 'e1', fileName: 'B.JPG' }
       ]
       const { sequences } = groupMediaByEventID(media)
 
-      assert.equal(sequences[0].items[0].filePath, 'A.JPG')
-      assert.equal(sequences[0].items[1].filePath, 'B.JPG')
-      assert.equal(sequences[0].items[2].filePath, 'C.JPG')
+      assert.equal(sequences[0].items[0].fileName, 'A.JPG')
+      assert.equal(sequences[0].items[1].fileName, 'B.JPG')
+      assert.equal(sequences[0].items[2].fileName, 'C.JPG')
     })
   })
 

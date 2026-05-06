@@ -158,7 +158,7 @@ Species observations linked to media.
 | `eventStart` | TEXT | | Event start (ISO 8601) |
 | `eventEnd` | TEXT | | Event end (ISO 8601) |
 | `scientificName` | TEXT | | Latin species name |
-| `observationType` | TEXT | | `animal`, `blank`, etc. |
+| `observationType` | TEXT | | One of `animal`, `human`, `vehicle`, `blank`, `unknown`, `unclassified` (Camtrap DP enum). See "Pseudo-species and blank media" below. |
 | `commonName` | TEXT | | Common name |
 | `classificationProbability` | REAL | | Classification probability (0-1) |
 | `count` | INTEGER | | Number of individuals |
@@ -205,6 +205,44 @@ export const observations = sqliteTable('observations', {
 })
 ```
 
+#### Pseudo-species and blank media
+
+The Camtrap DP `observationType` enum carries six values: `animal`, `human`,
+`vehicle`, `blank`, `unknown`, `unclassified`. Of these, only `animal` and
+`human` rows ever populate `scientificName` — the other four are
+"empty-species" rows.
+
+To present these consistently in the UI we group them into two pseudo-species
+buckets, addressed via sentinel strings defined in `src/shared/constants.js`:
+
+- **`BLANK_SENTINEL`** — represents *blank media*: media that has no
+  observation naming a real species and no vehicle observation. Covers
+  media with zero observation rows AND media whose only observations are
+  `blank`/`unclassified`/`unknown`-typed empty-species rows. Computed by
+  `getBlankMediaCount` (`src/main/database/queries/species.js`) via
+  `notExists(realObservations)`.
+- **`VEHICLE_SENTINEL`** — represents *vehicle media*: media with at least
+  one `observationType='vehicle'` observation. Computed by
+  `getVehicleMediaCount`. Vehicle media is **not** counted as blank.
+
+Both sentinels appear in the Library and Deployments species filters and
+flow through `getMediaForSequencePagination` as filterable buckets. The
+`scientificName` filter `IS NOT NULL AND != ''` is preferred over the
+older `observationType != 'blank'` proxy when restricting to "real
+species" rows — the proxy lets `unclassified`/`unknown` empty-species rows
+through, which pollutes species distributions.
+
+#### `observationID` reuse after delete
+
+`observationID` is a TEXT primary key (UUID, not auto-increment). Once an
+observation is deleted, its UUID is freed and a subsequent `INSERT` may reuse
+the same value. The undo system relies on this: undoing a delete recreates the
+row with its original `observationID` and `eventID` so any later stack entries
+that reference the observation (e.g., a follow-up classification edit) remain
+valid. The PK uniqueness constraint still rejects a second insert with a live
+id — `createObservation`'s optional `observationID` / `eventID` parameters are
+the only sanctioned way to reuse a freed UUID.
+
 ---
 
 ### metadata
@@ -221,8 +259,8 @@ Study-level metadata (one row per database).
 | `importerName` | TEXT | NOT NULL | Import source identifier |
 | `contributors` | TEXT | JSON | Array of contributor objects |
 | `updatedAt` | TEXT | | Last modification |
-| `startDate` | TEXT | | Temporal coverage start |
-| `endDate` | TEXT | | Temporal coverage end |
+| `startDate` | TEXT | | Temporal coverage start (ISO date). User override for the Overview tab's Span tile — when set, beats `observations.eventStart` / `deployments.deploymentStart` / `media.timestamp` derivation. |
+| `endDate` | TEXT | | Temporal coverage end (ISO date). Same override semantics as `startDate`. |
 | `sequenceGap` | INTEGER | | Media grouping threshold in seconds (null = smart default) |
 
 ```javascript
@@ -310,6 +348,50 @@ export const modelOutputs = sqliteTable(
 
 ---
 
+### jobs
+
+Persistent job queue for async work (ML inference, OCR, etc.). Jobs are self-contained — payload carries references (mediaIDs, file paths) as data, no foreign keys to other tables.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | TEXT | PRIMARY KEY | UUID |
+| `kind` | TEXT | NOT NULL | Job category (`ml-inference`, `ocr`, etc.) |
+| `topic` | TEXT | | Sub-grouping (`speciesnet:4.0.1a`, `deepfaune:1.2`, etc.) |
+| `status` | TEXT | NOT NULL, DEFAULT 'pending' | `pending`, `processing`, `completed`, `failed`, `cancelled` |
+| `payload` | TEXT | NOT NULL, JSON | Job-specific data (mediaId, filePath, etc.) |
+| `error` | TEXT | | Error message on failure |
+| `attempts` | INTEGER | NOT NULL, DEFAULT 0 | Number of processing attempts |
+| `maxAttempts` | INTEGER | NOT NULL, DEFAULT 3 | Maximum retry attempts |
+| `createdAt` | TEXT | NOT NULL | Job creation time (ISO 8601) |
+| `startedAt` | TEXT | | Last processing start time (ISO 8601) |
+| `completedAt` | TEXT | | Completion or final failure time (ISO 8601) |
+
+```javascript
+export const jobs = sqliteTable('jobs', {
+  id: text('id').primaryKey(),
+  kind: text('kind').notNull(),
+  topic: text('topic'),
+  status: text('status').notNull().default('pending'),
+  payload: text('payload', { mode: 'json' }).notNull(),
+  error: text('error'),
+  attempts: integer('attempts').notNull().default(0),
+  maxAttempts: integer('maxAttempts').notNull().default(3),
+  createdAt: text('createdAt').notNull(),
+  startedAt: text('startedAt'),
+  completedAt: text('completedAt')
+})
+```
+
+**Indexes:** `(kind, status)` for consumer queries, `(status, createdAt)` for FIFO ordering.
+
+**Failure handling:** Jobs that exhaust `maxAttempts` stay as `status='failed'`. Use `retryFailed()` to reset them.
+
+**Crash recovery:** On app startup, `recoverStale()` resets `processing` → `pending` (idempotent operations).
+
+**Queue service:** `src/main/services/queue.js` — `enqueue`, `enqueueBatch`, `claimBatch`, `complete`, `fail`, `cancel`, `retryFailed`, `recoverStale`, `getStatus`, `getJobs`.
+
+---
+
 ## JSON Field Formats
 
 ### contributors (metadata.contributors)
@@ -381,6 +463,7 @@ export const modelOutputs = sqliteTable(
 | `src/main/database/queries/best-media.js` | Best media selection |
 | `src/main/database/queries/utils.js` | Query utilities |
 | `src/main/database/migrations/` | SQL migration files |
+| `src/main/services/queue.js` | Job queue service (enqueue, claim, complete, fail, etc.) |
 
 ---
 

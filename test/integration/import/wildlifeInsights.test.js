@@ -93,6 +93,7 @@ describe('Wildlife Import Tests', () => {
       const expectedTables = [
         '__drizzle_migrations',
         'deployments',
+        'jobs',
         'media',
         'metadata',
         'model_outputs',
@@ -210,14 +211,14 @@ describe('Wildlife Import Tests', () => {
       // Check for species observations
       const speciesObs = queryDatabase(
         dbPath,
-        "SELECT * FROM observations WHERE scientificName LIKE 'Vulpes vulpes'"
+        "SELECT * FROM observations WHERE scientificName LIKE 'vulpes vulpes'"
       )
       assert(speciesObs.length > 0, 'Should have Red Fox observations')
 
       // Verify Red Fox observation details
       const foxObs = speciesObs[0]
       assert.equal(foxObs.commonName, 'Red Fox', 'Should have correct common name')
-      assert.equal(foxObs.scientificName, 'Vulpes vulpes', 'Should have correct scientific name')
+      assert.equal(foxObs.scientificName, 'vulpes vulpes', 'Should have correct scientific name')
       assert.equal(foxObs.count, 1, 'Should have correct count')
     })
 
@@ -235,7 +236,7 @@ describe('Wildlife Import Tests', () => {
 
       // Should have proper scientific names constructed from genus + species
       const scientificNames = observations.map((obs) => obs.scientificName)
-      assert(scientificNames.includes('Vulpes vulpes'), 'Should have Vulpes vulpes')
+      assert(scientificNames.includes('vulpes vulpes'), 'Should have Vulpes vulpes')
 
       // Should handle blank entries - they should have commonName = 'Blank' but scientificName = null
       const blankObs = queryDatabase(

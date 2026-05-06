@@ -10,12 +10,13 @@ import {
   getMediaBboxes,
   getMediaBboxesBatch,
   checkMediaHaveBboxes,
-  getBestMedia,
+  getVideoFrameDetections,
   updateMediaTimestamp,
   updateMediaFavorite,
   countMediaWithNullTimestamps,
   closeStudyDatabase
 } from '../database/index.js'
+import { runInWorker } from '../services/sequences/runInWorker.js'
 
 /**
  * Register all media-related IPC handlers
@@ -73,7 +74,27 @@ export function registerMediaIPCHandlers() {
     }
   })
 
-  // Get best media files scored by bbox quality heuristic
+  // Get per-frame detector bboxes for a video (from modelOutputs.rawOutput.frames)
+  ipcMain.handle('media:get-video-frame-detections', async (_, studyId, mediaID) => {
+    try {
+      const dbPath = getStudyDatabasePath(app.getPath('userData'), studyId)
+      if (!dbPath || !existsSync(dbPath)) {
+        log.warn(`Database not found for study ID: ${studyId}`)
+        return { error: 'Database not found for this study' }
+      }
+
+      const detections = await getVideoFrameDetections(dbPath, mediaID)
+      return { data: detections }
+    } catch (error) {
+      log.error('Error getting video frame detections:', error)
+      return { error: error.message }
+    }
+  })
+
+  // Get best media files scored by bbox quality heuristic.
+  // Runs in the sequences worker so the favorites CTE and (potentially heavy)
+  // auto-scored CTE don't block the renderer's UI on cold-cache runs. The
+  // bbox short-circuit inside getBestMedia keeps the no-bbox case cheap too.
   ipcMain.handle('media:get-best', async (_, studyId, options = {}) => {
     try {
       const dbPath = getStudyDatabasePath(app.getPath('userData'), studyId)
@@ -82,7 +103,12 @@ export function registerMediaIPCHandlers() {
         return { error: 'Database not found for this study' }
       }
 
-      const bestMedia = await getBestMedia(dbPath, options)
+      const bestMedia = await runInWorker({
+        type: 'best-media',
+        dbPath,
+        studyId,
+        options
+      })
       return { data: bestMedia }
     } catch (error) {
       log.error('Error getting best media:', error)

@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm'
 import log from 'electron-log'
 import { getStudyIdFromPath } from './utils.js'
 import { lifeStageSchema, sexSchema, behaviorSchema } from '../validators.js'
+import { normalizeScientificName } from '../../../shared/commonNames/normalize.js'
 
 /**
  * Update an observation's classification (species) with CamTrap DP compliant fields.
@@ -47,13 +48,35 @@ export async function updateObservationClassification(dbPath, observationID, upd
       classificationProbability: null
     }
 
-    // Add optional fields if provided (only update if explicitly passed)
+    // Three-case discrimination for scientificName + commonName:
+    //   1. Species cleared: scientificName null/empty -> clear both.
+    //   2. Picker-list selection: scientificName + non-null commonName -> save both.
+    //   3. Custom entry: scientificName + null/absent commonName -> save sci, clear common.
+    // See docs/specs/2026-04-21-common-names-robustness-design.md for rationale.
     if (updates.scientificName !== undefined) {
-      updateValues.scientificName = updates.scientificName || null
-    }
-
-    if (updates.commonName !== undefined) {
-      updateValues.commonName = updates.commonName
+      // Canonicalize at the single-write chokepoint so custom-species input
+      // ("Vulpes Vulpes") doesn't reintroduce the mixed-case duplicates the
+      // importers were just changed to prevent.
+      const sci = normalizeScientificName(updates.scientificName)
+      const sciIsCleared = sci === null || sci === ''
+      if (sciIsCleared) {
+        updateValues.scientificName = null
+        updateValues.commonName = null
+      } else {
+        updateValues.scientificName = sci
+        if (typeof updates.commonName === 'string' && updates.commonName.length > 0) {
+          updateValues.commonName = updates.commonName
+        } else {
+          updateValues.commonName = null
+        }
+      }
+    } else if (updates.commonName !== undefined) {
+      // scientificName not being updated; permit commonName-only tweaks.
+      // Normalize empty string to null for consistency with the sci-provided branch.
+      updateValues.commonName =
+        typeof updates.commonName === 'string' && updates.commonName.length > 0
+          ? updates.commonName
+          : null
     }
 
     if (updates.observationType !== undefined) {
@@ -90,8 +113,16 @@ export async function updateObservationClassification(dbPath, observationID, upd
       .get()
 
     const elapsedTime = Date.now() - startTime
+    // Describe what actually changed. scientificName=undefined means "field not
+    // in payload" (e.g. a sex-only update), distinct from scientificName=null
+    // which means "species cleared".
+    let sciDescription
+    if (!('scientificName' in updates)) sciDescription = 'unchanged'
+    else if (updates.scientificName === null || updates.scientificName === '')
+      sciDescription = 'cleared'
+    else sciDescription = `"${updates.scientificName}"`
     log.info(
-      `Updated observation ${observationID} to "${updates.scientificName || 'blank'}" in ${elapsedTime}ms`
+      `Updated observation ${observationID} (scientificName: ${sciDescription}) in ${elapsedTime}ms`
     )
     return updatedObservation
   } catch (error) {
@@ -212,6 +243,8 @@ export async function deleteObservation(dbPath, observationID) {
  *
  * @param {string} dbPath - Path to the SQLite database
  * @param {Object} observationData - The observation data
+ * @param {string} [observationData.observationID] - Optional explicit ID (used by undo to recreate deleted observations with their original UUID)
+ * @param {string} [observationData.eventID] - Optional explicit event ID (preserved alongside observationID)
  * @param {string} observationData.mediaID - Associated media ID
  * @param {string} observationData.deploymentID - Associated deployment ID
  * @param {string} observationData.timestamp - Media timestamp (ISO 8601)
@@ -280,9 +313,22 @@ export async function createObservation(dbPath, observationData) {
       behaviorSchema.parse(behavior)
     }
 
-    // Generate IDs
-    const observationID = crypto.randomUUID()
-    const eventID = crypto.randomUUID()
+    // Generate IDs (or accept explicit ones — used by the undo system to
+    // recreate a previously deleted observation with its original UUID).
+    const observationID = observationData.observationID ?? crypto.randomUUID()
+    const eventID = observationData.eventID ?? crypto.randomUUID()
+
+    // Classification metadata. Direct user creation defaults to a fresh human
+    // stamp ('human' / 'User' / now / null probability / 'animal'). The undo
+    // path opts out by passing these fields verbatim, so undo-of-delete can
+    // restore an originally machine-classified row in a single IPC instead
+    // of needing a separate stamp-free UPDATE.
+    const observationType = observationData.observationType ?? 'animal'
+    const classificationMethod = observationData.classificationMethod ?? 'human'
+    const classifiedBy = observationData.classifiedBy ?? 'User'
+    const classificationTimestamp =
+      observationData.classificationTimestamp ?? new Date().toISOString()
+    const classificationProbability = observationData.classificationProbability ?? null
 
     // Prepare observation data following CamTrap DP specification
     const newObservation = {
@@ -294,17 +340,17 @@ export async function createObservation(dbPath, observationData) {
       eventEnd: timestamp,
       scientificName: scientificName || null,
       commonName: commonName || null,
-      observationType: 'animal',
-      classificationProbability: null, // Human classification - no classificationProbability score
+      observationType,
+      classificationProbability,
       count: 1,
       bboxX: hasBbox ? bboxX : null,
       bboxY: hasBbox ? bboxY : null,
       bboxWidth: hasBbox ? bboxWidth : null,
       bboxHeight: hasBbox ? bboxHeight : null,
       modelOutputID: null, // No model involved
-      classificationMethod: 'human',
-      classifiedBy: 'User',
-      classificationTimestamp: new Date().toISOString(),
+      classificationMethod,
+      classifiedBy,
+      classificationTimestamp,
       // Camtrap DP observation fields
       sex: sex || null,
       lifeStage: lifeStage || null,
@@ -333,6 +379,62 @@ export async function createObservation(dbPath, observationData) {
 }
 
 /**
+ * Restore an observation's fields to a prior state (used by the undo system).
+ * Unlike updateObservationClassification / updateObservationBbox, this does NOT
+ * auto-stamp classificationMethod / classifiedBy / classificationTimestamp —
+ * undo is "revert state", not "another user edit", so it must preserve whatever
+ * those fields were at the snapshot point.
+ *
+ * @param {string} dbPath - Path to the SQLite database
+ * @param {string} observationID - The observation ID to restore
+ * @param {Object} fields - Fields to overwrite verbatim. Any combination of:
+ *   bboxX, bboxY, bboxWidth, bboxHeight, scientificName, commonName,
+ *   observationType, sex, lifeStage, behavior, classificationMethod,
+ *   classifiedBy, classificationTimestamp, classificationProbability
+ * @returns {Promise<Object>} - The restored observation
+ * @throws if no row matches observationID (so external deletions trigger the
+ *         caller's failure path rather than silently doing nothing).
+ */
+export async function restoreObservation(dbPath, observationID, fields) {
+  const startTime = Date.now()
+  log.info(`Restoring observation: ${observationID}`)
+
+  try {
+    if (!fields || Object.keys(fields).length === 0) {
+      // No-op restores aren't meaningful, but they shouldn't masquerade as
+      // 'observation not found' — verify the row exists and return it.
+      throw new Error('restoreObservation called with no fields to update')
+    }
+
+    const studyId = getStudyIdFromPath(dbPath)
+    const db = await getDrizzleDb(studyId, dbPath)
+
+    const result = await db
+      .update(observations)
+      .set(fields)
+      .where(eq(observations.observationID, observationID))
+
+    const rowsAffected = result.changes ?? result.rowsAffected ?? 0
+    if (rowsAffected === 0) {
+      throw new Error(`Observation not found: ${observationID}`)
+    }
+
+    const restored = await db
+      .select()
+      .from(observations)
+      .where(eq(observations.observationID, observationID))
+      .get()
+
+    const elapsedTime = Date.now() - startTime
+    log.info(`Restored observation ${observationID} in ${elapsedTime}ms`)
+    return restored
+  } catch (error) {
+    log.error(`Error restoring observation: ${error.message}`)
+    throw error
+  }
+}
+
+/**
  * Insert observations data into the database
  * @param {Object} manager - Database manager instance
  * @param {Array} observationsData - Array of observation objects
@@ -356,6 +458,7 @@ export async function insertObservations(manager, observationsData) {
             eventStart: observation.eventStart ? observation.eventStart.toISO() : null,
             eventEnd: observation.eventEnd ? observation.eventEnd.toISO() : null,
             scientificName: observation.scientificName,
+            observationType: observation.observationType,
             commonName: observation.commonName,
             classificationProbability:
               observation.classificationProbability !== undefined

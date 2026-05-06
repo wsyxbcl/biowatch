@@ -13,6 +13,8 @@ import {
 import log from '../../logger.js'
 import { getBiowatchDataPath } from '../../paths.js'
 import { DEFAULT_SEQUENCE_GAP } from '../../../../shared/constants.js'
+import { sanitizeDescription } from '../sanitizeDescription.js'
+import { normalizeScientificName } from '../../../../shared/commonNames/normalize.js'
 
 /**
  * Import Wildlife Insights dataset from a directory into a SQLite database
@@ -131,7 +133,7 @@ export async function importWildlifeDatasetWithPath(directoryPath, biowatchDataP
     id,
     name: data.name || path.basename(directoryPath),
     title: null,
-    description: data.data?.description || null,
+    description: sanitizeDescription(data.data?.description),
     created: new Date().toISOString(),
     importerName: 'wildlife/folder',
     contributors: data.data?.contributors || null,
@@ -302,7 +304,7 @@ async function insertObservations(db, csvPath) {
         eventID: row.sequence_id || null,
         eventStart: timestamp.isValid ? timestamp.toISO() : null,
         eventEnd: timestamp.isValid ? timestamp.toISO() : null,
-        scientificName: scientificName,
+        scientificName: normalizeScientificName(scientificName),
         observationType: null, // Not available in Wildlife Insights format
         commonName: row.common_name || null,
         classificationProbability: row.cv_confidence ? parseFloat(row.cv_confidence) : null,

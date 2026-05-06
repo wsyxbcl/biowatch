@@ -32,67 +32,115 @@ const { data, error } = await window.api.getSequences(studyId, { limit: 20 })
 
 ### Studies
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `getStudies()` | `studies:list` | - | `Study[]` |
-| `updateStudy(id, update)` | `studies:update` | studyId, update object | `Study` |
-| `deleteStudyDatabase(studyId)` | `study:delete-database` | studyId | `{ success: boolean }` |
-| `checkStudyHasEventIDs(studyId)` | `study:has-event-ids` | studyId | `{ data: boolean }` |
-| `getSequenceGap(studyId)` | `study:get-sequence-gap` | studyId | `{ data: number \| null }` |
-| `setSequenceGap(studyId, sequenceGap)` | `study:set-sequence-gap` | studyId, sequenceGap (0-600) | `{ data: number }` |
+| Method                                 | Channel                  | Parameters                   | Returns                    |
+| -------------------------------------- | ------------------------ | ---------------------------- | -------------------------- |
+| `getStudies()`                         | `studies:list`           | -                            | `Study[]`                  |
+| `updateStudy(id, update)`              | `studies:update`         | studyId, update object       | `Study`                    |
+| `deleteStudyDatabase(studyId)`         | `study:delete-database`  | studyId                      | `{ success: boolean }`     |
+| `checkStudyHasEventIDs(studyId)`       | `study:has-event-ids`    | studyId                      | `{ data: boolean }`        |
+| `getSequenceGap(studyId)`              | `study:get-sequence-gap` | studyId                      | `{ data: number \| null }` |
+| `setSequenceGap(studyId, sequenceGap)` | `study:set-sequence-gap` | studyId, sequenceGap (0-600) | `{ data: number }`         |
 
 ### Data Import
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `selectCamtrapDPDataset()` | `import:select-camtrap-dp` | - | `{ path, data, id }` |
-| `selectWildlifeDataset()` | `import:select-wildlife` | - | `{ path, data, id }` |
-| `selectDeepfauneDataset()` | `import:select-deepfaune` | - | `{ path, data, id }` |
-| `downloadDemoDataset()` | `import:download-demo` | - | `{ path, data, id }` |
-| `importGbifDataset(datasetKey)` | `import:gbif-dataset` | GBIF dataset key | `{ path, data, id }` |
-| `onCamtrapDPImportProgress(callback)` | `camtrap-dp-import:progress` | callback function | unsubscribe function |
+| Method                                | Channel                      | Parameters        | Returns                                     |
+| ------------------------------------- | ---------------------------- | ----------------- | ------------------------------------------- |
+| `selectCamtrapDPDataset()`            | `import:select-camtrap-dp`   | -                 | `{ path, data, id }`                        |
+| `selectWildlifeDataset()`             | `import:select-wildlife`     | -                 | `{ path, data, id }`                        |
+| `selectDeepfauneDataset()`            | `import:select-deepfaune`    | -                 | `{ path, data, id }`                        |
+| `downloadDemoDataset()`               | `import:download-demo`       | -                 | `{ path, data, id }`                        |
+| `importGbifDataset(datasetKey)`       | `import:gbif-dataset`        | GBIF dataset key  | `{ path, data, id }` or `null` if cancelled |
+| `cancelGbifImport(datasetKey)`        | `import:cancel-gbif`         | GBIF dataset key  | `boolean` (true if cancelled)               |
+| `cancelLilaImport(datasetId)`         | `import:cancel-lila`         | LILA dataset ID   | `boolean` (true if cancelled)               |
+| `onCamtrapDPImportProgress(callback)` | `camtrap-dp-import:progress` | callback function | unsubscribe function                        |
 
 ### Species & Distribution
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `getSpeciesDistribution(studyId)` | `species:get-distribution` | studyId | `{ data: Distribution[] }` |
-| `getDistinctSpecies(studyId)` | `species:get-distinct` | studyId | `{ data: string[] }` |
+| Method                            | Channel                    | Parameters | Returns                    |
+| --------------------------------- | -------------------------- | ---------- | -------------------------- |
+| `getSpeciesDistribution(studyId)` | `species:get-distribution` | studyId    | `{ data: Distribution[] }` |
+| `getDistinctSpecies(studyId)`     | `species:get-distinct`     | studyId    | `{ data: string[] }`       |
+| `getBlankMediaCount(studyId)`     | `species:get-blank-count`  | studyId    | `{ data: number }` — count of media with no animal/human/vehicle observation (covers zero-obs media + media with only `blank`/`unclassified`/`unknown`-typed empty-species rows). |
+| `getVehicleMediaCount(studyId)`   | `species:get-vehicle-count`| studyId    | `{ data: number }` — count of media with at least one `observationType='vehicle'` observation.  |
+
+### Overview
+
+| Method                       | Channel              | Parameters | Returns                  |
+| ---------------------------- | -------------------- | ---------- | ------------------------ |
+| `getOverviewStats(studyId)`  | `overview:get-stats` | studyId    | `{ data: OverviewStats }` |
+
+`OverviewStats`:
+
+```ts
+{
+  speciesCount: number
+  threatenedCount: number
+  threatenedSpecies: Array<{ scientificName: string, iucn: string }>
+  cameraCount: number       // distinct COALESCE(cameraID, deploymentID)
+  locationCount: number     // distinct deployments.locationID
+  observationCount: number  // animal/human (with species) + vehicle observations only;
+                            // excludes blank/unclassified/unknown empty-species rows
+  cameraDays: number        // sum of deployment durations, days
+  mediaCount: number
+  derivedRange: {           // independently per side: override → observations
+    start: string | null    // → deployments → media → null
+    end:   string | null
+  }
+}
+```
+
+Runs in the sequences worker thread (off the main process). Threatened species are those whose bundled `speciesInfo.iucn` is in `{VU, EN, CR, EW, EX}`. The Span override lives in `metadata.startDate` / `metadata.endDate`; the Overview tab clears both via the `Reset to auto` link.
 
 ### Deployments
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `getDeployments(studyId)` | `deployments:get` | studyId | `{ data: Deployment[] }` |
-| `getDeploymentsActivity(studyId)` | `deployments:get-activity` | studyId | `{ data: Activity[] }` |
-| `setDeploymentLatitude(studyId, deploymentID, latitude)` | `deployments:set-latitude` | studyId, deploymentID, latitude | `{ success: boolean }` |
-| `setDeploymentLongitude(studyId, deploymentID, longitude)` | `deployments:set-longitude` | studyId, deploymentID, longitude | `{ success: boolean }` |
-| `setDeploymentLocationName(studyId, locationID, locationName)` | `deployments:set-location-name` | studyId, locationID, locationName | `{ success: boolean }` |
+| Method                                                         | Channel                         | Parameters                        | Returns                  |
+| -------------------------------------------------------------- | ------------------------------- | --------------------------------- | ------------------------ |
+| `getDeploymentLocations(studyId)`                              | `deployments:get-locations`     | studyId                           | `{ data: Deployment[] }` |
+| `getAllDeployments(studyId)`                                   | `deployments:get-all`           | studyId                           | `{ data: Deployment[] }` |
+| `getDeploymentSpecies(studyId, deploymentID)`                  | `deployments:get-species`       | studyId, deploymentID             | `{ data: { scientificName, count }[] }` |
+| `getDeploymentsActivity(studyId, periodCount?)`                | `deployments:get-activity`      | studyId, periodCount (optional)   | `{ data: Activity[] }`   |
+| `setDeploymentLatitude(studyId, deploymentID, latitude)`       | `deployments:set-latitude`      | studyId, deploymentID, latitude   | `{ success: boolean }`   |
+| `setDeploymentLongitude(studyId, deploymentID, longitude)`     | `deployments:set-longitude`     | studyId, deploymentID, longitude  | `{ success: boolean }`   |
+| `setDeploymentLocationName(studyId, locationID, locationName)` | `deployments:set-location-name` | studyId, locationID, locationName | `{ success: boolean }`   |
+
+**Note on `getDeploymentLocations` vs `getAllDeployments`:** `getDeploymentLocations` dedupes by `(latitude, longitude)` and returns one row per physical camera-trap location — intended for read-only overview maps. `getAllDeployments` returns every deployment row (no dedup) — used by the Deployments tab's editable map so `MarkerClusterGroup` can correctly count co-located deployments and dragging doesn't silently split a group. `getDeploymentsActivity` runs in the sequences worker thread to keep the UI responsive on large studies.
+
+**Note on `periodCount`:** `getDeploymentsActivity` accepts an optional `periodCount` (number of time-period buckets in the per-deployment timeline). The Deployments tab measures the timeline column width and passes a bucketed value (multiples of 10) so wider screens get more circles per row. Defaults to 20 if null/0/non-numeric, and is clamped to a maximum of 100 backend-side to bound the SUM(CASE)×N SQL aggregation.
 
 **Note on `setDeploymentLocationName`:** This updates the `locationName` for ALL deployments with the given `locationID`. When deployments share a `locationID` (grouped deployments), renaming any one updates the entire group.
 
 ### Locations
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `getLocationsActivity(studyId)` | `locations:get-activity` | studyId | `{ data: Activity[] }` |
+| Method                          | Channel                  | Parameters | Returns                |
+| ------------------------------- | ------------------------ | ---------- | ---------------------- |
+| `getLocationsActivity(studyId)` | `locations:get-activity` | studyId    | `{ data: Activity[] }` |
+
+### Activity Map Export
+
+| Method                                                  | Channel                    | Parameters                  | Returns                                                                |
+| ------------------------------------------------------- | -------------------------- | --------------------------- | ---------------------------------------------------------------------- |
+| `exportActivityMapPng({ dataUrl, defaultFilename })`    | `activity:export-map-png`  | base64 PNG data URL, name   | `{ success: true, filePath } \| { cancelled: true } \| { success: false, error }` |
+
+The renderer captures the Leaflet map container with `html-to-image` (`pixelRatio: 2`, `crossOrigin=""` set on the tile layers so the canvas isn't tainted) and passes a `data:image/png;base64,…` URL plus a default filename. Main shows a save dialog (default location: Downloads) and writes the decoded buffer to disk. Triggered from the Activity tab's right-click context menu on the map.
 
 ### Sequence-Aware Species Counts
 
 These endpoints perform sequence grouping and counting in the main thread, returning pre-computed results. This avoids transferring raw media-level data to the renderer and keeps computation off the UI thread.
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `getSequenceAwareSpeciesDistribution(studyId)` | `sequences:get-species-distribution` | studyId | `{ data: [{scientificName, count}] }` |
-| `getSequenceAwareTimeseries(studyId, speciesNames)` | `sequences:get-timeseries` | studyId, species[] | `{ data: {timeseries, allSpecies} }` |
-| `getSequenceAwareHeatmap(studyId, speciesNames, startDate, endDate, startHour, endHour, includeNullTimestamps)` | `sequences:get-heatmap` | studyId, species[], dates, hours, includeNull | `{ data: {species -> locations[]} }` |
-| `getSequenceAwareDailyActivity(studyId, speciesNames, startDate, endDate)` | `sequences:get-daily-activity` | studyId, species[], dates | `{ data: [24 hourly objects] }` |
+| Method                                                                                                          | Channel                              | Parameters                                    | Returns                               |
+| --------------------------------------------------------------------------------------------------------------- | ------------------------------------ | --------------------------------------------- | ------------------------------------- |
+| `getSequenceAwareSpeciesDistribution(studyId)`                                                                  | `sequences:get-species-distribution` | studyId                                       | `{ data: [{scientificName, count}] }` |
+| `getSequenceAwareTimeseries(studyId, speciesNames)`                                                             | `sequences:get-timeseries`           | studyId, species[]                            | `{ data: {timeseries, allSpecies} }`  |
+| `getSequenceAwareHeatmap(studyId, speciesNames, startDate, endDate, startHour, endHour, includeNullTimestamps)` | `sequences:get-heatmap`              | studyId, species[], dates, hours, includeNull | `{ data: {species -> locations[]} }`  |
+| `getSequenceAwareDailyActivity(studyId, speciesNames, startDate, endDate)`                                      | `sequences:get-daily-activity`       | studyId, species[], dates                     | `{ data: [24 hourly objects] }`       |
 
 **Parameters:**
+
 - `speciesNames`: Array of scientific names to include in the analysis.
 - `gapSeconds` is **not passed by the frontend**. The backend fetches it from the study's metadata table. When metadata has no `sequenceGap` stored, it defaults to `null` (eventID-based grouping for CamtrapDP datasets).
 
 **Benefits:**
+
 - Computed in main thread = better UI responsiveness
 - Frontend query cache keys include `sequenceGap` for instant slider feedback (refetch triggered on change)
 
@@ -100,11 +148,12 @@ These endpoints perform sequence grouping and counting in the main thread, retur
 
 Returns pre-grouped sequences with cursor-based pagination for the media gallery. This moves sequence grouping from the client to the main process, supporting large datasets that would be too memory-intensive to group client-side.
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
+| Method                           | Channel                   | Parameters              | Returns                                        |
+| -------------------------------- | ------------------------- | ----------------------- | ---------------------------------------------- |
 | `getSequences(studyId, options)` | `sequences:get-paginated` | studyId, options object | `{ data: { sequences, nextCursor, hasMore } }` |
 
 **Options:**
+
 ```javascript
 {
   gapSeconds: number | null,  // Gap threshold in seconds (null = eventID grouping)
@@ -113,12 +162,14 @@ Returns pre-grouped sequences with cursor-based pagination for the media gallery
   filters: {
     species: string[],        // Species to filter by
     dateRange: { start, end }, // Date range filter
-    timeRange: { start, end }  // Time of day range (hours 0-23)
+    timeRange: { start, end }, // Time of day range (hours 0-23)
+    deploymentID?: string     // If set, only media for this deploymentID
   }
 }
 ```
 
 **Response:**
+
 ```javascript
 {
   data: {
@@ -137,43 +188,48 @@ Returns pre-grouped sequences with cursor-based pagination for the media gallery
 ```
 
 **Two-Phase Pagination:**
+
 1. **Timestamped phase**: Returns sequences grouped by timestamp proximity (or eventID)
 2. **Null-timestamp phase**: After all timestamped sequences, returns media without timestamps as individual single-item sequences
 
 The cursor is opaque to the client - just pass it back to get the next page. The server handles the phase transition automatically.
 
 **Usage:**
+
 ```javascript
 // React Query infinite scroll
 const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
   queryKey: ['sequences', studyId, filters, sequenceGap],
-  queryFn: ({ pageParam }) => window.api.getSequences(studyId, {
-    gapSeconds: sequenceGap,
-    limit: 20,
-    cursor: pageParam,
-    filters
-  }),
-  getNextPageParam: (lastPage) => lastPage.data.hasMore ? lastPage.data.nextCursor : undefined
+  queryFn: ({ pageParam }) =>
+    window.api.getSequences(studyId, {
+      gapSeconds: sequenceGap,
+      limit: 20,
+      cursor: pageParam,
+      filters
+    }),
+  getNextPageParam: (lastPage) => (lastPage.data.hasMore ? lastPage.data.nextCursor : undefined)
 })
 ```
 
 ### Media
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `getMediaBboxes(studyId, mediaID)` | `media:get-bboxes` | studyId, mediaID | `{ data: Bbox[] }` |
-| `getMediaBboxesBatch(studyId, mediaIDs)` | `media:get-bboxes-batch` | studyId, mediaID[] | `{ data: Map<mediaID, Bbox[]> }` |
-| `checkMediaHaveBboxes(studyId, mediaIDs)` | `media:have-bboxes` | studyId, mediaID[] | `{ data: boolean }` |
-| `getBestMedia(studyId, options)` | `media:get-best` | studyId, { limit? } | `{ data: ScoredMedia[] }` |
-| `setMediaTimestamp(studyId, mediaID, timestamp)` | `media:set-timestamp` | studyId, mediaID, timestamp | `{ success: boolean }` |
-| `setMediaFavorite(studyId, mediaID, favorite)` | `media:set-favorite` | studyId, mediaID, boolean | `{ success: boolean, mediaID, favorite }` |
+| Method                                           | Channel                  | Parameters                  | Returns                                   |
+| ------------------------------------------------ | ------------------------ | --------------------------- | ----------------------------------------- |
+| `getMediaBboxes(studyId, mediaID)`               | `media:get-bboxes`       | studyId, mediaID            | `{ data: Bbox[] }`                        |
+| `getMediaBboxesBatch(studyId, mediaIDs)`         | `media:get-bboxes-batch` | studyId, mediaID[]          | `{ data: Map<mediaID, Bbox[]> }`          |
+| `checkMediaHaveBboxes(studyId, mediaIDs)`        | `media:have-bboxes`      | studyId, mediaID[]          | `{ data: boolean }`                       |
+| `getBestMedia(studyId, options)`                 | `media:get-best`         | studyId, { limit? }         | `{ data: ScoredMedia[] }`                 |
+| `setMediaTimestamp(studyId, mediaID, timestamp)` | `media:set-timestamp`    | studyId, mediaID, timestamp | `{ success: boolean }`                    |
+| `setMediaFavorite(studyId, mediaID, favorite)`   | `media:set-favorite`     | studyId, mediaID, boolean   | `{ success: boolean, mediaID, favorite }` |
 
 **Best Media (Hybrid Mode with Diversity):**
 The `getBestMedia` endpoint uses a hybrid approach with diversity constraints:
+
 1. **User favorites first**: Returns user-marked favorite media (sorted by timestamp descending)
 2. **Auto-scored fills with diversity**: If fewer than `limit` favorites, fills remaining slots with diverse auto-scored captures
 
 The auto-scoring formula prioritizes:
+
 - **Bbox area (15%)**: Sweet spot is 10-60% of image area
 - **Fully visible (20%)**: Bbox not cut off at edges
 - **Padding (15%)**: Distance from bbox to nearest edge
@@ -183,6 +239,7 @@ The auto-scoring formula prioritizes:
 - **Daytime boost (10%)**: Daylight captures score higher (8am-4pm peak, 6am-6pm extended)
 
 Diversity constraints ensure variety in results:
+
 - **Species diversity**: Max 2 images per species
 - **Deployment diversity**: Max 3 images per camera location
 - **Temporal diversity**: Max 4 images per weekly time bucket
@@ -192,79 +249,102 @@ Returns images only (excludes videos), filtered to those with valid bbox data.
 
 **Favorite Media:**
 The `setMediaFavorite` endpoint toggles a media item's favorite status. Favorite status is:
+
 - Stored in the `favorite` field (boolean) in the media table
 - CamtrapDP compliant - exported/imported with the standard `favorite` field
 - Displayed with a heart icon in the media modal and Best Captures carousel
 
 ### Files
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `getFilesData(studyId)` | `files:get-data` | studyId | `{ data: FileStats }` |
+| Method                  | Channel          | Parameters | Returns               |
+| ----------------------- | ---------------- | ---------- | --------------------- |
+| `getFilesData(studyId)` | `files:get-data` | studyId    | `{ data: FileStats }` |
 
 ### Observations
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `updateObservationClassification(studyId, observationID, updates)` | `observations:update-classification` | studyId, observationID, { scientificName?, commonName? } | `{ data: Observation }` |
-| `updateObservationBbox(studyId, observationID, bboxUpdates)` | `observations:update-bbox` | studyId, observationID, { bboxX, bboxY, bboxWidth, bboxHeight } | `{ data: Observation }` |
-| `deleteObservation(studyId, observationID)` | `observations:delete` | studyId, observationID | `{ data: { deleted: boolean } }` |
-| `createObservation(studyId, observationData)` | `observations:create` | studyId, observation object | `{ data: Observation }` |
+| Method                                                             | Channel                              | Parameters                                                      | Returns                          |
+| ------------------------------------------------------------------ | ------------------------------------ | --------------------------------------------------------------- | -------------------------------- |
+| `updateObservationClassification(studyId, observationID, updates)` | `observations:update-classification` | studyId, observationID, { scientificName?, commonName? }        | `{ data: Observation }`          |
+| `updateObservationBbox(studyId, observationID, bboxUpdates)`       | `observations:update-bbox`           | studyId, observationID, { bboxX, bboxY, bboxWidth, bboxHeight } | `{ data: Observation }`          |
+| `deleteObservation(studyId, observationID)`                        | `observations:delete`                | studyId, observationID                                          | `{ data: { deleted: boolean } }` |
+| `createObservation(studyId, observationData)`                      | `observations:create`                | studyId, observation object (optional `observationID`/`eventID`) | `{ data: Observation }`          |
+| `restoreObservation(studyId, observationID, fields)`               | `observations:restore`               | studyId, observationID, fields to overwrite                     | `{ data: Observation }`          |
+
+`observations:create` accepts optional `observationID` and `eventID` in its
+payload. When supplied (used by undo-of-delete), the row is inserted with those
+exact UUIDs instead of fresh ones; SQLite's PK uniqueness constraint still
+rejects a second insert with a live id. It also accepts optional
+`observationType` / `classificationMethod` / `classifiedBy` /
+`classificationTimestamp` / `classificationProbability` — when any of these are
+supplied, they are written verbatim instead of being auto-stamped as a fresh
+human classification. This lets undo-of-delete restore an originally
+machine-classified observation in a single IPC.
+
+`observations:restore` performs a plain `UPDATE` of the supplied fields without
+auto-stamping `classificationMethod` / `classifiedBy` / `classificationTimestamp`,
+so the undo path can faithfully restore the prior classification metadata
+(including `'machine'` originals). It throws `Observation not found: <id>` when
+zero rows match — the renderer's undo manager treats that as a poisoned entry
+and drops it from the stack. Direct user edits go through the `update-bbox` /
+`update-classification` handlers, never `restore`.
 
 ### Export
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `exportImageDirectories(studyId, options)` | `export:image-directories` | studyId, { selectedSpecies?, includeBlank? } | `{ success, exportPath, copiedCount }` |
-| `exportCamtrapDP(studyId, options)` | `export:camtrap-dp` | studyId, { includeMedia?, selectedSpecies?, includeBlank?, sequenceGap? } | `{ success, exportPath, counts... }` |
-| `cancelExport()` | `export:cancel` | - | `boolean` |
-| `onExportProgress(callback)` | `export:progress` | callback function | unsubscribe function |
+| Method                                     | Channel                    | Parameters                                                                | Returns                                |
+| ------------------------------------------ | -------------------------- | ------------------------------------------------------------------------- | -------------------------------------- |
+| `exportImageDirectories(studyId, options)` | `export:image-directories` | studyId, { selectedSpecies?, includeBlank? }                              | `{ success, exportPath, copiedCount }` |
+| `exportCamtrapDP(studyId, options)`        | `export:camtrap-dp`        | studyId, { includeMedia?, selectedSpecies?, includeBlank?, sequenceGap? } | `{ success, exportPath, counts... }`   |
+| `cancelExport()`                           | `export:cancel`            | -                                                                         | `boolean`                              |
+| `onExportProgress(callback)`               | `export:progress`          | callback function                                                         | unsubscribe function                   |
 
 ### ML Models
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `downloadMLModel({ id, version })` | `model:download` | id, version | `{ success: boolean }` |
-| `deleteLocalMLModel({ id, version })` | `model:delete` | id, version | `{ success: boolean }` |
-| `isMLModelDownloaded({ id, version })` | `model:is-downloaded` | id, version | `boolean` |
-| `listInstalledMLModels()` | `model:list-installed` | - | `ModelReference[]` |
-| `listInstalledMLModelEnvironments()` | `model:list-installed-environments` | - | `EnvironmentReference[]` |
-| `getMLModelDownloadStatus({ modelReference, pythonEnvironmentReference })` | `model:get-download-status` | refs | `{ model: Status, env: Status }` |
-| `downloadPythonEnvironment({ id, version, requestingModelId })` | `model:download-python-environment` | id, version, requestingModelId | `{ success: boolean }` |
-| `startMLModelHTTPServer({ modelReference, pythonEnvironment })` | `model:start-http-server` | modelRef, envRef | `{ port, pid, shutdownApiKey }` |
-| `stopMLModelHTTPServer({ pid, port, shutdownApiKey })` | `model:stop-http-server` | pid, port, shutdownApiKey | `{ success: boolean }` |
+| Method                                                                     | Channel                             | Parameters                     | Returns                          |
+| -------------------------------------------------------------------------- | ----------------------------------- | ------------------------------ | -------------------------------- |
+| `downloadMLModel({ id, version })`                                         | `model:download`                    | id, version                    | `{ success: boolean }`           |
+| `deleteLocalMLModel({ id, version })`                                      | `model:delete`                      | id, version                    | `{ success: boolean }`           |
+| `isMLModelDownloaded({ id, version })`                                     | `model:is-downloaded`               | id, version                    | `boolean`                        |
+| `listInstalledMLModels()`                                                  | `model:list-installed`              | -                              | `ModelReference[]`               |
+| `listInstalledMLModelEnvironments()`                                       | `model:list-installed-environments` | -                              | `EnvironmentReference[]`         |
+| `getMLModelDownloadStatus({ modelReference, pythonEnvironmentReference })` | `model:get-download-status`         | refs                           | `{ model: Status, env: Status }` |
+| `downloadPythonEnvironment({ id, version, requestingModelId })`            | `model:download-python-environment` | id, version, requestingModelId | `{ success: boolean }`           |
+| `startMLModelHTTPServer({ modelReference, pythonEnvironment })`            | `model:start-http-server`           | modelRef, envRef               | `{ port, pid, shutdownApiKey }`  |
+| `stopMLModelHTTPServer({ pid, port, shutdownApiKey })`                     | `model:stop-http-server`            | pid, port, shutdownApiKey      | `{ success: boolean }`           |
 
 ### Image Import with ML
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `selectImagesDirectoryOnly()` | `importer:select-images-directory-only` | - | `{ path, id }` |
-| `selectImagesDirectoryWithModel(directoryPath, modelReference, countryCode)` | `importer:select-images-directory-with-model` | path, modelRef, countryCode | `{ path, id }` |
-| `getImportStatus(id)` | `importer:get-status` | import id | `ImportStatus` |
-| `stopImport(id)` | `importer:stop` | import id | `{ success: boolean }` |
-| `resumeImport(id)` | `importer:resume` | import id | `{ success: boolean }` |
-| `selectMoreImagesDirectory(id)` | `importer:select-more-images-directory` | study id | `{ success: boolean }` |
+| Method                                                                       | Channel                                       | Parameters                  | Returns                |
+| ---------------------------------------------------------------------------- | --------------------------------------------- | --------------------------- | ---------------------- |
+| `selectImagesDirectoryOnly()`                                                | `importer:select-images-directory-only`       | -                           | `{ path, id }`         |
+| `selectImagesDirectoryWithModel(directoryPath, modelReference, countryCode)` | `importer:select-images-directory-with-model` | path, modelRef, countryCode | `{ path, id }`         |
+| `getImportStatus(id)`                                                        | `importer:get-status`                         | study id                    | `ImportStatus`         |
+| `stopImport(id)`                                                             | `importer:stop`                               | study id                    | `{ success: boolean }` |
+| `resumeImport(id)`                                                           | `importer:resume`                             | study id                    | `{ success: boolean }` |
+| `selectMoreImagesDirectory(id)`                                              | `importer:select-more-images-directory`       | study id                    | `{ success: boolean }` |
+
+**Note:** `importer:stop` now pauses instantly (no server kill). `importer:resume` resumes instantly if paused, or cold-starts from `modelRuns` if the app was restarted. These handlers are backed by the persistent job queue (`src/main/ipc/queue.js`) rather than in-memory state.
 
 ### Video Transcoding
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `transcode.needsTranscoding(filePath)` | `transcode:needs-transcoding` | filePath | `boolean` |
-| `transcode.getCached(studyId, filePath)` | `transcode:get-cached` | studyId, filePath | `string \| null` (cached path) |
-| `transcode.start(studyId, filePath)` | `transcode:start` | studyId, filePath | `{ success, path? } \| { success: false, error }` |
-| `transcode.cancel(filePath)` | `transcode:cancel` | filePath | `boolean` |
-| `transcode.getCacheStats(studyId)` | `transcode:cache-stats` | studyId | `{ size: number, count: number }` |
-| `transcode.clearCache(studyId)` | `transcode:clear-cache` | studyId | `{ cleared: number, freedBytes: number }` |
-| `transcode.onProgress(callback)` | `transcode:progress` | callback function | unsubscribe function |
+| Method                                   | Channel                       | Parameters        | Returns                                           |
+| ---------------------------------------- | ----------------------------- | ----------------- | ------------------------------------------------- |
+| `transcode.needsTranscoding(filePath)`   | `transcode:needs-transcoding` | filePath          | `boolean`                                         |
+| `transcode.getCached(studyId, filePath)` | `transcode:get-cached`        | studyId, filePath | `string \| null` (cached path)                    |
+| `transcode.start(studyId, filePath)`     | `transcode:start`             | studyId, filePath | `{ success, path? } \| { success: false, error }` |
+| `transcode.cancel(filePath)`             | `transcode:cancel`            | filePath          | `boolean`                                         |
+| `transcode.getCacheStats(studyId)`       | `transcode:cache-stats`       | studyId           | `{ size: number, count: number }`                 |
+| `transcode.clearCache(studyId)`          | `transcode:clear-cache`       | studyId           | `{ cleared: number, freedBytes: number }`         |
+| `transcode.onProgress(callback)`         | `transcode:progress`          | callback function | unsubscribe function                              |
 
 ### Video Thumbnails
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `thumbnail.getCached(studyId, filePath)` | `thumbnail:get-cached` | studyId, filePath | `string \| null` (cached path) |
-| `thumbnail.extract(studyId, filePath)` | `thumbnail:extract` | studyId, filePath | `{ success, path? } \| { success: false, error }` |
+| Method                                   | Channel                | Parameters        | Returns                                           |
+| ---------------------------------------- | ---------------------- | ----------------- | ------------------------------------------------- |
+| `thumbnail.getCached(studyId, filePath)` | `thumbnail:get-cached` | studyId, filePath | `string \| null` (cached path)                    |
+| `thumbnail.extract(studyId, filePath)`   | `thumbnail:extract`    | studyId, filePath | `{ success, path? } \| { success: false, error }` |
 
 **Notes:**
+
 - Transcoding converts unsupported video formats (AVI, MKV, MOV, etc.) to browser-playable MP4 (H.264)
 - Uses bundled FFmpeg via `ffmpeg-static` npm package
 - **Per-study caching:** Transcoded files and thumbnails are cached within each study folder:
@@ -274,6 +354,7 @@ The `setMediaFavorite` endpoint toggles a media item's favorite status. Favorite
 - Cache key is SHA256 hash of (filePath + mtime) to detect file changes
 
 **Progress event:**
+
 ```javascript
 // Subscribe to progress updates
 const unsubscribe = window.api.transcode.onProgress(({ filePath, progress }) => {
@@ -284,14 +365,15 @@ const unsubscribe = window.api.transcode.onProgress(({ filePath, progress }) => 
 
 ### Remote Image Caching
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `imageCache.getCached(studyId, url)` | `image-cache:get-cached` | studyId, remote URL | `string \| null` (cached path) |
-| `imageCache.download(studyId, url)` | `image-cache:download` | studyId, remote URL | `{ success, path? } \| { success: false, error }` |
-| `imageCache.getCacheStats(studyId)` | `image-cache:stats` | studyId | `{ size: number, count: number }` |
-| `imageCache.clearCache(studyId)` | `image-cache:clear` | studyId | `{ cleared: number, freedBytes: number }` |
+| Method                               | Channel                  | Parameters          | Returns                                           |
+| ------------------------------------ | ------------------------ | ------------------- | ------------------------------------------------- |
+| `imageCache.getCached(studyId, url)` | `image-cache:get-cached` | studyId, remote URL | `string \| null` (cached path)                    |
+| `imageCache.download(studyId, url)`  | `image-cache:download`   | studyId, remote URL | `{ success, path? } \| { success: false, error }` |
+| `imageCache.getCacheStats(studyId)`  | `image-cache:stats`      | studyId             | `{ size: number, count: number }`                 |
+| `imageCache.clearCache(studyId)`     | `image-cache:clear`      | studyId             | `{ cleared: number, freedBytes: number }`         |
 
 **Notes:**
+
 - Caches remote images (from GBIF, Agouti imports) to disk for offline access
 - Uses the `cached-image://` custom protocol for transparent caching
 - **Cache location:** `studies/{studyId}/cache/images/`
@@ -301,6 +383,7 @@ const unsubscribe = window.api.transcode.onProgress(({ filePath, progress }) => 
 - **Fallback:** If download fails, original remote URL is used via redirect
 
 **Protocol flow:**
+
 1. Renderer requests `cached-image://cache?studyId=X&url=Y`
 2. Main process checks cache → if cached, serves from disk
 3. If not cached → redirects to original URL, triggers background download
@@ -308,9 +391,9 @@ const unsubscribe = window.api.transcode.onProgress(({ filePath, progress }) => 
 
 ### Utilities
 
-| Method | Channel | Parameters | Returns |
-|--------|---------|------------|---------|
-| `shell:open-path` | N/A (direct ipcMain) | path | `{ success: boolean }` |
+| Method            | Channel              | Parameters | Returns                |
+| ----------------- | -------------------- | ---------- | ---------------------- |
+| `shell:open-path` | N/A (direct ipcMain) | path       | `{ success: boolean }` |
 
 ---
 
@@ -369,6 +452,7 @@ if (error) {
 ## Error Handling Pattern
 
 All handlers return:
+
 ```javascript
 // Success
 { data: <result> }
@@ -378,6 +462,7 @@ All handlers return:
 ```
 
 Check for errors in renderer:
+
 ```javascript
 const response = await window.api.someMethod(params)
 if (response.error) {
@@ -392,18 +477,18 @@ const data = response.data
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/main/index.js` | Minimal app entry point |
-| `src/main/ipc/index.js` | Registers all IPC handlers |
-| `src/main/ipc/*.js` | Individual IPC handler modules |
-| `src/main/ipc/sequences.js` | Sequence-aware counting IPC handlers |
-| `src/preload/index.js` | API bridge to renderer |
-| `src/main/database/queries/` | Database query implementations |
-| `src/main/services/export/exporter.js` | Export handler implementations |
-| `src/main/services/sequences/` | Sequence grouping and counting logic |
-| `src/main/ipc/ml.js` | ML model IPC handlers |
-| `src/main/services/ml/server.ts` | ML server lifecycle management |
-| `src/main/services/ml/download.ts` | ML model download/installation |
-| `src/main/services/cache/video.js` | Video transcoding with FFmpeg |
-| `src/main/services/cache/image.js` | Remote image caching for GBIF/Agouti imports |
+| File                                   | Purpose                                      |
+| -------------------------------------- | -------------------------------------------- |
+| `src/main/index.js`                    | Minimal app entry point                      |
+| `src/main/ipc/index.js`                | Registers all IPC handlers                   |
+| `src/main/ipc/*.js`                    | Individual IPC handler modules               |
+| `src/main/ipc/sequences.js`            | Sequence-aware counting IPC handlers         |
+| `src/preload/index.js`                 | API bridge to renderer                       |
+| `src/main/database/queries/`           | Database query implementations               |
+| `src/main/services/export/exporter.js` | Export handler implementations               |
+| `src/main/services/sequences/`         | Sequence grouping and counting logic         |
+| `src/main/ipc/ml.js`                   | ML model IPC handlers                        |
+| `src/main/services/ml/server.ts`       | ML server lifecycle management               |
+| `src/main/services/ml/download.ts`     | ML model download/installation               |
+| `src/main/services/cache/video.js`     | Video transcoding with FFmpeg                |
+| `src/main/services/cache/image.js`     | Remote image caching for GBIF/Agouti imports |

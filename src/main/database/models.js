@@ -1,5 +1,27 @@
 import { sqliteTable, text, real, integer, unique, index } from 'drizzle-orm/sqlite-core'
 
+// Persistent job queue for async work (ML inference, OCR, etc.)
+export const jobs = sqliteTable(
+  'jobs',
+  {
+    id: text('id').primaryKey(),
+    kind: text('kind').notNull(), // 'ml-inference', 'ocr', etc.
+    topic: text('topic'), // Sub-grouping: 'speciesnet:4.0.1a', 'deepfaune:1.2', etc.
+    status: text('status').notNull().default('pending'), // pending, processing, completed, failed, cancelled
+    payload: text('payload', { mode: 'json' }).notNull(), // Job-specific data (mediaId, filePath, etc.)
+    error: text('error'), // Error message on failure
+    attempts: integer('attempts').notNull().default(0),
+    maxAttempts: integer('maxAttempts').notNull().default(3),
+    createdAt: text('createdAt').notNull(),
+    startedAt: text('startedAt'),
+    completedAt: text('completedAt')
+  },
+  (table) => [
+    index('idx_jobs_kind_status').on(table.kind, table.status),
+    index('idx_jobs_status_createdAt').on(table.status, table.createdAt)
+  ]
+)
+
 export const deployments = sqliteTable(
   'deployments',
   {
@@ -129,6 +151,21 @@ export const observations = sqliteTable(
     index('idx_observations_scientificName').on(table.scientificName),
     index('idx_observations_eventStart').on(table.eventStart),
     index('idx_observations_scientificName_eventStart').on(table.scientificName, table.eventStart),
-    index('idx_observations_mediaID_deploymentID').on(table.mediaID, table.deploymentID)
+    index('idx_observations_mediaID_deploymentID').on(table.mediaID, table.deploymentID),
+    // Used by getVehicleMediaCount and the Vehicle pseudo-species filter in
+    // getMediaForSequencePagination — without this, vehicle queries do a
+    // full scan of `observations` (3s+ on a 2.7M-row study).
+    index('idx_observations_observationType').on(table.observationType),
+    // Covering index for the blank-media notExists pattern used by
+    // getBlankMediaCount, getBlankMediaCountForDeployment, and the
+    // sequences.js blank arm. The query checks per-media that no observation
+    // names a real species AND has no vehicle observation; with this index
+    // SQLite can evaluate both predicates from index alone (~5× faster on
+    // a 2.7M-row study: 2.3s → 465ms).
+    index('idx_observations_blank_cover').on(
+      table.mediaID,
+      table.scientificName,
+      table.observationType
+    )
   ]
 )

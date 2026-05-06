@@ -18,6 +18,22 @@ import { chain } from 'stream-chain'
 import log from '../../logger.js'
 import { getBiowatchDataPath } from '../../paths.js'
 import { DEFAULT_SEQUENCE_GAP } from '../../../../shared/constants.js'
+import { normalizeScientificName } from '../../../../shared/commonNames/normalize.js'
+import labelAliases from '../../../../shared/commonNames/labelAliases.json' with { type: 'json' }
+
+/**
+ * COCO category names from LILA datasets are snake_case display labels
+ * ("yellow_baboon", "common_warthog"), not real binomials. Resolve them to
+ * the canonical scientific name when our alias map knows one — that way the
+ * observations table holds a real "papio cynocephalus" and the LILA label
+ * "yellow_baboon" (preserved separately as commonName) instead of duplicating
+ * the snake_case in both fields.
+ */
+function resolveScientificFromLilaCategory(categoryName) {
+  const normalized = normalizeScientificName(categoryName)
+  if (!normalized) return null
+  return labelAliases[normalized] ?? normalized
+}
 
 /**
  * Whitelisted LILA datasets with their metadata and access URLs
@@ -537,9 +553,9 @@ function buildContributors(dataset) {
  * @param {function} onProgress - Optional callback for progress updates
  * @returns {Promise<Object>} - Object containing dbPath and metadata
  */
-export async function importLilaDataset(datasetId, id, onProgress = null) {
+export async function importLilaDataset(datasetId, id, onProgress = null, signal = null) {
   const biowatchDataPath = getBiowatchDataPath()
-  return await importLilaDatasetWithPath(datasetId, biowatchDataPath, id, onProgress)
+  return await importLilaDatasetWithPath(datasetId, biowatchDataPath, id, onProgress, signal)
 }
 
 /**
@@ -554,7 +570,8 @@ export async function importLilaDatasetWithPath(
   datasetId,
   biowatchDataPath,
   id,
-  onProgress = null
+  onProgress = null,
+  signal = null
 ) {
   log.info(`Starting LILA dataset import for: ${datasetId}`)
 
@@ -580,20 +597,23 @@ export async function importLilaDatasetWithPath(
       `Dataset has ${dataset.imageCount} images (>= ${STREAMING_THRESHOLD}), using streaming import`
     )
     try {
-      return await importLilaDatasetStreaming(dataset, dbPath, id, onProgress)
+      return await importLilaDatasetStreaming(dataset, dbPath, id, onProgress, signal)
     } catch (error) {
-      log.error('Error during streaming LILA import:', error)
+      // Don't send error progress for cancellations - the IPC handler sends 'cancelled' instead
+      if (error.name !== 'AbortError') {
+        log.error('Error during streaming LILA import:', error)
 
-      if (onProgress) {
-        onProgress({
-          stage: 'error',
-          stageIndex: -1,
-          totalStages: 3,
-          datasetTitle: dataset.name,
-          error: {
-            message: error.message
-          }
-        })
+        if (onProgress) {
+          onProgress({
+            stage: 'error',
+            stageIndex: -1,
+            totalStages: 3,
+            datasetTitle: dataset.name,
+            error: {
+              message: error.message
+            }
+          })
+        }
       }
 
       throw error
@@ -621,7 +641,7 @@ export async function importLilaDatasetWithPath(
       })
     }
 
-    const cocoData = await downloadAndParseMetadata(dataset, onProgress)
+    const cocoData = await downloadAndParseMetadata(dataset, onProgress, signal)
     log.info(`Downloaded metadata: ${cocoData.images?.length || 0} images`)
 
     // Stage 2: Parse COCO format
@@ -703,7 +723,8 @@ export async function importLilaDatasetWithPath(
           })
         }
       },
-      manager
+      manager,
+      signal
     )
 
     // Insert media
@@ -726,7 +747,8 @@ export async function importLilaDatasetWithPath(
           })
         }
       },
-      manager
+      manager,
+      signal
     )
 
     // Insert observations
@@ -749,7 +771,8 @@ export async function importLilaDatasetWithPath(
           })
         }
       },
-      manager
+      manager,
+      signal
     )
 
     // Insert metadata
@@ -785,18 +808,21 @@ export async function importLilaDatasetWithPath(
       data: metadataRecord
     }
   } catch (error) {
-    log.error('Error importing LILA dataset:', error)
+    // Don't send error progress for cancellations - the IPC handler sends 'cancelled' instead
+    if (error.name !== 'AbortError') {
+      log.error('Error importing LILA dataset:', error)
 
-    if (onProgress) {
-      onProgress({
-        stage: 'error',
-        stageIndex: -1,
-        totalStages: 3,
-        datasetTitle: dataset.name,
-        error: {
-          message: error.message
-        }
-      })
+      if (onProgress) {
+        onProgress({
+          stage: 'error',
+          stageIndex: -1,
+          totalStages: 3,
+          datasetTitle: dataset.name,
+          error: {
+            message: error.message
+          }
+        })
+      }
     }
 
     throw error
@@ -809,7 +835,7 @@ export async function importLilaDatasetWithPath(
 /**
  * Download and parse LILA metadata (JSON or ZIP)
  */
-async function downloadAndParseMetadata(dataset, onProgress) {
+async function downloadAndParseMetadata(dataset, onProgress, signal = null) {
   const tempDir = path.join(os.tmpdir(), 'biowatch-lila-import')
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true })
@@ -818,21 +844,27 @@ async function downloadAndParseMetadata(dataset, onProgress) {
   if (dataset.isZipped) {
     // Download ZIP file
     const zipPath = path.join(tempDir, `${dataset.id}.zip`)
-    await downloadFileWithRetry(dataset.metadataUrl, zipPath, (progress) => {
-      if (onProgress) {
-        onProgress({
-          stage: 'downloading',
-          stageIndex: 0,
-          totalStages: 3,
-          datasetTitle: dataset.name,
-          downloadProgress: progress
-        })
-      }
-    })
+    await downloadFileWithRetry(
+      dataset.metadataUrl,
+      zipPath,
+      (progress) => {
+        if (onProgress) {
+          onProgress({
+            stage: 'downloading',
+            stageIndex: 0,
+            totalStages: 3,
+            datasetTitle: dataset.name,
+            downloadProgress: progress
+          })
+        }
+      },
+      0,
+      signal
+    )
 
     // Extract ZIP
     const extractPath = path.join(tempDir, dataset.id)
-    await extractZip(zipPath, extractPath)
+    await extractZip(zipPath, extractPath, signal)
 
     // Find JSON file in extracted contents
     const jsonFile = findJsonFile(extractPath)
@@ -845,17 +877,23 @@ async function downloadAndParseMetadata(dataset, onProgress) {
   } else {
     // Download JSON directly
     const jsonPath = path.join(tempDir, `${dataset.id}.json`)
-    await downloadFileWithRetry(dataset.metadataUrl, jsonPath, (progress) => {
-      if (onProgress) {
-        onProgress({
-          stage: 'downloading',
-          stageIndex: 0,
-          totalStages: 3,
-          datasetTitle: dataset.name,
-          downloadProgress: progress
-        })
-      }
-    })
+    await downloadFileWithRetry(
+      dataset.metadataUrl,
+      jsonPath,
+      (progress) => {
+        if (onProgress) {
+          onProgress({
+            stage: 'downloading',
+            stageIndex: 0,
+            totalStages: 3,
+            datasetTitle: dataset.name,
+            downloadProgress: progress
+          })
+        }
+      },
+      0,
+      signal
+    )
 
     const jsonContent = fs.readFileSync(jsonPath, 'utf8')
     return JSON.parse(sanitizeJsonString(jsonContent))
@@ -1084,7 +1122,7 @@ function transformCOCOToObservations(annotations, categoryMap, imageMap, sequenc
         eventID,
         eventStart,
         eventEnd,
-        scientificName: categoryName,
+        scientificName: resolveScientificFromLilaCategory(categoryName),
         commonName: categoryName,
         observationType: 'animal',
         classificationProbability: null,
@@ -1209,7 +1247,7 @@ function createBulkInserter(sqlite, tableName, columns) {
  * @param {Function} onProgress - Progress callback
  * @param {object} manager - StudyDatabaseManager instance for raw SQLite access
  */
-async function batchInsert(db, table, data, tableName, onProgress, manager) {
+async function batchInsert(db, table, data, tableName, onProgress, manager, signal = null) {
   if (data.length === 0) {
     log.info(`No data to insert for ${tableName}`)
     return
@@ -1224,6 +1262,10 @@ async function batchInsert(db, table, data, tableName, onProgress, manager) {
   const inserter = createBulkInserter(sqlite, tableName, columns)
 
   for (let i = 0; i < data.length; i += batchSize) {
+    if (signal?.aborted) {
+      throw new DOMException('Import cancelled', 'AbortError')
+    }
+
     const batch = data.slice(i, i + batchSize)
     inserter(batch) // Transaction-wrapped insert
 
@@ -1315,7 +1357,8 @@ async function computeBoundsAndWriteJsonl(
   dataset,
   sequenceBounds,
   deploymentBounds,
-  onProgress
+  onProgress,
+  signal = null
 ) {
   // Clear temp JSONL file if it exists
   if (fs.existsSync(tempJsonlPath)) {
@@ -1428,6 +1471,16 @@ async function computeBoundsAndWriteJsonl(
       streamArray()
     ])
 
+    if (signal) {
+      signal.addEventListener(
+        'abort',
+        () => {
+          pipeline.destroy(new DOMException('Import cancelled', 'AbortError'))
+        },
+        { once: true }
+      )
+    }
+
     pipeline.on('data', async ({ value }) => {
       // Each value is an image object from the images array
       if (value && typeof value === 'object' && 'file_name' in value && 'id' in value) {
@@ -1435,6 +1488,12 @@ async function computeBoundsAndWriteJsonl(
 
         if (chunk.length >= CHUNK_SIZE) {
           pipeline.pause()
+
+          if (signal?.aborted) {
+            pipeline.destroy(new DOMException('Import cancelled', 'AbortError'))
+            return
+          }
+
           try {
             await processChunk(chunk)
             chunk = []
@@ -1484,7 +1543,14 @@ async function computeBoundsAndWriteJsonl(
  * @param {object} manager - StudyDatabaseManager for raw SQLite access
  * @returns {Promise<number>} - Total number of media records inserted
  */
-async function insertMediaFromJsonl(tempJsonlPath, mainDb, dataset, onProgress, manager) {
+async function insertMediaFromJsonl(
+  tempJsonlPath,
+  mainDb,
+  dataset,
+  onProgress,
+  manager,
+  signal = null
+) {
   // Create bulk inserter for media table using raw SQL
   const sqlite = manager.getSqlite()
   const mediaColumns = [
@@ -1538,6 +1604,16 @@ async function insertMediaFromJsonl(tempJsonlPath, mainDb, dataset, onProgress, 
     const readStream = fs.createReadStream(tempJsonlPath, { encoding: 'utf8' })
     let buffer = ''
 
+    if (signal) {
+      signal.addEventListener(
+        'abort',
+        () => {
+          readStream.destroy(new DOMException('Import cancelled', 'AbortError'))
+        },
+        { once: true }
+      )
+    }
+
     readStream.on('data', async (data) => {
       buffer += data
       const lines = buffer.split('\n')
@@ -1551,6 +1627,12 @@ async function insertMediaFromJsonl(tempJsonlPath, mainDb, dataset, onProgress, 
 
             if (chunk.length >= CHUNK_SIZE) {
               readStream.pause()
+
+              if (signal?.aborted) {
+                readStream.destroy(new DOMException('Import cancelled', 'AbortError'))
+                return
+              }
+
               try {
                 await insertChunk(chunk)
                 chunk = []
@@ -1770,7 +1852,8 @@ async function streamAnnotationsPass(
   dataset,
   totalAnnotations,
   onProgress,
-  manager
+  manager,
+  signal = null
 ) {
   // Create bulk inserter for observations table using raw SQL
   const sqlite = manager.getSqlite()
@@ -1863,7 +1946,7 @@ async function streamAnnotationsPass(
           eventID,
           eventStart,
           eventEnd,
-          scientificName: categoryName,
+          scientificName: resolveScientificFromLilaCategory(categoryName),
           commonName: categoryName,
           observationType: 'animal',
           classificationProbability: null,
@@ -1914,6 +1997,16 @@ async function streamAnnotationsPass(
       streamArray()
     ])
 
+    if (signal) {
+      signal.addEventListener(
+        'abort',
+        () => {
+          pipeline.destroy(new DOMException('Import cancelled', 'AbortError'))
+        },
+        { once: true }
+      )
+    }
+
     pipeline.on('data', async ({ value }) => {
       // Each value is an annotation object from the annotations array
       if (value && typeof value === 'object' && 'category_id' in value && 'image_id' in value) {
@@ -1921,6 +2014,12 @@ async function streamAnnotationsPass(
 
         if (chunk.length >= CHUNK_SIZE) {
           pipeline.pause()
+
+          if (signal?.aborted) {
+            pipeline.destroy(new DOMException('Import cancelled', 'AbortError'))
+            return
+          }
+
           try {
             await processChunk(chunk)
             chunk = []
@@ -2011,7 +2110,7 @@ async function insertDeploymentsFromBounds(deploymentBounds, mainDb, manager) {
  * Streaming import for large LILA datasets
  * Uses JSONL temp file and in-memory bounds to avoid memory exhaustion
  */
-async function importLilaDatasetStreaming(dataset, dbPath, id, onProgress) {
+async function importLilaDatasetStreaming(dataset, dbPath, id, onProgress, signal = null) {
   log.info(`Starting STREAMING import for large dataset: ${dataset.id}`)
 
   const tempDir = path.join(os.tmpdir(), 'biowatch-lila-import')
@@ -2032,7 +2131,7 @@ async function importLilaDatasetStreaming(dataset, dbPath, id, onProgress) {
     })
   }
 
-  const jsonPath = await downloadAndExtractMetadata(dataset, onProgress)
+  const jsonPath = await downloadAndExtractMetadata(dataset, onProgress, signal)
   log.info(`Downloaded metadata to: ${jsonPath}`)
 
   // In-memory Maps for bounds (small enough to keep in memory)
@@ -2078,7 +2177,8 @@ async function importLilaDatasetStreaming(dataset, dbPath, id, onProgress) {
       dataset,
       sequenceBounds,
       deploymentBounds,
-      onProgress
+      onProgress,
+      signal
     )
     log.info(`Processed ${imageCount} images, computed bounds`)
 
@@ -2126,7 +2226,8 @@ async function importLilaDatasetStreaming(dataset, dbPath, id, onProgress) {
       mainDb,
       dataset,
       onProgress,
-      manager
+      manager,
+      signal
     )
     log.info(`Inserted ${mediaCount} media records`)
 
@@ -2150,7 +2251,8 @@ async function importLilaDatasetStreaming(dataset, dbPath, id, onProgress) {
       dataset,
       totalAnnotations,
       onProgress,
-      manager
+      manager,
+      signal
     )
     log.info(`Streamed ${observationCount} observations`)
 
@@ -2206,7 +2308,7 @@ async function importLilaDatasetStreaming(dataset, dbPath, id, onProgress) {
  * Download and extract metadata, returning path to JSON file
  * (Extracted from downloadAndParseMetadata for streaming use)
  */
-async function downloadAndExtractMetadata(dataset, onProgress) {
+async function downloadAndExtractMetadata(dataset, onProgress, signal = null) {
   const tempDir = path.join(os.tmpdir(), 'biowatch-lila-import')
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true })
@@ -2214,20 +2316,26 @@ async function downloadAndExtractMetadata(dataset, onProgress) {
 
   if (dataset.isZipped) {
     const zipPath = path.join(tempDir, `${dataset.id}.zip`)
-    await downloadFileWithRetry(dataset.metadataUrl, zipPath, (progress) => {
-      if (onProgress) {
-        onProgress({
-          stage: 'downloading',
-          stageIndex: 0,
-          totalStages: 3,
-          datasetTitle: dataset.name,
-          downloadProgress: progress
-        })
-      }
-    })
+    await downloadFileWithRetry(
+      dataset.metadataUrl,
+      zipPath,
+      (progress) => {
+        if (onProgress) {
+          onProgress({
+            stage: 'downloading',
+            stageIndex: 0,
+            totalStages: 3,
+            datasetTitle: dataset.name,
+            downloadProgress: progress
+          })
+        }
+      },
+      0,
+      signal
+    )
 
     const extractPath = path.join(tempDir, dataset.id)
-    await extractZip(zipPath, extractPath)
+    await extractZip(zipPath, extractPath, signal)
 
     const jsonFile = findJsonFile(extractPath)
     if (!jsonFile) {
@@ -2237,17 +2345,23 @@ async function downloadAndExtractMetadata(dataset, onProgress) {
     return jsonFile
   } else {
     const jsonPath = path.join(tempDir, `${dataset.id}.json`)
-    await downloadFileWithRetry(dataset.metadataUrl, jsonPath, (progress) => {
-      if (onProgress) {
-        onProgress({
-          stage: 'downloading',
-          stageIndex: 0,
-          totalStages: 3,
-          datasetTitle: dataset.name,
-          downloadProgress: progress
-        })
-      }
-    })
+    await downloadFileWithRetry(
+      dataset.metadataUrl,
+      jsonPath,
+      (progress) => {
+        if (onProgress) {
+          onProgress({
+            stage: 'downloading',
+            stageIndex: 0,
+            totalStages: 3,
+            datasetTitle: dataset.name,
+            downloadProgress: progress
+          })
+        }
+      },
+      0,
+      signal
+    )
 
     return jsonPath
   }

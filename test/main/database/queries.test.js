@@ -9,7 +9,7 @@ import { DateTime } from 'luxon'
 import {
   getSpeciesDistribution,
   getLocationsActivity,
-  getDeployments,
+  getDeploymentLocations,
   getDeploymentsActivity,
   getFilesData,
   createImageDirectoryDatabase,
@@ -18,7 +18,9 @@ import {
   insertObservations,
   getStudyIdFromPath,
   getBlankMediaCount,
-  getMediaForSequencePagination
+  getMediaForSequencePagination,
+  getBestMedia,
+  updateMediaFavorite
 } from '../../../src/main/database/index.js'
 
 // Test database setup
@@ -271,11 +273,11 @@ describe('Database Query Functions Tests', () => {
     })
   })
 
-  describe('getDeployments', () => {
+  describe('getDeploymentLocations', () => {
     test('should return distinct deployment locations', async () => {
       await createTestData(testDbPath)
 
-      const result = await getDeployments(testDbPath)
+      const result = await getDeploymentLocations(testDbPath)
 
       assert.equal(result.length, 3, 'Should return 3 deployment locations')
 
@@ -403,13 +405,16 @@ describe('Database Query Functions Tests', () => {
   })
 
   describe('getBlankMediaCount', () => {
-    test('should return 0 for mediaID-based dataset with no blanks', async () => {
-      // Standard test data has all media linked to observations via mediaID
+    test('counts media with empty-species observations as blank', async () => {
+      // createTestData attaches a null-scientificName "Empty" observation
+      // to media004 — under the new contract that media is blank because
+      // no observation names a real species (or vehicle). All other
+      // media in the fixture have animal observations and are not blank.
       await createTestData(testDbPath)
 
       const result = await getBlankMediaCount(testDbPath)
 
-      assert.equal(result, 0, 'Should return 0 when all media have observations')
+      assert.equal(result, 1, 'media004 (null-species observation) is blank')
     })
 
     test('should return correct blank count for mediaID-based dataset with blanks', async () => {
@@ -800,6 +805,48 @@ describe('Database Query Functions Tests', () => {
 
       assert.equal(result.media.length, 1, 'Should filter by dateRange when provided')
       assert.equal(result.media[0].mediaID, 'media001', 'Should return only media001')
+    })
+
+    test('returns locationID and locationName for each media row', async () => {
+      await createTestData(testDbPath)
+
+      const result = await getMediaForSequencePagination(testDbPath, {
+        species: ['Cervus elaphus'],
+        dateRange: {}
+      })
+
+      // Cervus elaphus matches media001 (deploy001 → loc001 / Forest Site A)
+      // and media003 (deploy002 → loc002 / Meadow Site B).
+      const expectedByMediaID = {
+        media001: { locationID: 'loc001', locationName: 'Forest Site A' },
+        media003: { locationID: 'loc002', locationName: 'Meadow Site B' }
+      }
+
+      assert.equal(result.media.length, 2, 'should return both Cervus elaphus media rows')
+      for (const row of result.media) {
+        const expected = expectedByMediaID[row.mediaID]
+        assert.ok(expected, `unexpected mediaID: ${row.mediaID}`)
+        assert.equal(row.locationID, expected.locationID, `row ${row.mediaID} locationID`)
+        assert.equal(row.locationName, expected.locationName, `row ${row.mediaID} locationName`)
+      }
+    })
+  })
+
+  describe('getBestMedia', () => {
+    test('returns locationID and locationName for favorite media rows', async () => {
+      await createTestData(testDbPath)
+
+      // media001 is on deploy001 → loc001 / Forest Site A. Marking it as
+      // a favorite makes it the only row that the favorites CTE can return,
+      // and gives us a deterministic expected location.
+      await updateMediaFavorite(testDbPath, 'media001', true)
+
+      const result = await getBestMedia(testDbPath, { limit: 12 })
+
+      const row = result.find((r) => r.mediaID === 'media001')
+      assert.ok(row, 'should return media001')
+      assert.equal(row.locationID, 'loc001', 'locationID should be loc001')
+      assert.equal(row.locationName, 'Forest Site A', 'locationName should be Forest Site A')
     })
   })
 })

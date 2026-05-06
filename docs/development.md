@@ -76,6 +76,47 @@ Opens Electron app with hot reload enabled.
 | `npm run build:linux` | Build for Linux |
 | `npm run build:unpack` | Build unpacked (for debugging) |
 
+### Reference data scripts
+
+These regenerate static JSON files bundled into the renderer. Run periodically (every ~6 months, or after upstream sources change) and commit the diff.
+
+| Script | Description |
+|--------|-------------|
+| `npm run dict:build` | Rebuild `src/shared/commonNames/dictionary.json` from source files (SpeciesNet / DeepFaune / Manas / `extras.json`). |
+| `npm run species-info:build` | Rebuild `src/shared/speciesInfo/data.json` (IUCN status + Wikipedia blurb + image URL per species). Hits GBIF + Wikipedia; takes ~45–60 minutes for the full dictionary at the current ~25 species/min throughput. |
+| `npm run iucn-link-id:build` | Add IUCN Red List link IDs (`iucnTaxonId`, `iucnAssessmentId`) to `src/shared/speciesInfo/data.json` for VU/EN/CR species. Reads `data/redlist_species_data_*/assessments.csv` (account-bound, gitignored). See "IUCN Red List link IDs" below for the workflow. |
+
+`species-info:build` flags:
+
+```
+npm run species-info:build                    # incremental run, fetches missing entries
+npm run species-info:build -- --resume        # skip already-fetched entries
+npm run species-info:build -- --force         # refetch every species
+npm run species-info:build -- --limit 25      # cap candidates (smoke testing)
+npm run species-info:build -- --dry-run       # don't write the output file
+```
+
+The script is idempotent and resumable. SIGINT (Ctrl-C) flushes partial progress to disk before exiting; resume with `--resume`.
+
+### IUCN Red List link IDs
+
+The species hover card on the Overview tab includes a click-through to the official IUCN Red List assessment for species classified as Vulnerable, Endangered, or Critically Endangered. The required public IDs (`iucnTaxonId` and `iucnAssessmentId`) are baked into `src/shared/speciesInfo/data.json` by `npm run iucn-link-id:build`, which reads from a gitignored bulk export.
+
+**Why a bulk export instead of the API?** The IUCN T&C (Section 4) prohibit redistribution of Red List Data — including inside a derivative app — without a written waiver. The committed `data.json` deliberately stores only the public numeric identifiers (which the IUCN URL itself exposes), never rationale text, criteria strings, threats lists, or any other CSV text field. Section 3 explicitly carves out the IUCN Categories themselves (VU/EN/CR/...) as freely usable, which is what we already display on the badges.
+
+**Refreshing the link IDs:**
+
+1. Sign in at https://www.iucnredlist.org and run a search filtered to Red List Category = Vulnerable, Endangered, Critically Endangered.
+2. Use "Download → Search Results". You'll get an emailed link to a zip.
+3. Unzip into `data/`, ending up with `data/redlist_species_data_<uuid>/`. The folder is gitignored.
+4. From the repo root: `npm run iucn-link-id:build`. The script picks up the most recent `data/redlist_species_data_*` folder automatically. Override with `--from <path>` if needed.
+5. Optionally pass `--version 2025-1` (or whatever Red List version you downloaded) so `_iucnSourceVersion` in `data.json` is human-readable. When omitted, the script infers a version from the folder name or falls back to the folder's mtime as YYYY-MM-DD.
+6. Commit the resulting `data.json` diff. Two top-level metadata keys (`_iucnSourceVersion` and `_iucnRefreshedAt`) record provenance.
+
+The script is idempotent — running it twice in a row produces an identical `data.json` (modulo the `_iucnRefreshedAt` timestamp).
+
+**Refresh cadence.** IUCN publishes new Red List versions roughly once or twice a year. Refresh when a new version drops or when a new threatened species is added to the camera-trap dictionaries shipped with Biowatch.
+
 ### Linux build notes
 
 The Linux build includes an `afterPack` hook (`scripts/afterPack.js`) that fixes a common Electron sandbox issue.
@@ -363,48 +404,59 @@ Biowatch uses an automated CI/CD pipeline that builds and publishes releases for
 
 ### Step-by-Step Release
 
-1. **Update version** in `package.json`:
-   ```json
-   "version": "1.5.0"
+Releases go through a pull request rather than a direct push to `main`, so the version bump gets the same review and CI checks as any other change.
+
+1. **Create a release branch** off `main`:
+   ```bash
+   git checkout main
+   git pull
+   git checkout -b <yourname>/release-new-version-1.5.0
    ```
 
-2. **Update `CHANGELOG.md`** with the new version's changes:
+2. **Update version** using `npm version` so `package.json` and `package-lock.json` stay in sync:
+   ```bash
+   npm version 1.5.0 --no-git-tag-version
+   ```
+   Do not edit `package.json` by hand — the lockfile would drift and need a follow-up sync commit.
+
+3. **Update `CHANGELOG.md`** with the new version's changes:
    - Add a new section for the version with the release date
    - Document all notable changes under: Added, Changed, Fixed, Removed
    - Update the comparison links at the bottom of the file
 
-3. **Commit the version bump**:
+4. **Commit and push the release branch**:
    ```bash
-   git add package.json CHANGELOG.md
+   git add package.json package-lock.json CHANGELOG.md
    git commit -m "chore: bump version to 1.5.0"
-   git push origin main
+   git push -u origin HEAD
    ```
 
-4. **Create and push a version tag**:
+5. **Open a pull request** targeting `main` and get it reviewed/merged. Do **not** push the bump commit straight to `main` — the tag in step 6 must point at the merge commit on `main`.
+
+6. **Create and push a version tag** from `main` after the PR merges:
    ```bash
+   git checkout main
+   git pull
    git tag v1.5.0
    git push origin v1.5.0
    ```
 
-5. **Verify CI triggered**: Check [GitHub Actions](https://github.com/earthtoolsmaker/biowatch/actions) to ensure both workflows started.
+7. **Verify CI triggered**: Check [GitHub Actions](https://github.com/earthtoolsmaker/biowatch/actions) to ensure the Build/Release workflow started.
+
+8. **Edit the GitHub Release notes** once `electron-builder` has created the release. The release is published with an empty body — fill it in with a "What's New" section linking to `CHANGELOG.md` and a "Highlights" bullet list. See [v1.8.0](https://github.com/earthtoolsmaker/biowatch/releases/tag/v1.8.0) for the format.
 
 ### CI/CD Workflows
 
-Two GitHub Actions workflows handle releases:
+A single GitHub Actions workflow handles releases:
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
-| Build/Release | `.github/workflows/build.yml` | Push to `main` or `v*.*.*` tags | Builds and publishes binaries |
-| Create Release | `.github/workflows/release.yml` | Push to `v*.*.*` tags | Creates GitHub Release with notes |
+| Build/Release | `.github/workflows/build.yml` | Push to `main` or `v*.*.*` tags | Builds binaries and publishes the GitHub Release |
 
 **Build/Release workflow:**
 - Runs on 3 parallel runners: `windows-latest`, `macos-latest`, `ubuntu-22.04`
 - Executes platform-specific build scripts (`build:win`, `build:mac`, `build:linux`)
-- Publishes artifacts directly to GitHub Releases via `electron-builder --publish always`
-
-**Create Release workflow:**
-- Creates the GitHub Release entry
-- Auto-generates release notes from commits since last tag
+- Publishes artifacts and creates the GitHub Release via `electron-builder --publish always` (the release body starts empty and must be filled in manually — see step 8 above)
 
 ### Build Artifacts
 
@@ -461,7 +513,7 @@ publish:
 **Release not appearing:**
 - Ensure the tag matches the pattern `v*.*.*` (e.g., `v1.5.0`)
 - Check that `GH_TOKEN` has `write` permissions for releases
-- Verify both workflows completed successfully
+- Verify the Build/Release workflow completed successfully
 
 **Users not seeing updates:**
 - The version in `package.json` must be higher than the installed version

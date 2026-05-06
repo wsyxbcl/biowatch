@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
+import { resolveCommonName } from '../../shared/commonNames/index.js'
+import { formatScientificName } from './utils/scientificName'
 
 function ImageDirectoriesExportModal({ isOpen, onConfirm, onCancel, studyId }) {
   const [species, setSpecies] = useState([])
@@ -133,23 +135,43 @@ function ImageDirectoriesExportModal({ isOpen, onConfirm, onCancel, studyId }) {
 
               <div className="flex-1 overflow-y-auto px-6 py-2">
                 <div className="space-y-1">
-                  {species.map((s) => (
-                    <label
-                      key={s.scientificName}
-                      className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedSpecies.has(s.scientificName)}
-                        onChange={() => handleSpeciesToggle(s.scientificName)}
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <div className="flex-1 flex justify-between items-center">
-                        <span className="text-sm text-gray-900">{s.scientificName}</span>
-                        <span className="text-xs text-gray-500">{s.count} media</span>
-                      </div>
-                    </label>
-                  ))}
+                  {species.map((s) => {
+                    // Match the picker / observation rail: prefer the
+                    // dictionary's curated common name, fall back to the
+                    // scientific name. Show the scientific in italics when it
+                    // differs (so "yellow baboon (papio cynocephalus)").
+                    const dictCommon = resolveCommonName(s.scientificName)
+                    const showSci = dictCommon && dictCommon !== s.scientificName
+                    const display = dictCommon || formatScientificName(s.scientificName)
+                    return (
+                      <label
+                        key={s.scientificName}
+                        className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedSpecies.has(s.scientificName)}
+                          onChange={() => handleSpeciesToggle(s.scientificName)}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <div className="flex-1 flex justify-between items-center min-w-0">
+                          <span
+                            className={`text-sm text-gray-900 truncate ${showSci ? 'capitalize' : 'italic'}`}
+                          >
+                            {display}
+                            {showSci && (
+                              <span className="text-xs text-gray-500 ml-2 italic normal-case">
+                                ({formatScientificName(s.scientificName)})
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
+                            {s.count} media
+                          </span>
+                        </div>
+                      </label>
+                    )
+                  })}
                 </div>
               </div>
             </>

@@ -7,6 +7,7 @@ import { eq, and, desc, count, sql, isNotNull, inArray, isNull } from 'drizzle-o
 import { DateTime } from 'luxon'
 import log from 'electron-log'
 import { getStudyIdFromPath, formatToMatchOriginal } from './utils.js'
+import { transformBboxToCamtrapDP, detectModelType } from '../../utils/bbox.js'
 
 /**
  * Get files data (directories with image counts and processing progress) for local/ml_run studies
@@ -86,7 +87,16 @@ export async function getMediaBboxes(dbPath, mediaID, includeWithoutBbox = false
     const rows = await db
       .select({
         observationID: observations.observationID,
+        // mediaID / deploymentID / eventID / eventStart are needed by the
+        // undo system so a deleted observation can be recreated with its
+        // original IDs and event grouping.
+        mediaID: observations.mediaID,
+        deploymentID: observations.deploymentID,
+        eventID: observations.eventID,
+        eventStart: observations.eventStart,
         scientificName: observations.scientificName,
+        observationType: observations.observationType,
+        commonName: observations.commonName,
         classificationProbability: observations.classificationProbability,
         detectionConfidence: observations.detectionConfidence,
         bboxX: observations.bboxX,
@@ -139,6 +149,8 @@ export async function getMediaBboxesBatch(dbPath, mediaIDs) {
         mediaID: observations.mediaID,
         observationID: observations.observationID,
         scientificName: observations.scientificName,
+        observationType: observations.observationType,
+        commonName: observations.commonName,
         classificationProbability: observations.classificationProbability,
         detectionConfidence: observations.detectionConfidence,
         bboxX: observations.bboxX,
@@ -153,7 +165,7 @@ export async function getMediaBboxesBatch(dbPath, mediaIDs) {
         behavior: observations.behavior
       })
       .from(observations)
-      .where(and(inArray(observations.mediaID, mediaIDs), isNotNull(observations.bboxX)))
+      .where(inArray(observations.mediaID, mediaIDs))
       .orderBy(observations.mediaID, desc(observations.detectionConfidence))
 
     // Group results by mediaID
@@ -485,6 +497,87 @@ export async function countMediaWithNullTimestamps(dbPath) {
     return nullCount
   } catch (error) {
     log.error(`Error counting media with null timestamps: ${error.message}`)
+    throw error
+  }
+}
+
+/**
+ * Get per-frame detector bboxes for a video, sourced from modelOutputs.rawOutput.frames.
+ *
+ * Applies the same confidence filter as the image write path:
+ * - Always keep the highest-confidence detection per frame.
+ * - Keep additional detections only if conf >= DETECTION_CONFIDENCE_THRESHOLD.
+ *
+ * Returns a flat array of { frameNumber, bboxX, bboxY, bboxWidth, bboxHeight, conf }
+ * sorted by frameNumber ascending.
+ *
+ * @param {string} dbPath - Path to the SQLite database
+ * @param {string} mediaID - The media ID to get frame detections for
+ * @returns {Promise<Array>}
+ */
+export async function getVideoFrameDetections(dbPath, mediaID) {
+  const DETECTION_CONFIDENCE_THRESHOLD = 0.5
+  const startTime = Date.now()
+
+  try {
+    const studyId = getStudyIdFromPath(dbPath)
+    const db = await getDrizzleDb(studyId, dbPath)
+
+    const rows = await db
+      .select({ rawOutput: modelOutputs.rawOutput })
+      .from(modelOutputs)
+      .where(eq(modelOutputs.mediaID, mediaID))
+      .limit(1)
+
+    if (rows.length === 0) return []
+
+    const rawOutput = rows[0].rawOutput
+    const frames = rawOutput?.frames
+    if (!Array.isArray(frames) || frames.length === 0) return []
+
+    const modelType = detectModelType(frames[0])
+
+    const result = []
+    for (const frame of frames) {
+      const frameNumber = frame?.frame_number
+      const detections = frame?.detections
+      if (
+        typeof frameNumber !== 'number' ||
+        !Array.isArray(detections) ||
+        detections.length === 0
+      ) {
+        continue
+      }
+
+      // Sort by conf desc. Always keep the top; keep others only if >= threshold.
+      const sorted = [...detections].sort((a, b) => (b?.conf ?? 0) - (a?.conf ?? 0))
+      const kept = sorted.filter(
+        (d, i) => i === 0 || (d?.conf ?? 0) >= DETECTION_CONFIDENCE_THRESHOLD
+      )
+
+      for (const detection of kept) {
+        const bbox = transformBboxToCamtrapDP(detection, modelType)
+        if (!bbox) continue
+        result.push({
+          frameNumber,
+          bboxX: bbox.bboxX,
+          bboxY: bbox.bboxY,
+          bboxWidth: bbox.bboxWidth,
+          bboxHeight: bbox.bboxHeight,
+          conf: detection.conf
+        })
+      }
+    }
+
+    result.sort((a, b) => a.frameNumber - b.frameNumber)
+
+    const elapsedTime = Date.now() - startTime
+    log.info(
+      `Retrieved ${result.length} video frame detections for media ${mediaID} in ${elapsedTime}ms`
+    )
+    return result
+  } catch (error) {
+    log.error(`Error querying video frame detections: ${error.message}`)
     throw error
   }
 }
