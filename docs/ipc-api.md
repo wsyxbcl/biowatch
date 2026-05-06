@@ -98,6 +98,7 @@ Runs in the sequences worker thread (off the main process). Threatened species a
 | `getDeploymentLocations(studyId)`                              | `deployments:get-locations`     | studyId                           | `{ data: Deployment[] }` |
 | `getAllDeployments(studyId)`                                   | `deployments:get-all`           | studyId                           | `{ data: Deployment[] }` |
 | `getDeploymentSpecies(studyId, deploymentID)`                  | `deployments:get-species`       | studyId, deploymentID             | `{ data: { scientificName, count }[] }` |
+| `getDeploymentStats(studyId, deploymentID)`                    | `deployments:get-stats`         | studyId, deploymentID             | `{ data: { mediaCount, observationCount, blankCount } }` — `blankCount` is media-level (count of media with no real animal/human/vehicle observation), matching the species-filter popover's `BLANK_SENTINEL` count. |
 | `getDeploymentsActivity(studyId, periodCount?)`                | `deployments:get-activity`      | studyId, periodCount (optional)   | `{ data: Activity[] }`   |
 | `setDeploymentLatitude(studyId, deploymentID, latitude)`       | `deployments:set-latitude`      | studyId, deploymentID, latitude   | `{ success: boolean }`   |
 | `setDeploymentLongitude(studyId, deploymentID, longitude)`     | `deployments:set-longitude`     | studyId, deploymentID, longitude  | `{ success: boolean }`   |
