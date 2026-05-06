@@ -399,7 +399,7 @@ export function registerImportIPCHandlers() {
       })
 
       const id = crypto.randomUUID()
-      const { data } = await importCamTrapDataset(
+      const { data, synthesized } = await importCamTrapDataset(
         camtrapDpDirPath,
         id,
         (csvProgress) => {
@@ -427,7 +427,8 @@ export function registerImportIPCHandlers() {
           ...data,
           name: datasetTitle
         },
-        id
+        id,
+        synthesized
       }
 
       log.info('Cleaning up temporary files after successful import...')
@@ -467,7 +468,8 @@ export function registerImportIPCHandlers() {
         stage: 'complete',
         stageIndex: 3,
         totalStages: 3,
-        datasetTitle
+        datasetTitle,
+        synthesized
       })
 
       return result
@@ -653,7 +655,7 @@ export function registerImportIPCHandlers() {
         datasetTitle
       })
 
-      const { data } = await importCamTrapDataset(
+      const { data, synthesized } = await importCamTrapDataset(
         camtrapDpDirPath,
         id,
         (csvProgress) => {
@@ -683,7 +685,8 @@ export function registerImportIPCHandlers() {
           ...data,
           name: datasetTitle || data.name
         },
-        id
+        id,
+        synthesized
       }
 
       log.info('Cleaning up temporary files after successful import...')
@@ -725,7 +728,8 @@ export function registerImportIPCHandlers() {
         totalStages: 4,
         stageName: 'Import complete!',
         datasetKey,
-        datasetTitle
+        datasetTitle,
+        synthesized
       })
 
       return result

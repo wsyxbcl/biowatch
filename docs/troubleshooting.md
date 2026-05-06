@@ -30,6 +30,24 @@ Common issues and solutions.
 - Check paths use correct separator (`/` on macOS/Linux, `\` on Windows)
 - If images are HTTP URLs, ensure they're accessible
 
+### "FOREIGN KEY constraint failed" on CamTrap DP import
+
+**Cause:** Historically, datasets where `media.csv` or `observations.csv`
+reference `deploymentID`s missing from `deployments.csv` (a curator
+oversight) aborted the entire import.
+
+**Resolved automatically as of 2026-05-06.** The importer now synthesizes
+minimal stub deployment rows for orphan IDs (`locationID = deploymentID`,
+NULL location/camera fields, time window derived from referencing rows'
+timestamps), so the FK insert succeeds. Observation rows whose `mediaID` is
+missing from `media.csv` are dropped (cannot be recovered).
+
+If you still see this error:
+- Check the import log for `Synthesized stub deployment …` warnings to see
+  what was auto-recovered.
+- The error indicates a different FK shape we don't yet handle — please open
+  an issue with a copy of the dataset's `datapackage.json` and CSV headers.
+
 ### Import hangs or crashes
 
 **Cause:** Very large dataset exceeding memory.

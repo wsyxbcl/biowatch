@@ -17,6 +17,7 @@ import { eq, and, isNotNull, ne, isNull, asc, inArray } from 'drizzle-orm'
 import { downloadFileWithRetry } from '../download.ts'
 import crypto from 'crypto'
 import { observationSchema, mediaSchema, deploymentSchema, datapackageSchema } from './schemas.js'
+import { stripSynthLocationID } from '../import/parsers/camtrapDP.js'
 import {
   sanitizeObservation,
   sanitizeMedia,
@@ -896,7 +897,10 @@ export async function exportCamtrapDP(studyId, options = {}) {
         longitude: d.longitude,
         deploymentStart: d.deploymentStart,
         deploymentEnd: d.deploymentEnd,
-        locationID: d.locationID,
+        // Strip synthesized geo: prefix so exported CSVs match the
+        // curator's original shape — biowatch never publishes its own
+        // synthetic identifiers into round-tripped CamTrap-DP packages.
+        locationID: stripSynthLocationID(d.locationID),
         locationName: d.locationName,
         cameraModel: d.cameraModel,
         cameraID: d.cameraID,
