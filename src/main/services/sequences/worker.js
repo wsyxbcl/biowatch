@@ -23,6 +23,7 @@ import {
   getBestImagePerSpecies,
   getBlankMediaCount,
   getDeploymentsActivity,
+  getSourcesData,
   getOverviewStats
 } from '../../database/index.js'
 import { getPaginatedSequences } from './pagination.js'
@@ -150,6 +151,12 @@ async function run() {
       // SUM(CASE) × N scan over observations was locking the renderer for
       // multiple seconds on first open of large studies.
       return getDeploymentsActivity(dbPath, workerData.periodCount)
+    }
+    case 'sources-data': {
+      // Sources tab rollup. Runs four queries (per-source, per-deployment,
+      // last-model-used, active-run) over media/observations/model_outputs and
+      // would otherwise block the renderer on large studies.
+      return getSourcesData(dbPath)
     }
     case 'overview-stats': {
       // Overview tab's KPI band — counts + derived range in two SQLite
