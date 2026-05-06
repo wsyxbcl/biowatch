@@ -28,7 +28,7 @@ import { extractZip, downloadFile } from '../services/download.ts'
 import { getGbifTitle } from '../../shared/gbifTitles.js'
 
 // Module-level state for tracking active imports (for cancellation)
-let activeGbifImport = null // { abortController, studyId, datasetKey, downloadDir }
+let activeGbifImport = null // { abortController, studyId, datasetKey, tmpDownloadDir }
 let activeLilaImport = null // { abortController, studyId, datasetId }
 
 /**
@@ -284,6 +284,13 @@ export function registerImportIPCHandlers() {
 
   ipcMain.handle('import:download-demo', async () => {
     const datasetTitle = 'Demo - Kruger National Park'
+    // Same persistent-extract layout as the GBIF handler — see comments
+    // there. id is generated up front so the study dir path is known before
+    // we extract.
+    const id = crypto.randomUUID()
+    const tmpDownloadDir = join(app.getPath('temp'), `biowatch-demo-${id}`)
+    const studyPath = getStudyPath(app.getPath('userData'), id)
+    const extractPath = join(studyPath, 'source')
 
     try {
       log.info('Downloading and importing demo dataset')
@@ -297,16 +304,12 @@ export function registerImportIPCHandlers() {
         downloadProgress: { percent: 0, downloadedBytes: 0, totalBytes: 0 }
       })
 
-      // Create a temp directory for the downloaded file
-      const downloadDir = join(app.getPath('temp'), 'camtrap-demo')
-      if (!existsSync(downloadDir)) {
-        mkdirSync(downloadDir, { recursive: true })
-      }
+      mkdirSync(tmpDownloadDir, { recursive: true })
+      mkdirSync(studyPath, { recursive: true })
 
       const demoDatasetUrl =
         'https://github.com/earthtoolsmaker/biowatch/releases/download/v1.7.2/camtrapdp-demo-dataset.zip'
-      const zipPath = join(downloadDir, 'demo-dataset.zip')
-      const extractPath = join(downloadDir, 'extracted')
+      const zipPath = join(tmpDownloadDir, 'demo-dataset.zip')
 
       log.info(`Downloading demo dataset from ${demoDatasetUrl} to ${zipPath}`)
       await downloadFile(demoDatasetUrl, zipPath, (progress) => {
@@ -332,28 +335,8 @@ export function registerImportIPCHandlers() {
         datasetTitle
       })
 
-      // Create extraction directory if it doesn't exist
-      if (!existsSync(extractPath)) {
-        mkdirSync(extractPath, { recursive: true })
-      } else {
-        // Clean the extraction directory first to avoid conflicts
-        const files = readdirSync(extractPath)
-        for (const file of files) {
-          const filePath = join(extractPath, file)
-          if (statSync(filePath).isDirectory()) {
-            await new Promise((resolve, reject) => {
-              const rmProcess = spawn('rm', ['-rf', filePath])
-              rmProcess.on('close', (code) => {
-                if (code === 0) resolve()
-                else reject(new Error(`Failed to delete directory: ${filePath}`))
-              })
-              rmProcess.on('error', reject)
-            })
-          } else {
-            unlinkSync(filePath)
-          }
-        }
-      }
+      // Fresh study UUID → extractPath is always empty here.
+      mkdirSync(extractPath, { recursive: true })
 
       // Extract the zip file
       await extractZip(zipPath, extractPath)
@@ -399,7 +382,6 @@ export function registerImportIPCHandlers() {
         datasetTitle
       })
 
-      const id = crypto.randomUUID()
       const { data, synthesized } = await importCamTrapDataset(
         camtrapDpDirPath,
         id,
@@ -419,7 +401,8 @@ export function registerImportIPCHandlers() {
             }
           })
         },
-        { nameOverride: datasetTitle }
+        // See GBIF handler for rationale on importFolderOverride: null.
+        { nameOverride: datasetTitle, importFolderOverride: null }
       )
 
       const result = {
@@ -432,36 +415,15 @@ export function registerImportIPCHandlers() {
         synthesized
       }
 
-      log.info('Cleaning up temporary files after successful import...')
+      log.info('Cleaning up temporary download files after successful import...')
 
       try {
-        if (existsSync(zipPath)) {
-          unlinkSync(zipPath)
-          log.info(`Deleted zip file: ${zipPath}`)
+        if (existsSync(tmpDownloadDir)) {
+          rmSync(tmpDownloadDir, { recursive: true, force: true })
+          log.info(`Deleted temp download dir: ${tmpDownloadDir}`)
         }
       } catch (error) {
-        log.warn(`Failed to delete zip file: ${error.message}`)
-      }
-
-      try {
-        await new Promise((resolve) => {
-          const rmProcess = spawn('rm', ['-rf', extractPath])
-          rmProcess.on('close', (code) => {
-            if (code === 0) {
-              log.info(`Deleted extraction directory: ${extractPath}`)
-              resolve()
-            } else {
-              log.warn(`Failed to delete extraction directory, exit code: ${code}`)
-              resolve()
-            }
-          })
-          rmProcess.on('error', (err) => {
-            log.warn(`Error during extraction directory cleanup: ${err.message}`)
-            resolve()
-          })
-        })
-      } catch (error) {
-        log.warn(`Failed to cleanup extraction directory: ${error.message}`)
+        log.warn(`Failed to delete temp download dir: ${error.message}`)
       }
 
       // Stage 3: Complete
@@ -476,6 +438,19 @@ export function registerImportIPCHandlers() {
       return result
     } catch (error) {
       log.error('Error downloading or importing demo dataset:', error)
+
+      try {
+        await cleanupStudy(id)
+      } catch (e) {
+        log.warn('Error cleaning up failed study:', e.message)
+      }
+      try {
+        if (existsSync(tmpDownloadDir)) {
+          rmSync(tmpDownloadDir, { recursive: true, force: true })
+        }
+      } catch (e) {
+        log.warn('Error cleaning up temp download dir:', e.message)
+      }
 
       sendDemoImportProgress({
         stage: 'error',
@@ -497,9 +472,15 @@ export function registerImportIPCHandlers() {
     const abortController = new AbortController()
     const signal = abortController.signal
     const id = crypto.randomUUID()
-    const downloadDir = join(app.getPath('temp'), `gbif-${datasetKey}`)
+    // Zip lands in /tmp (ephemeral, removed post-extract). Extracted contents
+    // go under the persistent study dir so bundled media survive the import —
+    // media.filePath rows reference these JPGs after import completes, and
+    // /tmp would be wiped on reboot or by a success-path cleanup.
+    const tmpDownloadDir = join(app.getPath('temp'), `biowatch-gbif-${id}`)
+    const studyPath = getStudyPath(app.getPath('userData'), id)
+    const extractPath = join(studyPath, 'source')
 
-    activeGbifImport = { abortController, studyId: id, datasetKey, downloadDir }
+    activeGbifImport = { abortController, studyId: id, datasetKey, tmpDownloadDir }
 
     try {
       log.info(`Downloading and importing GBIF dataset: ${datasetKey}`)
@@ -536,13 +517,15 @@ export function registerImportIPCHandlers() {
       const downloadUrl = camtrapEndpoint.url
       log.info(`Found download URL: ${downloadUrl}`)
 
-      // Create a temp directory for the downloaded file
-      if (!existsSync(downloadDir)) {
-        mkdirSync(downloadDir, { recursive: true })
+      // Create the temp download dir (zip only) and the persistent study dir.
+      if (!existsSync(tmpDownloadDir)) {
+        mkdirSync(tmpDownloadDir, { recursive: true })
+      }
+      if (!existsSync(studyPath)) {
+        mkdirSync(studyPath, { recursive: true })
       }
 
-      const zipPath = join(downloadDir, 'gbif-dataset.zip')
-      const extractPath = join(downloadDir, 'extracted')
+      const zipPath = join(tmpDownloadDir, 'gbif-dataset.zip')
 
       // Stage 1: Downloading
       sendGbifImportProgress({
@@ -588,27 +571,9 @@ export function registerImportIPCHandlers() {
         datasetTitle
       })
 
-      // Create extraction directory if it doesn't exist
-      if (!existsSync(extractPath)) {
-        mkdirSync(extractPath, { recursive: true })
-      } else {
-        const files = readdirSync(extractPath)
-        for (const file of files) {
-          const filePath = join(extractPath, file)
-          if (statSync(filePath).isDirectory()) {
-            await new Promise((resolve, reject) => {
-              const rmProcess = spawn('rm', ['-rf', filePath])
-              rmProcess.on('close', (code) => {
-                if (code === 0) resolve()
-                else reject(new Error(`Failed to delete directory: ${filePath}`))
-              })
-              rmProcess.on('error', reject)
-            })
-          } else {
-            unlinkSync(filePath)
-          }
-        }
-      }
+      // The extract dir lives under a freshly minted study UUID, so it's
+      // always empty here — no need to clean stale contents.
+      mkdirSync(extractPath, { recursive: true })
 
       // Extract the zip file
       await extractZip(zipPath, extractPath, signal)
@@ -677,7 +642,10 @@ export function registerImportIPCHandlers() {
             }
           })
         },
-        { signal, nameOverride: datasetTitle }
+        // importFolderOverride: null — the package directory's basename is
+        // dataset-internal (e.g. "national_monitoring") and not user-meaningful.
+        // Falling back to studyName in the Sources tab reads better.
+        { signal, nameOverride: datasetTitle, importFolderOverride: null }
       )
 
       const result = {
@@ -690,36 +658,19 @@ export function registerImportIPCHandlers() {
         synthesized
       }
 
-      log.info('Cleaning up temporary files after successful import...')
+      log.info('Cleaning up temporary download files after successful import...')
 
+      // Drop the temp download dir (just the zip). The extracted tree under
+      // the study dir is intentionally retained — media.filePath rows point
+      // into it. Study deletion (study:delete-database) wipes the whole
+      // study dir, including this tree.
       try {
-        if (existsSync(zipPath)) {
-          unlinkSync(zipPath)
-          log.info(`Deleted zip file: ${zipPath}`)
+        if (existsSync(tmpDownloadDir)) {
+          rmSync(tmpDownloadDir, { recursive: true, force: true })
+          log.info(`Deleted temp download dir: ${tmpDownloadDir}`)
         }
       } catch (error) {
-        log.warn(`Failed to delete zip file: ${error.message}`)
-      }
-
-      try {
-        await new Promise((resolve) => {
-          const rmProcess = spawn('rm', ['-rf', extractPath])
-          rmProcess.on('close', (code) => {
-            if (code === 0) {
-              log.info(`Deleted extraction directory: ${extractPath}`)
-              resolve()
-            } else {
-              log.warn(`Failed to delete extraction directory, exit code: ${code}`)
-              resolve()
-            }
-          })
-          rmProcess.on('error', (err) => {
-            log.warn(`Error during extraction directory cleanup: ${err.message}`)
-            resolve()
-          })
-        })
-      } catch (error) {
-        log.warn(`Failed to cleanup extraction directory: ${error.message}`)
+        log.warn(`Failed to delete temp download dir: ${error.message}`)
       }
 
       // Stage 4: Complete
@@ -737,13 +688,15 @@ export function registerImportIPCHandlers() {
     } catch (error) {
       if (error.name === 'AbortError') {
         log.info(`GBIF import cancelled by user: ${datasetKey}`)
+        // cleanupStudy nukes the study dir (extractPath included). Also drop
+        // the temp download dir.
         await cleanupStudy(id)
         try {
-          if (existsSync(downloadDir)) {
-            rmSync(downloadDir, { recursive: true, force: true })
+          if (existsSync(tmpDownloadDir)) {
+            rmSync(tmpDownloadDir, { recursive: true, force: true })
           }
         } catch (e) {
-          log.warn('Error cleaning up download directory:', e.message)
+          log.warn('Error cleaning up temp download dir:', e.message)
         }
         sendGbifImportProgress({
           stage: 'cancelled',
@@ -756,6 +709,20 @@ export function registerImportIPCHandlers() {
       }
 
       log.error('Error downloading or importing GBIF dataset:', error)
+      // Same cleanup on non-cancel failures: avoid leaving a half-imported
+      // study dir + orphaned zip behind.
+      try {
+        await cleanupStudy(id)
+      } catch (e) {
+        log.warn('Error cleaning up failed study:', e.message)
+      }
+      try {
+        if (existsSync(tmpDownloadDir)) {
+          rmSync(tmpDownloadDir, { recursive: true, force: true })
+        }
+      } catch (e) {
+        log.warn('Error cleaning up temp download dir:', e.message)
+      }
 
       sendGbifImportProgress({
         stage: 'error',
