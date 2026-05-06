@@ -57,6 +57,16 @@ const api = {
   setSequenceGap: async (studyId, sequenceGap) => {
     return await electronAPI.ipcRenderer.invoke('study:set-sequence-gap', studyId, sequenceGap)
   },
+  getStudyCacheStats: async (studyId) => {
+    const response = await electronAPI.ipcRenderer.invoke('study:get-cache-stats', studyId)
+    if (response.error) throw new Error(response.error)
+    return response.data
+  },
+  clearStudyCache: async (studyId) => {
+    const response = await electronAPI.ipcRenderer.invoke('study:clear-cache', studyId)
+    if (response.error) throw new Error(response.error)
+    return response.data
+  },
   getLocationsActivity: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('locations:get-activity', studyId)
   },

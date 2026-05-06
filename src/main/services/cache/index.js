@@ -37,6 +37,14 @@ export {
   registerImageCacheIPCHandlers
 } from './image.js'
 
+// Per-study cache aggregation
+export {
+  getStudyCacheStats,
+  clearStudyCache,
+  getStudyCacheStatsImpl,
+  clearStudyCacheImpl
+} from './study.js'
+
 // Cleanup utilities
 export {
   CACHE_MAX_AGE_MS,
