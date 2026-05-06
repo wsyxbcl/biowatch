@@ -20,6 +20,7 @@ import {
   getSequenceAwareHeatmapSQL,
   getSequenceAwareDailyActivitySQL,
   getBestMedia,
+  getBestImagePerSpecies,
   getBlankMediaCount,
   getDeploymentsActivity,
   getOverviewStats
@@ -127,6 +128,16 @@ async function run() {
       // favorites CTE and the (potentially heavy) auto-scored CTE. See
       // src/main/database/queries/best-media.js for the query pipeline.
       return getBestMedia(dbPath, workerData.options || {})
+    }
+    case 'best-images-per-species': {
+      // Overview tab's species-distribution hover tooltips. Two SQLite paths,
+      // both expensive on large studies: the full multi-CTE scoring CTE
+      // (~440-840ms on 209k obs / 49k bbox), and — counter-intuitively — the
+      // no-bbox short-circuit probe, which has to scan the entire observations
+      // table looking for a non-null bboxX (~1.3-1.7s cold on 2.7-4M obs
+      // studies that turn out to have no bboxes at all). Off-thread so the
+      // main process keeps responding to other IPC during that window.
+      return getBestImagePerSpecies(dbPath)
     }
     case 'pagination': {
       // Gallery paginated sequences. Studies with long event-grouped sequences
