@@ -42,6 +42,9 @@ const api = {
   getDeploymentSpecies: async (studyId, deploymentID) => {
     return await electronAPI.ipcRenderer.invoke('deployments:get-species', studyId, deploymentID)
   },
+  getDeploymentStats: async (studyId, deploymentID) => {
+    return await electronAPI.ipcRenderer.invoke('deployments:get-stats', studyId, deploymentID)
+  },
   deleteStudyDatabase: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('study:delete-database', studyId)
   },
