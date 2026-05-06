@@ -21,13 +21,17 @@ export const GBIF_TITLE_OVERRIDES = {
 export const getGbifTitle = (key, fallback) => GBIF_TITLE_OVERRIDES[key] ?? fallback
 
 // GBIF datasets that are not importable and should be hidden from the picker.
-// Reasons: CAMTRAP_DP endpoint returns 403 or no CAMTRAP_DP endpoint exists.
+// Reasons: CAMTRAP_DP endpoint returns 403, no CAMTRAP_DP endpoint exists, or
+// the data imports but produces a misleading study (e.g., minute-precision
+// event-level observations that the species-distribution chart can't
+// surface — see docs/specs for the planned chart fix).
 // Re-check periodically and remove keys that come back online.
 export const GBIF_UNAVAILABLE = new Set([
   'f0a42d7d-1eda-4ec8-ac66-c1343acea3bc', // Snapshot Japan 2023 — Cloudflare bot challenge
   'd54b6dc3-48ab-4533-9e68-25ec45696737', // Wet Tropics Queensland — no CAMTRAP_DP endpoint
   '0c74050a-13f8-4206-bd29-8c464a441def', // Wombat Burrows Gigafire — no CAMTRAP_DP endpoint
-  'dcdc214a-e8ec-467b-b5ed-c6b5e4993527' // VIC–NSW Gigafire Impacts — no CAMTRAP_DP endpoint
+  'dcdc214a-e8ec-467b-b5ed-c6b5e4993527', // VIC–NSW Gigafire Impacts — no CAMTRAP_DP endpoint
+  'f0963153-077b-4676-a337-891a06fab52a' // Forest First Mammals, CO — minute-precision event-only observations break species-distribution chart; hidden until chart includes event-level obs
 ])
 
 export const isGbifAvailable = (key) => !GBIF_UNAVAILABLE.has(key)
