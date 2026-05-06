@@ -277,9 +277,11 @@ export async function getBestMedia(dbPath, options = {}) {
     const favoritesQuery = `
       WITH favs AS (
         SELECT
-          mediaID, filePath, fileName, timestamp, deploymentID, fileMediatype, favorite
-        FROM media
-        WHERE favorite = 1
+          m.mediaID, m.filePath, m.fileName, m.timestamp, m.deploymentID, m.fileMediatype, m.favorite,
+          d.locationID, d.locationName
+        FROM media m
+        LEFT JOIN deployments d ON d.deploymentID = m.deploymentID
+        WHERE m.favorite = 1
       ),
       -- Strategy 1: Join via mediaID (ML runs, Wildlife Insights, Deepfaune)
       obs_by_mediaID AS (
@@ -317,6 +319,8 @@ export async function getBestMedia(dbPath, options = {}) {
         f.fileName,
         f.timestamp,
         f.deploymentID,
+        f.locationID,
+        f.locationName,
         f.fileMediatype,
         f.favorite,
         COALESCE(o1.observationID, o2.observationID) as observationID,
@@ -530,6 +534,8 @@ export async function getBestMedia(dbPath, options = {}) {
         m.fileName,
         m.timestamp,
         m.deploymentID,
+        d.locationID,
+        d.locationName,
         m.fileMediatype,
         m.favorite,
         r.observationID,
@@ -544,6 +550,7 @@ export async function getBestMedia(dbPath, options = {}) {
         r.compositeScore
       FROM ranked_per_species r
       INNER JOIN media m ON r.mediaID = m.mediaID
+      LEFT JOIN deployments d ON d.deploymentID = m.deploymentID
       WHERE r.species_rank <= ?
       ORDER BY r.compositeScore DESC
     `
