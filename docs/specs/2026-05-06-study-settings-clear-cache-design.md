@@ -275,10 +275,10 @@ the component calls `refetch()` so the total snaps to zeros.
 `formatBytes` helper. The new `CacheSection.jsx` needs the same. We
 lift `formatBytes` out to a shared util:
 
-- New file: `src/renderer/src/lib/formatBytes.js` — exports
+- New file: `src/renderer/src/utils/formatBytes.js` — exports
   `formatBytes(bytes)` with the same body as the existing function.
 - `SettingsInfo/StorageBreakdown.jsx` — replace its inline definition
-  with `import { formatBytes } from '../lib/formatBytes.js'`.
+  with `import { formatBytes } from '../utils/formatBytes.js'`.
 - `CacheSection.jsx` — imports it.
 
 This keeps the two formatters in sync and follows the project's "lift
@@ -350,7 +350,7 @@ behavior is integration-level and will be verified manually.
 - `src/renderer/src/StudySettings.jsx` — import and mount
   `<CacheSection />` between Export and Danger Zone.
 - `src/renderer/src/CacheSection.jsx` — **new**.
-- `src/renderer/src/lib/formatBytes.js` — **new**: lifted from
+- `src/renderer/src/utils/formatBytes.js` — **new**: lifted from
   `SettingsInfo/StorageBreakdown.jsx`.
 - `src/renderer/src/SettingsInfo/StorageBreakdown.jsx` — replace
   inline `formatBytes` with the shared import.
