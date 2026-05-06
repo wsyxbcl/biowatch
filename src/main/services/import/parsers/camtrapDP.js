@@ -42,6 +42,7 @@ export function stripSynthLocationID(locationID) {
  * @param {function} onProgress - Optional callback for progress updates
  * @param {Object} options - Optional import options
  * @param {string} [options.nameOverride] - Override the dataset name (instead of using name from datapackage.json)
+ * @param {string|null} [options.importFolderOverride] - Override the importFolder stamped on media rows. Pass null to leave it empty (e.g. for GBIF/demo imports whose package directory is a temp path that gets cleaned up post-import). Omit to default to directoryPath (spec D3 for local picks).
  * @returns {Promise<Object>} - Object containing dbPath and name
  */
 export async function importCamTrapDataset(directoryPath, id, onProgress = null, options = {}) {
@@ -63,6 +64,7 @@ export async function importCamTrapDataset(directoryPath, id, onProgress = null,
  * @param {function} onProgress - Optional callback for progress updates
  * @param {Object} options - Optional import options
  * @param {string} [options.nameOverride] - Override the dataset name (instead of using name from datapackage.json)
+ * @param {string|null} [options.importFolderOverride] - See importCamTrapDataset.
  * @returns {Promise<Object>} - Object containing dbPath and data
  */
 export async function importCamTrapDatasetWithPath(
@@ -72,6 +74,8 @@ export async function importCamTrapDatasetWithPath(
   onProgress = null,
   options = {}
 ) {
+  const importFolderForMedia =
+    'importFolderOverride' in options ? options.importFolderOverride : directoryPath
   log.info('Starting CamTrap dataset import')
   // Create database in the specified biowatch-data directory
   const dbPath = path.join(biowatchDataPath, 'studies', id, 'study.db')
@@ -193,6 +197,7 @@ export async function importCamTrapDatasetWithPath(
         name,
         columns,
         directoryPath,
+        importFolderForMedia,
         (batchProgress) => {
           if (onProgress) {
             onProgress({
@@ -431,6 +436,7 @@ async function insertCSVData(
   tableName,
   columns,
   directoryPath,
+  importFolderForMedia,
   onProgress = null,
   signal = null,
   rowFilter = null
@@ -460,7 +466,14 @@ async function insertCSVData(
         throw new DOMException('Import cancelled', 'AbortError')
       }
 
-      const transformedRow = transformRowToSchema(row, tableName, columns, directoryPath, pathCache)
+      const transformedRow = transformRowToSchema(
+        row,
+        tableName,
+        columns,
+        directoryPath,
+        pathCache,
+        importFolderForMedia
+      )
       if (transformedRow && (!rowFilter || rowFilter(transformedRow))) {
         // Create bulk inserter on first row (need column names from transformed data)
         if (!inserter) {
@@ -516,13 +529,20 @@ async function insertCSVData(
  * @param {string} directoryPath - Path to the CamTrapDP directory
  * @returns {Object|null} - Transformed row data or null if invalid
  */
-function transformRowToSchema(row, tableName, columns, directoryPath, pathCache) {
+function transformRowToSchema(
+  row,
+  tableName,
+  columns,
+  directoryPath,
+  pathCache,
+  importFolderForMedia
+) {
   try {
     switch (tableName) {
       case 'deployments':
         return transformDeploymentRow(row)
       case 'media':
-        return transformMediaRow(row, directoryPath, pathCache)
+        return transformMediaRow(row, directoryPath, pathCache, importFolderForMedia)
       case 'observations':
         return transformObservationRow(row)
       default:
@@ -591,7 +611,7 @@ function transformDeploymentRow(row) {
 /**
  * Transform media CSV row to media schema
  */
-function transformMediaRow(row, directoryPath, pathCache) {
+function transformMediaRow(row, directoryPath, pathCache, importFolderForMedia) {
   const mediaID = row.mediaID || row.media_id
 
   // Skip rows without required primary key
@@ -627,7 +647,10 @@ function transformMediaRow(row, directoryPath, pathCache) {
     favorite,
     // Stamp the absolute package directory so the Sources tab can group by it.
     // Per spec D3: importFolder = "absolute package directory path" for CamtrapDP imports.
-    importFolder: directoryPath
+    // Callers (GBIF, demo) that extract into an ephemeral temp dir override this
+    // with null so the Sources tab falls back to the study name instead of
+    // showing a soon-to-be-deleted /tmp path.
+    importFolder: importFolderForMedia
   }
 }
 
