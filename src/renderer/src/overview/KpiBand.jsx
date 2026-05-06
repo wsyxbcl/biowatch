@@ -202,7 +202,7 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
       )}
       <div
         ref={carouselRef}
-        className="flex overflow-x-auto snap-x snap-mandatory gap-4 py-2 scrollbar-hide"
+        className="flex overflow-x-auto snap-x snap-mandatory gap-3 py-2 scrollbar-hide"
       >
         <div className={tileWrapperClass} ref={speciesTriggerRef}>
           <KpiTile
