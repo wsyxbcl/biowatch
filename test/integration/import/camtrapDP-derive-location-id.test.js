@@ -125,6 +125,26 @@ describe('CamTrap-DP locationID derivation from coordinates', () => {
     }
   })
 
+  test('coords at exactly (0, 0) are preserved and synthesized (lat=0 is not "missing")', async () => {
+    const studyId = 'derive-locid-equator'
+    await importCamTrapDatasetWithPath(testCamTrapDataPath, testBiowatchDataPath, studyId)
+
+    const dbPath = join(testBiowatchDataPath, 'studies', studyId, 'study.db')
+    const db = openDb(dbPath)
+    try {
+      const row = db
+        .prepare(
+          "SELECT locationID, latitude, longitude FROM deployments WHERE deploymentID = 'd_equator'"
+        )
+        .get()
+      assert.equal(row.latitude, 0)
+      assert.equal(row.longitude, 0)
+      assert.equal(row.locationID, 'biowatch-geo:0.0000,0.0000')
+    } finally {
+      db.close()
+    }
+  })
+
   test('singleton-coord deployment still gets a synthesized geo: ID', async () => {
     // No "needs aggregation" gating: any empty locationID + coords gets synthesis.
     const studyId = 'derive-locid-singleton'

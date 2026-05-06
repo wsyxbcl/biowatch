@@ -91,7 +91,8 @@ export function registerImportIPCHandlers() {
         stage: 'complete',
         stageIndex: importResult?.data ? 2 : 1,
         totalStages: importResult?.data ? 2 : 1,
-        datasetTitle: importResult?.data?.name || 'CamTrap DP Dataset'
+        datasetTitle: importResult?.data?.name || 'CamTrap DP Dataset',
+        synthesized: importResult?.synthesized
       })
 
       return importResult

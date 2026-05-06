@@ -232,6 +232,11 @@ export async function importCamTrapDatasetWithPath(
           for (const [orphanID, info] of orphans) {
             stubRows.push({
               deploymentID: orphanID,
+              // Stubs bypass transformDeploymentRow's synthesis rule on
+              // purpose — they have no coords to derive from. Reusing the
+              // orphan deploymentID as locationID gives the inline-rename
+              // IPC a target and keeps the row from displaying as
+              // "Unnamed Location". See spec § Synthesized row shape.
               locationID: orphanID,
               locationName: null,
               deploymentStart: info.start,
@@ -552,8 +557,10 @@ function transformDeploymentRow(row) {
     }
   }
 
-  const latitude = parseFloat(row.latitude) || null
-  const longitude = parseFloat(row.longitude) || null
+  // parseFloatOrNull preserves 0 (the equator / prime meridian); plain
+  // `parseFloat(x) || null` would discard it.
+  const latitude = parseFloatOrNull(row.latitude)
+  const longitude = parseFloatOrNull(row.longitude)
   let locationID = row.locationID || row.location_id || null
   // Synthesize a deterministic locationID when the curator left it blank but
   // gave us coords. ~11 m precision (4 decimals) absorbs GPS jitter so
