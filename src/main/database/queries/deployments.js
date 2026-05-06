@@ -98,7 +98,11 @@ export async function getAllDeployments(dbPath) {
         locationID: deployments.locationID,
         locationName: deployments.locationName,
         latitude: deployments.latitude,
-        longitude: deployments.longitude
+        longitude: deployments.longitude,
+        deploymentStart: deployments.deploymentStart,
+        deploymentEnd: deployments.deploymentEnd,
+        cameraID: deployments.cameraID,
+        cameraModel: deployments.cameraModel
       })
       .from(deployments)
 
