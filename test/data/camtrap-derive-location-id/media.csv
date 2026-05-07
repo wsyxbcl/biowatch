@@ -1,0 +1,7 @@
+mediaID,deploymentID,filePath,fileName,timestamp
+m1,d_curator,images/IMG001.JPG,IMG001.JPG,2023-03-20T14:30:15Z
+m2,d_synth_a,images/IMG002.JPG,IMG002.JPG,2023-03-21T14:30:15Z
+m3,d_synth_b,images/IMG003.JPG,IMG003.JPG,2023-09-21T14:30:15Z
+m4,d_synth_c,images/IMG004.JPG,IMG004.JPG,2023-03-22T14:30:15Z
+m5,d_unique,images/IMG005.JPG,IMG005.JPG,2023-03-23T14:30:15Z
+m6,d_no_coords,images/IMG006.JPG,IMG006.JPG,2023-03-24T14:30:15Z

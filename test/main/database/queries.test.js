@@ -11,11 +11,13 @@ import {
   getLocationsActivity,
   getDeploymentLocations,
   getDeploymentsActivity,
-  getFilesData,
+  getSourcesData,
   createImageDirectoryDatabase,
   insertDeployments,
   insertMedia,
   insertObservations,
+  insertModelRun,
+  insertModelOutput,
   getStudyIdFromPath,
   getBlankMediaCount,
   getMediaForSequencePagination,
@@ -332,6 +334,7 @@ describe('Database Query Functions Tests', () => {
       assert(result.startDate, 'Should have start date')
       assert(result.endDate, 'Should have end date')
       assert(typeof result.percentile90Count === 'number', 'Should have percentile count')
+      assert.equal(result.hasTimestamps, true, 'Should flag timestamped data')
       assert(Array.isArray(result.deployments), 'Should have deployments array')
       assert.equal(result.deployments.length, 3, 'Should have 3 deployments')
 
@@ -339,6 +342,17 @@ describe('Database Query Functions Tests', () => {
         assert(deployment.deploymentID, 'Deployment should have ID')
         assert(deployment.locationName, 'Deployment should have location name')
         assert(Array.isArray(deployment.periods), 'Deployment should have periods array')
+        assert.equal(
+          typeof deployment.totalCount,
+          'number',
+          'Deployment should have numeric totalCount'
+        )
+        const periodSum = deployment.periods.reduce((s, p) => s + p.count, 0)
+        assert.equal(
+          deployment.totalCount,
+          periodSum,
+          'totalCount should equal sum of period counts'
+        )
 
         deployment.periods.forEach((period) => {
           assert(period.start, 'Period should have start date')
@@ -347,29 +361,520 @@ describe('Database Query Functions Tests', () => {
         })
       })
     })
-  })
 
-  describe('getFilesData', () => {
-    test('should return directory statistics', async () => {
-      await createTestData(testDbPath)
+    test('falls back to timestamp-less list when deployments lack dates', async () => {
+      // Mirrors the LILA Biome Health import: deployments rows exist with
+      // observations against them, but no deploymentStart/deploymentEnd
+      // (the source COCO has no per-image datetime). Without the fallback
+      // the Deployments tab would render "No deployments found".
+      const manager = await createImageDirectoryDatabase(testDbPath)
 
-      const result = await getFilesData(testDbPath)
-
-      assert(Array.isArray(result), 'Should return an array')
-      assert.equal(result.length, 3, 'Should have 3 directories (locations)')
-
-      result.forEach((directory) => {
-        assert(directory.folderName, 'Directory should have folder name')
-        assert(typeof directory.imageCount === 'number', 'Should have numeric image count')
-        assert(typeof directory.processedCount === 'number', 'Should have numeric processed count')
+      await insertDeployments(manager, {
+        NB47: {
+          deploymentID: 'NB47',
+          locationID: 'NB47',
+          locationName: 'NB47',
+          deploymentStart: null,
+          deploymentEnd: null,
+          latitude: null,
+          longitude: null
+        },
+        NB46: {
+          deploymentID: 'NB46',
+          locationID: 'NB46',
+          locationName: 'NB46',
+          deploymentStart: null,
+          deploymentEnd: null,
+          latitude: null,
+          longitude: null
+        }
       })
 
-      // Verify total counts match our test data
-      const totalImages = result.reduce((sum, dir) => sum + dir.imageCount, 0)
-      const totalProcessed = result.reduce((sum, dir) => sum + dir.processedCount, 0)
+      await insertMedia(manager, {
+        'm1.jpg': {
+          mediaID: 'm1',
+          deploymentID: 'NB47',
+          timestamp: null,
+          filePath: 'a/m1.jpg',
+          fileName: 'm1.jpg',
+          importFolder: 'a',
+          folderName: 'a'
+        },
+        'm2.jpg': {
+          mediaID: 'm2',
+          deploymentID: 'NB47',
+          timestamp: null,
+          filePath: 'a/m2.jpg',
+          fileName: 'm2.jpg',
+          importFolder: 'a',
+          folderName: 'a'
+        },
+        'm3.jpg': {
+          mediaID: 'm3',
+          deploymentID: 'NB46',
+          timestamp: null,
+          filePath: 'a/m3.jpg',
+          fileName: 'm3.jpg',
+          importFolder: 'a',
+          folderName: 'a'
+        }
+      })
 
-      assert.equal(totalImages, 5, 'Should have total of 5 images')
-      assert.equal(totalProcessed, 5, 'Should have total of 5 processed observations')
+      await insertObservations(manager, [
+        {
+          observationID: 'o1',
+          mediaID: 'm1',
+          deploymentID: 'NB47',
+          eventID: null,
+          eventStart: null,
+          eventEnd: null,
+          scientificName: 'Loxodonta africana',
+          commonName: 'African Elephant',
+          classificationProbability: 0.9,
+          count: 1
+        },
+        {
+          observationID: 'o2',
+          mediaID: 'm2',
+          deploymentID: 'NB47',
+          eventID: null,
+          eventStart: null,
+          eventEnd: null,
+          scientificName: 'Loxodonta africana',
+          commonName: 'African Elephant',
+          classificationProbability: 0.8,
+          count: 1
+        },
+        {
+          observationID: 'o3',
+          mediaID: 'm3',
+          deploymentID: 'NB46',
+          eventID: null,
+          eventStart: null,
+          eventEnd: null,
+          scientificName: 'Panthera leo',
+          commonName: 'Lion',
+          classificationProbability: 0.85,
+          count: 1
+        }
+      ])
+
+      const result = await getDeploymentsActivity(testDbPath)
+
+      assert.equal(result.hasTimestamps, false, 'Should flag missing timestamps')
+      assert.equal(result.startDate, null, 'startDate should be null')
+      assert.equal(result.endDate, null, 'endDate should be null')
+      assert.equal(result.deployments.length, 2, 'Should still list both deployments')
+
+      const byId = Object.fromEntries(result.deployments.map((d) => [d.deploymentID, d]))
+      assert.equal(byId.NB47.totalCount, 2, 'NB47 should report its 2 observations')
+      assert.equal(byId.NB46.totalCount, 1, 'NB46 should report its 1 observation')
+      result.deployments.forEach((d) => {
+        assert.deepEqual(d.periods, [], 'periods should be empty without a date range')
+      })
+    })
+
+    test('lists dateless deployments alongside timestamped ones', async () => {
+      // Mixed shape: at least one deployment has dates so the global
+      // MIN/MAX is non-null and we go through the timestamped branch, but a
+      // dateless deployment should still appear in the list (with empty
+      // sparkline / zero total).
+      const manager = await createImageDirectoryDatabase(testDbPath)
+
+      await insertDeployments(manager, {
+        dated: {
+          deploymentID: 'dated',
+          locationID: 'dated',
+          locationName: 'Dated Site',
+          deploymentStart: DateTime.fromISO('2024-01-01T00:00:00Z'),
+          deploymentEnd: DateTime.fromISO('2024-01-31T23:59:59Z'),
+          latitude: 0,
+          longitude: 0
+        },
+        dateless: {
+          deploymentID: 'dateless',
+          locationID: 'dateless',
+          locationName: 'Dateless Site',
+          deploymentStart: null,
+          deploymentEnd: null,
+          latitude: null,
+          longitude: null
+        }
+      })
+
+      await insertMedia(manager, {
+        'd1.jpg': {
+          mediaID: 'd1',
+          deploymentID: 'dated',
+          timestamp: DateTime.fromISO('2024-01-15T12:00:00Z'),
+          filePath: 'a/d1.jpg',
+          fileName: 'd1.jpg',
+          importFolder: 'a',
+          folderName: 'a'
+        }
+      })
+
+      await insertObservations(manager, [
+        {
+          observationID: 'obs-dated',
+          mediaID: 'd1',
+          deploymentID: 'dated',
+          eventID: 'e1',
+          eventStart: DateTime.fromISO('2024-01-15T12:00:00Z'),
+          eventEnd: DateTime.fromISO('2024-01-15T12:00:30Z'),
+          scientificName: 'Panthera leo',
+          commonName: 'Lion',
+          classificationProbability: 0.9,
+          count: 1
+        }
+      ])
+
+      const result = await getDeploymentsActivity(testDbPath)
+
+      assert.equal(result.hasTimestamps, true, 'Mixed case takes the timestamped branch')
+      assert.equal(result.deployments.length, 2, 'Both deployments should be listed')
+
+      const byId = Object.fromEntries(result.deployments.map((d) => [d.deploymentID, d]))
+      assert.equal(byId.dated.totalCount, 1, 'Dated deployment counts its 1 observation')
+      assert.equal(byId.dateless.totalCount, 0, 'Dateless deployment lists with zero count')
+      assert(byId.dateless.periods.length > 0, 'Dateless deployment still gets period buckets')
+      byId.dateless.periods.forEach((p) => {
+        assert.equal(p.count, 0, 'Dateless deployment has no observations in any bucket')
+      })
+    })
+  })
+
+  describe('getSourcesData', () => {
+    test('returns one row per distinct importFolder', async () => {
+      await createTestData(testDbPath)
+
+      const result = await getSourcesData(testDbPath)
+
+      assert(Array.isArray(result), 'should return an array')
+      assert(result.length >= 1, 'should have at least one source row')
+      result.forEach((row) => {
+        assert(typeof row.importFolder === 'string', 'importFolder is a string')
+      })
+    })
+
+    test('counts images and videos per source', async () => {
+      await createTestData(testDbPath)
+
+      const result = await getSourcesData(testDbPath)
+      const totalImages = result.reduce((s, r) => s + r.imageCount, 0)
+      const totalVideos = result.reduce((s, r) => s + r.videoCount, 0)
+
+      // createTestData inserts 5 image rows (default fileMediatype 'image/jpeg') and 0 video rows
+      assert.equal(totalImages, 5, 'totalImages')
+      assert.equal(totalVideos, 0, 'totalVideos')
+    })
+
+    test('counts distinct deployments per source', async () => {
+      await createTestData(testDbPath)
+
+      const result = await getSourcesData(testDbPath)
+      const totalDeployments = result.reduce((s, r) => s + r.deploymentCount, 0)
+
+      // createTestData inserts 3 deployments
+      assert.equal(totalDeployments, 3, 'totalDeployments')
+    })
+
+    test('counts observations per source', async () => {
+      await createTestData(testDbPath)
+
+      const result = await getSourcesData(testDbPath)
+      const totalObservations = result.reduce((s, r) => s + r.observationCount, 0)
+
+      // createTestData inserts 5 observations
+      assert.equal(totalObservations, 5, 'totalObservations')
+    })
+
+    test('returns activeRun when a model_run is currently running', async () => {
+      const { manager } = await createTestData(testDbPath)
+      const db = manager.getDb()
+
+      // createTestData puts all media under importFolder='images'
+      await insertModelRun(db, {
+        id: 'run-active-1',
+        modelID: 'deepfaune',
+        modelVersion: '1.3',
+        startedAt: '2024-01-02T00:00:00.000Z',
+        status: 'running',
+        importPath: 'images'
+      })
+      // Mark 2 of 5 media as processed by this active run
+      await insertModelOutput(db, {
+        id: 'mo-active-1',
+        mediaID: 'media001',
+        runID: 'run-active-1',
+        rawOutput: null
+      })
+      await insertModelOutput(db, {
+        id: 'mo-active-2',
+        mediaID: 'media002',
+        runID: 'run-active-1',
+        rawOutput: null
+      })
+
+      const result = await getSourcesData(testDbPath)
+      const source = result.find((r) => r.importFolder === 'images')
+
+      assert(source, 'images source row exists')
+      assert(source.activeRun, 'should have activeRun')
+      assert.equal(source.activeRun.runID, 'run-active-1')
+      assert.equal(source.activeRun.modelID, 'deepfaune')
+      assert.equal(source.activeRun.modelVersion, '1.3')
+      assert.equal(source.activeRun.processed, 2)
+      assert.equal(source.activeRun.total, 5)
+    })
+
+    test('returns lastModelUsed when a model_run exists', async () => {
+      const { manager } = await createTestData(testDbPath)
+      const db = manager.getDb()
+      await insertModelRun(db, {
+        id: 'run-completed-1',
+        modelID: 'speciesnet',
+        modelVersion: '4.0.1a',
+        startedAt: '2024-01-01T00:00:00.000Z',
+        status: 'completed'
+      })
+      await insertModelOutput(db, {
+        id: 'mo-1',
+        mediaID: 'media001',
+        runID: 'run-completed-1',
+        rawOutput: null
+      })
+
+      const result = await getSourcesData(testDbPath)
+      const sourceWithModel = result.find((r) => r.lastModelUsed !== null)
+
+      assert(sourceWithModel, 'at least one source should have lastModelUsed')
+      assert.equal(sourceWithModel.lastModelUsed.modelID, 'speciesnet')
+      assert.equal(sourceWithModel.lastModelUsed.modelVersion, '4.0.1a')
+    })
+
+    test('handles studies with mixed importFolder values', async () => {
+      // Two distinct importFolders in one study; verify counts roll up per source.
+      const manager = await createImageDirectoryDatabase(testDbPath)
+      await insertDeployments(manager, {
+        d1: { deploymentID: 'd1', locationID: 'l1', locationName: 'Site A' },
+        d2: { deploymentID: 'd2', locationID: 'l2', locationName: 'Site B' }
+      })
+      await insertMedia(manager, {
+        a: {
+          mediaID: 'm-a',
+          deploymentID: 'd1',
+          filePath: '/a/1.jpg',
+          fileName: '1.jpg',
+          importFolder: '/a',
+          folderName: 'a'
+        },
+        b: {
+          mediaID: 'm-b',
+          deploymentID: 'd1',
+          filePath: '/a/2.mp4',
+          fileName: '2.mp4',
+          importFolder: '/a',
+          folderName: 'a'
+        },
+        c: {
+          mediaID: 'm-c',
+          deploymentID: 'd2',
+          filePath: '/b/1.jpg',
+          fileName: '1.jpg',
+          importFolder: '/b',
+          folderName: 'b'
+        }
+      })
+
+      const result = await getSourcesData(testDbPath)
+      const a = result.find((r) => r.importFolder === '/a')
+      const b = result.find((r) => r.importFolder === '/b')
+
+      assert.equal(result.length, 2, 'two distinct sources')
+      assert.equal(a.imageCount, 1, '/a images')
+      assert.equal(a.videoCount, 1, '/a videos (.mp4 by extension)')
+      assert.equal(a.deploymentCount, 1)
+      assert.equal(b.imageCount, 1, '/b images')
+      assert.equal(b.videoCount, 0)
+      assert.equal(b.deploymentCount, 1)
+    })
+
+    test('handles NULL importFolder (legacy pre-fix LILA imports)', async () => {
+      const manager = await createImageDirectoryDatabase(testDbPath)
+      await insertDeployments(manager, {
+        d1: { deploymentID: 'd1', locationID: 'l1', locationName: 'L' }
+      })
+      await insertMedia(manager, {
+        x: {
+          mediaID: 'm-x',
+          deploymentID: 'd1',
+          filePath: 'https://example.com/x.jpg',
+          fileName: 'x.jpg',
+          importFolder: null,
+          folderName: null
+        }
+      })
+
+      const result = await getSourcesData(testDbPath)
+      assert.equal(result.length, 1)
+      assert.equal(result[0].importFolder, '', 'NULL importFolder maps to empty string')
+      assert.equal(result[0].imageCount, 1)
+      assert.equal(result[0].isRemote, true)
+    })
+
+    test('lastModelUsed picks the most recent run when multiple exist', async () => {
+      const { manager } = await createTestData(testDbPath)
+      const db = manager.getDb()
+      await insertModelRun(db, {
+        id: 'run-old',
+        modelID: 'deepfaune',
+        modelVersion: '1.3',
+        startedAt: '2023-01-01T00:00:00.000Z',
+        status: 'completed'
+      })
+      await insertModelRun(db, {
+        id: 'run-new',
+        modelID: 'speciesnet',
+        modelVersion: '4.0.1a',
+        startedAt: '2024-06-01T00:00:00.000Z',
+        status: 'completed'
+      })
+      // Each run has at least one output on a media in the source.
+      await insertModelOutput(db, {
+        id: 'mo-old',
+        mediaID: 'media001',
+        runID: 'run-old',
+        rawOutput: null
+      })
+      await insertModelOutput(db, {
+        id: 'mo-new',
+        mediaID: 'media002',
+        runID: 'run-new',
+        rawOutput: null
+      })
+
+      const result = await getSourcesData(testDbPath)
+      const source = result.find((r) => r.importFolder === 'images')
+      assert(source.lastModelUsed)
+      assert.equal(source.lastModelUsed.modelID, 'speciesnet', 'most recent wins')
+      assert.equal(source.lastModelUsed.modelVersion, '4.0.1a')
+    })
+
+    test('activeRun with importPath that matches no media returns no active source', async () => {
+      const { manager } = await createTestData(testDbPath)
+      const db = manager.getDb()
+      await insertModelRun(db, {
+        id: 'run-orphan',
+        modelID: 'deepfaune',
+        modelVersion: '1.3',
+        startedAt: '2024-06-01T00:00:00.000Z',
+        status: 'running',
+        importPath: '/nonexistent/folder'
+      })
+
+      const result = await getSourcesData(testDbPath)
+      // No source should be flagged active because the running run's importPath
+      // doesn't match any media.importFolder in this study.
+      result.forEach((s) => {
+        assert.equal(s.activeRun, null, `${s.importFolder} should have no activeRun`)
+      })
+    })
+
+    test('per-deployment activeRun reports processed/total scoped to that deployment', async () => {
+      const { manager } = await createTestData(testDbPath)
+      const db = manager.getDb()
+      await insertModelRun(db, {
+        id: 'run-active-2',
+        modelID: 'deepfaune',
+        modelVersion: '1.3',
+        startedAt: '2024-06-01T00:00:00.000Z',
+        status: 'running',
+        importPath: 'images'
+      })
+      // createTestData puts media001 + media002 under deploy001 (2 media),
+      // media003 + media004 under deploy002 (2 media), media005 under deploy003.
+      // Process media001 (deploy001) and media003 (deploy002).
+      await insertModelOutput(db, {
+        id: 'mo-d1',
+        mediaID: 'media001',
+        runID: 'run-active-2',
+        rawOutput: null
+      })
+      await insertModelOutput(db, {
+        id: 'mo-d2',
+        mediaID: 'media003',
+        runID: 'run-active-2',
+        rawOutput: null
+      })
+
+      const result = await getSourcesData(testDbPath)
+      const source = result.find((r) => r.importFolder === 'images')
+      const deploys = source.deployments
+      const d1 = deploys.find((d) => d.deploymentID === 'deploy001')
+      const d2 = deploys.find((d) => d.deploymentID === 'deploy002')
+      const d3 = deploys.find((d) => d.deploymentID === 'deploy003')
+
+      assert(d1.activeRun, 'd1 has activeRun')
+      assert.equal(d1.activeRun.processed, 1, 'd1 processed = 1')
+      assert.equal(d1.activeRun.total, 2, 'd1 total = 2 media in deployment')
+      assert(d2.activeRun, 'd2 has activeRun')
+      assert.equal(d2.activeRun.processed, 1, 'd2 processed = 1')
+      assert.equal(d2.activeRun.total, 2)
+      assert(d3.activeRun, 'd3 has activeRun (no processed yet)')
+      assert.equal(d3.activeRun.processed, 0, 'd3 processed = 0')
+      assert.equal(d3.activeRun.total, 1)
+    })
+
+    test('returns deployment rows under each source', async () => {
+      await createTestData(testDbPath)
+
+      const result = await getSourcesData(testDbPath)
+      const totalDeploymentRows = result.reduce((s, r) => s + r.deployments.length, 0)
+      assert.equal(totalDeploymentRows, 3, 'one deployment row per deployment')
+
+      result.forEach((source) => {
+        source.deployments.forEach((d) => {
+          assert(typeof d.deploymentID === 'string', 'deploymentID')
+          assert(typeof d.label === 'string', 'label')
+          assert(typeof d.imageCount === 'number', 'imageCount')
+          assert(typeof d.videoCount === 'number', 'videoCount')
+          assert(typeof d.observationCount === 'number', 'observationCount')
+        })
+      })
+    })
+
+    test('marks isRemote=true when any filePath is an http URL', async () => {
+      const manager = await createImageDirectoryDatabase(testDbPath)
+      await insertDeployments(manager, {
+        d1: { deploymentID: 'd1', locationID: 'l1', locationName: 'Local' },
+        d2: { deploymentID: 'd2', locationID: 'l2', locationName: 'Remote' }
+      })
+      await insertMedia(manager, {
+        'a.jpg': {
+          mediaID: 'm1',
+          deploymentID: 'd1',
+          filePath: '/local/a.jpg',
+          fileName: 'a.jpg',
+          importFolder: '/local',
+          folderName: 'local'
+        },
+        'b.jpg': {
+          mediaID: 'm2',
+          deploymentID: 'd2',
+          filePath: 'https://example.com/b.jpg',
+          fileName: 'b.jpg',
+          importFolder: 'remote-dataset',
+          folderName: null
+        }
+      })
+
+      const result = await getSourcesData(testDbPath)
+      const local = result.find((r) => r.importFolder === '/local')
+      const remote = result.find((r) => r.importFolder === 'remote-dataset')
+
+      assert.equal(local.isRemote, false, 'local source')
+      assert.equal(remote.isRemote, true, 'remote source')
     })
   })
 

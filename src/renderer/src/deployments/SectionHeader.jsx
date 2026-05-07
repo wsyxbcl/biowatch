@@ -14,11 +14,14 @@ const SectionHeader = memo(function SectionHeader({
   percentile90Count,
   isSelected,
   onRenameLocation,
-  onSectionClick
+  onSectionClick,
+  hasTimestamps = true
 }) {
   const handleClick = useCallback(() => {
     onSectionClick(group)
   }, [group, onSectionClick])
+
+  const total = group.deployments.reduce((sum, d) => sum + (d.totalCount || 0), 0)
 
   return (
     <div
@@ -42,16 +45,18 @@ const SectionHeader = memo(function SectionHeader({
       </div>
 
       <div className="flex-1 min-w-0">
-        <Sparkline
-          periods={group.aggregatedPeriods}
-          mode={sparklineMode}
-          percentile90Count={percentile90Count}
-          muted
-        />
+        {hasTimestamps && (
+          <Sparkline
+            periods={group.aggregatedPeriods}
+            mode={sparklineMode}
+            percentile90Count={percentile90Count}
+            muted
+          />
+        )}
       </div>
 
       <div className="flex-shrink-0 w-16 text-right text-xs text-gray-600 tabular-nums">
-        {group.aggregatedPeriods.reduce((sum, p) => sum + (p.count || 0), 0).toLocaleString()}
+        {total.toLocaleString()}
       </div>
     </div>
   )

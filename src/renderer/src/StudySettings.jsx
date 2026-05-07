@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { HelpCircle } from 'lucide-react'
 import * as Tooltip from '@radix-ui/react-tooltip'
+import CacheSection from './CacheSection'
 import DeleteStudyModal from './DeleteStudyModal'
 import Export from './export'
 import { useSequenceGap } from './hooks/useSequenceGap'
@@ -74,6 +75,8 @@ export default function StudySettings({ studyId, studyName }) {
           </p>
           <Export studyId={studyId} />
         </section>
+
+        <CacheSection studyId={studyId} />
 
         <section className="py-6">
           <h2 className="text-base font-medium text-red-700 mb-4">Danger Zone</h2>

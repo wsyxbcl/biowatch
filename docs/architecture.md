@@ -188,7 +188,7 @@ src/
 │   │   └── useResponsiveLayout.js     # split (≥900px) vs stacked (<900px)
 │   ├── settings.jsx         # Settings pages
 │   ├── export.jsx           # Export UI
-│   ├── files.jsx            # File statistics
+│   ├── sources.jsx          # Sources tab (per-importFolder rollup, multi-source aware)
 │   ├── overview.jsx         # Editorial showcase tab (header, KPI band, captures, species)
 │   ├── overview/            # Overview-tab subcomponents
 │   │   ├── EditorialHeader.jsx       # Title + description + byline + map slot

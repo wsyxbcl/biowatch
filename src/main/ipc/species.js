@@ -9,8 +9,7 @@ import { getStudyDatabasePath } from '../services/paths.js'
 import {
   getSpeciesDistribution,
   getVehicleMediaCount,
-  getDistinctSpecies,
-  getBestImagePerSpecies
+  getDistinctSpecies
 } from '../database/index.js'
 import { runInWorker } from '../services/sequences/runInWorker.js'
 
@@ -85,7 +84,12 @@ export function registerSpeciesIPCHandlers() {
     }
   })
 
-  // Get best image per species for hover tooltips
+  // Get best image per species for hover tooltips. Dispatched to the
+  // sequences worker because the multi-CTE scoring scan, and even the
+  // no-bbox short-circuit probe, are O(observations) and block the main
+  // event loop for ~1-2s on large studies — which (since IPC replies are
+  // delivered on main) makes sibling queries like the Overview KPI band
+  // appear frozen even though their own work has already finished.
   ipcMain.handle('species:get-best-images', async (_, studyId) => {
     try {
       const dbPath = getStudyDatabasePath(app.getPath('userData'), studyId)
@@ -94,7 +98,7 @@ export function registerSpeciesIPCHandlers() {
         return { error: 'Database not found for this study' }
       }
 
-      const bestImages = await getBestImagePerSpecies(dbPath)
+      const bestImages = await runInWorker({ type: 'best-images-per-species', dbPath })
       return { data: bestImages }
     } catch (error) {
       log.error('Error getting best images per species:', error)

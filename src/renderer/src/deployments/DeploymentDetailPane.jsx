@@ -5,6 +5,7 @@ import * as HoverCard from '@radix-ui/react-hover-card'
 import DeploymentMediaGallery from '../media/DeploymentMediaGallery'
 import EditableLocationName from './EditableLocationName'
 import LocationPopover from './LocationPopover'
+import DeploymentSettingsPopover from './DeploymentSettingsPopover'
 import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
 import { resolveCommonName } from '../../../shared/commonNames/index.js'
 import { formatScientificName } from '../utils/scientificName'
@@ -56,6 +57,7 @@ export default function DeploymentDetailPane({
             selectedSpecies={selectedSpecies}
             onChange={setSelectedSpecies}
           />
+          <DeploymentSettingsPopover studyId={studyId} deployment={deployment} />
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
