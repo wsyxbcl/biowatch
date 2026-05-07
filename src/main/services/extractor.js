@@ -125,7 +125,7 @@ export async function processDataset(inputPath, id, onProgress) {
     }
 
     // Import the dataset with progress callback
-    const { data } = await importCamTrapDataset(pathToImport, id, (csvProgress) => {
+    const { data, synthesized } = await importCamTrapDataset(pathToImport, id, (csvProgress) => {
       if (onProgress) {
         onProgress({
           stage: 'importing_csvs',
@@ -180,7 +180,8 @@ export async function processDataset(inputPath, id, onProgress) {
     return {
       path: pathToImport,
       data,
-      id
+      id,
+      synthesized
     }
   } catch (error) {
     log.error('Error processing dataset:', error)

@@ -217,6 +217,9 @@ export {
   insertDeployments,
   getDeploymentsActivity,
   getSpeciesForDeployment,
+  getMediaCountForDeployment,
+  getObservationCountForDeployment,
+  getBlankMediaCountForDeployment,
   // Species
   getSpeciesDistribution,
   getBlankMediaCount,
@@ -230,7 +233,7 @@ export {
   getSequenceAwareHeatmapSQL,
   getSequenceAwareDailyActivitySQL,
   // Media
-  getFilesData,
+  getSourcesData,
   getMediaBboxes,
   getMediaBboxesBatch,
   checkMediaHaveBboxes,

@@ -14,6 +14,26 @@ import log from '../../logger.js'
 import { getBiowatchDataPath } from '../../paths.js'
 import { normalizeScientificName } from '../../../../shared/commonNames/normalize.js'
 import { sanitizeDescription } from '../sanitizeDescription.js'
+import { collectOrphanDeployments } from './orphanDeployments.js'
+
+// Prefix used on locationIDs that biowatch synthesized from (lat, lon) at
+// import time, when the curator left locationID empty. The CamTrap-DP
+// exporter strips this prefix back to empty so the synthesized values do
+// not leak into round-tripped packages.
+export const SYNTH_LOCATION_ID_PREFIX = 'biowatch-geo:'
+
+/**
+ * Strip the synth-locationID marker so an exported CamTrap-DP package
+ * matches the curator's original (empty-locationID) shape. Pass-through for
+ * any locationID a curator actually provided.
+ * @param {string|null|undefined} locationID
+ * @returns {string|null}
+ */
+export function stripSynthLocationID(locationID) {
+  if (!locationID) return null
+  if (locationID.startsWith(SYNTH_LOCATION_ID_PREFIX)) return null
+  return locationID
+}
 
 /**
  * Import CamTrapDP dataset from a directory into a SQLite database
@@ -22,6 +42,7 @@ import { sanitizeDescription } from '../sanitizeDescription.js'
  * @param {function} onProgress - Optional callback for progress updates
  * @param {Object} options - Optional import options
  * @param {string} [options.nameOverride] - Override the dataset name (instead of using name from datapackage.json)
+ * @param {string|null} [options.importFolderOverride] - Override the importFolder stamped on media rows. Pass null to leave it empty (e.g. for GBIF/demo imports whose package directory is a temp path that gets cleaned up post-import). Omit to default to directoryPath (spec D3 for local picks).
  * @returns {Promise<Object>} - Object containing dbPath and name
  */
 export async function importCamTrapDataset(directoryPath, id, onProgress = null, options = {}) {
@@ -43,6 +64,7 @@ export async function importCamTrapDataset(directoryPath, id, onProgress = null,
  * @param {function} onProgress - Optional callback for progress updates
  * @param {Object} options - Optional import options
  * @param {string} [options.nameOverride] - Override the dataset name (instead of using name from datapackage.json)
+ * @param {string|null} [options.importFolderOverride] - See importCamTrapDataset.
  * @returns {Promise<Object>} - Object containing dbPath and data
  */
 export async function importCamTrapDatasetWithPath(
@@ -52,6 +74,8 @@ export async function importCamTrapDatasetWithPath(
   onProgress = null,
   options = {}
 ) {
+  const importFolderForMedia =
+    'importFolderOverride' in options ? options.importFolderOverride : directoryPath
   log.info('Starting CamTrap dataset import')
   // Create database in the specified biowatch-data directory
   const dbPath = path.join(biowatchDataPath, 'studies', id, 'study.db')
@@ -109,6 +133,14 @@ export async function importCamTrapDatasetWithPath(
     log.info(`Found ${existingFiles.length} CamTrapDP CSV files to import`)
 
     const signal = options.signal || null
+    const sqlite = manager.getSqlite()
+
+    const synthesized = {
+      deployments: 0,
+      orphanMediaRows: 0,
+      orphanObservationRows: 0,
+      droppedObservationRows: 0
+    }
 
     // Process each CSV file in dependency order
     for (let fileIndex = 0; fileIndex < existingFiles.length; fileIndex++) {
@@ -137,6 +169,25 @@ export async function importCamTrapDatasetWithPath(
         throw new DOMException('Import cancelled', 'AbortError')
       }
 
+      // Build a per-row drop filter for observations: drop rows whose mediaID
+      // is non-empty but missing from the media table we just inserted.
+      let rowFilter = null
+      if (name === 'observations') {
+        const insertedMediaIDs = new Set(
+          sqlite
+            .prepare('SELECT mediaID FROM media')
+            .all()
+            .map((r) => r.mediaID)
+        )
+        rowFilter = (row) => {
+          if (row.mediaID && !insertedMediaIDs.has(row.mediaID)) {
+            synthesized.droppedObservationRows += 1
+            return false
+          }
+          return true
+        }
+      }
+
       // Insert data using Drizzle with progress callback
       await insertCSVData(
         db,
@@ -146,6 +197,7 @@ export async function importCamTrapDatasetWithPath(
         name,
         columns,
         directoryPath,
+        importFolderForMedia,
         (batchProgress) => {
           if (onProgress) {
             onProgress({
@@ -157,10 +209,67 @@ export async function importCamTrapDatasetWithPath(
             })
           }
         },
-        signal
+        signal,
+        rowFilter
       )
 
       log.info(`Successfully imported ${file} into ${name} table`)
+
+      // After deployments are loaded, pre-scan media + observations for
+      // deploymentIDs that reference rows missing from deployments.csv and
+      // synthesize stub deployments so the FK insert below succeeds.
+      if (name === 'deployments') {
+        const knownDeploymentIDs = new Set(
+          sqlite
+            .prepare('SELECT deploymentID FROM deployments')
+            .all()
+            .map((r) => r.deploymentID)
+        )
+        const orphans = await collectOrphanDeployments({
+          directoryPath,
+          knownDeploymentIDs,
+          signal
+        })
+        if (orphans.size > 0) {
+          const stubRows = []
+          let logged = 0
+          const LOG_CAP = 50
+          for (const [orphanID, info] of orphans) {
+            stubRows.push({
+              deploymentID: orphanID,
+              // Stubs bypass transformDeploymentRow's synthesis rule on
+              // purpose — they have no coords to derive from. Reusing the
+              // orphan deploymentID as locationID gives the inline-rename
+              // IPC a target and keeps the row from displaying as
+              // "Unnamed Location". See spec § Synthesized row shape.
+              locationID: orphanID,
+              locationName: null,
+              deploymentStart: info.start,
+              deploymentEnd: info.end,
+              latitude: null,
+              longitude: null,
+              cameraModel: null,
+              cameraID: null,
+              coordinateUncertainty: null
+            })
+            synthesized.orphanMediaRows += info.mediaCount
+            synthesized.orphanObservationRows += info.obsCount
+            if (logged < LOG_CAP) {
+              log.warn(
+                `Synthesized stub deployment ${orphanID} from ${info.mediaCount} media rows / ${info.obsCount} obs rows; window ${info.start || 'null'}..${info.end || 'null'}`
+              )
+              logged += 1
+            }
+          }
+          if (orphans.size > LOG_CAP) {
+            log.warn(`...and ${orphans.size - LOG_CAP} more synthesized deployments (capped)`)
+          }
+          const stubInserter = createBulkInserter(sqlite, 'deployments', Object.keys(stubRows[0]))
+          stubInserter(stubRows)
+          synthesized.deployments = stubRows.length
+          log.info(`Inserted ${stubRows.length} synthesized stub deployments`)
+        }
+      }
     }
 
     // Post-process: expand event-based observations to individual media
@@ -204,7 +313,8 @@ export async function importCamTrapDatasetWithPath(
 
     return {
       dbPath,
-      data: metadataRecord
+      data: metadataRecord,
+      synthesized
     }
   } catch (error) {
     log.error('Error importing dataset:', error)
@@ -326,8 +436,10 @@ async function insertCSVData(
   tableName,
   columns,
   directoryPath,
+  importFolderForMedia,
   onProgress = null,
-  signal = null
+  signal = null,
+  rowFilter = null
 ) {
   log.debug(`Beginning data insertion from ${filePath} to table ${tableName}`)
   log.debug(`directoryPath: ${directoryPath}`)
@@ -354,8 +466,15 @@ async function insertCSVData(
         throw new DOMException('Import cancelled', 'AbortError')
       }
 
-      const transformedRow = transformRowToSchema(row, tableName, columns, directoryPath, pathCache)
-      if (transformedRow) {
+      const transformedRow = transformRowToSchema(
+        row,
+        tableName,
+        columns,
+        directoryPath,
+        pathCache,
+        importFolderForMedia
+      )
+      if (transformedRow && (!rowFilter || rowFilter(transformedRow))) {
         // Create bulk inserter on first row (need column names from transformed data)
         if (!inserter) {
           inserter = createBulkInserter(sqlite, tableName, Object.keys(transformedRow))
@@ -410,13 +529,20 @@ async function insertCSVData(
  * @param {string} directoryPath - Path to the CamTrapDP directory
  * @returns {Object|null} - Transformed row data or null if invalid
  */
-function transformRowToSchema(row, tableName, columns, directoryPath, pathCache) {
+function transformRowToSchema(
+  row,
+  tableName,
+  columns,
+  directoryPath,
+  pathCache,
+  importFolderForMedia
+) {
   try {
     switch (tableName) {
       case 'deployments':
         return transformDeploymentRow(row)
       case 'media':
-        return transformMediaRow(row, directoryPath, pathCache)
+        return transformMediaRow(row, directoryPath, pathCache, importFolderForMedia)
       case 'observations':
         return transformObservationRow(row)
       default:
@@ -451,14 +577,27 @@ function transformDeploymentRow(row) {
     }
   }
 
+  // parseFloatOrNull preserves 0 (the equator / prime meridian); plain
+  // `parseFloat(x) || null` would discard it.
+  const latitude = parseFloatOrNull(row.latitude)
+  const longitude = parseFloatOrNull(row.longitude)
+  let locationID = row.locationID || row.location_id || null
+  // Synthesize a deterministic locationID when the curator left it blank but
+  // gave us coords. ~11 m precision (4 decimals) absorbs GPS jitter so
+  // re-deployments at the same physical spot share an ID. Self-identifying
+  // prefix lets the exporter strip these back to empty on round-trip.
+  if (!locationID && latitude != null && longitude != null) {
+    locationID = `${SYNTH_LOCATION_ID_PREFIX}${latitude.toFixed(4)},${longitude.toFixed(4)}`
+  }
+
   const transformed = {
     deploymentID,
-    locationID: row.locationID || row.location_id || null,
+    locationID,
     locationName: row.locationName || row.location_name || null,
     deploymentStart: transformDateField(row.deploymentStart || row.deployment_start),
     deploymentEnd: transformDateField(row.deploymentEnd || row.deployment_end),
-    latitude: parseFloat(row.latitude) || null,
-    longitude: parseFloat(row.longitude) || null,
+    latitude,
+    longitude,
     // CamtrapDP EXIF fields
     cameraModel: row.cameraModel || row.camera_model || null,
     cameraID: row.cameraID || row.camera_id || null,
@@ -472,7 +611,7 @@ function transformDeploymentRow(row) {
 /**
  * Transform media CSV row to media schema
  */
-function transformMediaRow(row, directoryPath, pathCache) {
+function transformMediaRow(row, directoryPath, pathCache, importFolderForMedia) {
   const mediaID = row.mediaID || row.media_id
 
   // Skip rows without required primary key
@@ -505,7 +644,13 @@ function transformMediaRow(row, directoryPath, pathCache) {
     fileName: row.fileName || row.file_name || path.basename(row.filePath || row.file_path || ''),
     fileMediatype: row.fileMediatype || row.file_mediatype || null,
     exifData,
-    favorite
+    favorite,
+    // Stamp the absolute package directory so the Sources tab can group by it.
+    // Per spec D3: importFolder = "absolute package directory path" for CamtrapDP imports.
+    // Callers (GBIF, demo) that extract into an ephemeral temp dir override this
+    // with null so the Sources tab falls back to the study name instead of
+    // showing a soon-to-be-deleted /tmp path.
+    importFolder: importFolderForMedia
   }
 }
 

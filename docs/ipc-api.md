@@ -40,6 +40,8 @@ const { data, error } = await window.api.getSequences(studyId, { limit: 20 })
 | `checkStudyHasEventIDs(studyId)`       | `study:has-event-ids`    | studyId                      | `{ data: boolean }`        |
 | `getSequenceGap(studyId)`              | `study:get-sequence-gap` | studyId                      | `{ data: number \| null }` |
 | `setSequenceGap(studyId, sequenceGap)` | `study:set-sequence-gap` | studyId, sequenceGap (0-600) | `{ data: number }`         |
+| `getStudyCacheStats(studyId)`          | `study:get-cache-stats`  | studyId                      | `{ data: { total: { bytes, files }, breakdown: { transcodes, thumbnails, images, videos } } }` — each breakdown entry is `{ bytes, files }`. Files in `cache/` outside the four known subdirs are counted toward `total` only. |
+| `clearStudyCache(studyId)`             | `study:clear-cache`      | studyId                      | `{ data: { freedBytes, clearedFiles, error? } }` — removes the entire `<study>/cache/` directory; subdirs are recreated lazily by per-cache services on next write. |
 
 ### Data Import
 
@@ -98,6 +100,7 @@ Runs in the sequences worker thread (off the main process). Threatened species a
 | `getDeploymentLocations(studyId)`                              | `deployments:get-locations`     | studyId                           | `{ data: Deployment[] }` |
 | `getAllDeployments(studyId)`                                   | `deployments:get-all`           | studyId                           | `{ data: Deployment[] }` |
 | `getDeploymentSpecies(studyId, deploymentID)`                  | `deployments:get-species`       | studyId, deploymentID             | `{ data: { scientificName, count }[] }` |
+| `getDeploymentStats(studyId, deploymentID)`                    | `deployments:get-stats`         | studyId, deploymentID             | `{ data: { mediaCount, observationCount, blankCount } }` — `blankCount` is media-level (count of media with no real animal/human/vehicle observation), matching the species-filter popover's `BLANK_SENTINEL` count. |
 | `getDeploymentsActivity(studyId, periodCount?)`                | `deployments:get-activity`      | studyId, periodCount (optional)   | `{ data: Activity[] }`   |
 | `setDeploymentLatitude(studyId, deploymentID, latitude)`       | `deployments:set-latitude`      | studyId, deploymentID, latitude   | `{ success: boolean }`   |
 | `setDeploymentLongitude(studyId, deploymentID, longitude)`     | `deployments:set-longitude`     | studyId, deploymentID, longitude  | `{ success: boolean }`   |
@@ -106,6 +109,8 @@ Runs in the sequences worker thread (off the main process). Threatened species a
 **Note on `getDeploymentLocations` vs `getAllDeployments`:** `getDeploymentLocations` dedupes by `(latitude, longitude)` and returns one row per physical camera-trap location — intended for read-only overview maps. `getAllDeployments` returns every deployment row (no dedup) — used by the Deployments tab's editable map so `MarkerClusterGroup` can correctly count co-located deployments and dragging doesn't silently split a group. `getDeploymentsActivity` runs in the sequences worker thread to keep the UI responsive on large studies.
 
 **Note on `periodCount`:** `getDeploymentsActivity` accepts an optional `periodCount` (number of time-period buckets in the per-deployment timeline). The Deployments tab measures the timeline column width and passes a bucketed value (multiples of 10) so wider screens get more circles per row. Defaults to 20 if null/0/non-numeric, and is clamped to a maximum of 100 backend-side to bound the SUM(CASE)×N SQL aggregation.
+
+**Note on `hasTimestamps` / `totalCount`:** `getDeploymentsActivity` always returns a `hasTimestamps` boolean and always emits `totalCount` per deployment (observation count). When all deployments lack `deploymentStart`/`deploymentEnd` (e.g. LILA Biome Health, where the source COCO has no per-image datetimes), the response sets `hasTimestamps: false`, returns `startDate: null` / `endDate: null`, and emits each deployment with `periods: []`. In the timestamped branch, `totalCount` equals the sum of period counts. The renderer reads `hasTimestamps` to hide the date axis, sparkline column, and hover crosshair, while still listing every deployment with its `totalCount`.
 
 **Note on `setDeploymentLocationName`:** This updates the `locationName` for ALL deployments with the given `locationID`. When deployments share a `locationID` (grouped deployments), renaming any one updates the entire group.
 
@@ -254,11 +259,42 @@ The `setMediaFavorite` endpoint toggles a media item's favorite status. Favorite
 - CamtrapDP compliant - exported/imported with the standard `favorite` field
 - Displayed with a heart icon in the media modal and Best Captures carousel
 
-### Files
+### Sources
 
-| Method                  | Channel          | Parameters | Returns               |
-| ----------------------- | ---------------- | ---------- | --------------------- |
-| `getFilesData(studyId)` | `files:get-data` | studyId    | `{ data: FileStats }` |
+| Method                    | Channel            | Parameters | Returns                  |
+| ------------------------- | ------------------ | ---------- | ------------------------ |
+| `getSourcesData(studyId)` | `sources:get-data` | studyId    | `{ data: SourceRow[] }` |
+
+`SourceRow` shape:
+
+```ts
+{
+  importFolder: string,        // grouping key, also displayed as the source path/label
+  isRemote: boolean,           // true if any media.filePath in this source starts with 'http'
+  imageCount: number,
+  videoCount: number,
+  deploymentCount: number,
+  observationCount: number,    // observations attached to this source's media
+  activeRun: {                 // null when no model_run with status='running' targets this source
+    runID: string,
+    modelID: string,
+    modelVersion: string,
+    processed: number,         // count(model_outputs) for this run scoped to this source
+    total: number              // imageCount + videoCount
+  } | null,
+  lastModelUsed: { modelID: string, modelVersion: string } | null,
+  deployments: Array<{
+    deploymentID: string,
+    label: string,             // deployments.locationName ?? media.folderName ?? deploymentID
+    imageCount: number,
+    videoCount: number,
+    observationCount: number,
+    activeRun: { runID, processed, total } | null
+  }>
+}
+```
+
+A "source" is derived at query time as a distinct value of `media.importFolder`. No `sources` table exists — the grouping is computed on every call.
 
 ### Observations
 
@@ -315,14 +351,17 @@ and drops it from the stack. Direct user edits go through the `update-bbox` /
 
 | Method                                                                       | Channel                                       | Parameters                  | Returns                |
 | ---------------------------------------------------------------------------- | --------------------------------------------- | --------------------------- | ---------------------- |
-| `selectImagesDirectoryOnly()`                                                | `importer:select-images-directory-only`       | -                           | `{ path, id }`         |
-| `selectImagesDirectoryWithModel(directoryPath, modelReference, countryCode)` | `importer:select-images-directory-with-model` | path, modelRef, countryCode | `{ path, id }`         |
-| `getImportStatus(id)`                                                        | `importer:get-status`                         | study id                    | `ImportStatus`         |
-| `stopImport(id)`                                                             | `importer:stop`                               | study id                    | `{ success: boolean }` |
-| `resumeImport(id)`                                                           | `importer:resume`                             | study id                    | `{ success: boolean }` |
-| `selectMoreImagesDirectory(id)`                                              | `importer:select-more-images-directory`       | study id                    | `{ success: boolean }` |
+| `selectImagesDirectoryOnly()`                                                | `importer:select-images-directory-only`       | -                           | `{ path, id }`                                                                |
+| `selectImagesDirectoryWithModel(directoryPath, modelReference, countryCode)` | `importer:select-images-directory-with-model` | path, modelRef, countryCode | `{ path, id }`                                                                |
+| `addFolder(studyId, directoryPath, modelReference, country)`                 | `importer:add-folder`                         | studyId, path, modelRef, countryCode | `{ success: boolean, error?: string }`                                |
+| `getStudyLatestModelOptions(studyId)`                                        | `study:get-latest-model-options`              | studyId                     | `{ modelReference: { id, version } \| null, country: string \| null }`        |
+| `getImportStatus(id)`                                                        | `importer:get-status`                         | study id                    | `ImportStatus`                                                                |
+| `stopImport(id)`                                                             | `importer:stop`                               | study id                    | `{ success: boolean }`                                                        |
+| `resumeImport(id)`                                                           | `importer:resume`                             | study id                    | `{ success: boolean }`                                                        |
 
 **Note:** `importer:stop` now pauses instantly (no server kill). `importer:resume` resumes instantly if paused, or cold-starts from `modelRuns` if the app was restarted. These handlers are backed by the persistent job queue (`src/main/ipc/queue.js`) rather than in-memory state.
+
+`importer:add-folder` is the canonical "Add images directory" entry point used by the Sources tab modal. The renderer chooses model + country (defaulting to the latest run when one exists) and posts here. Supersedes the older `importer:select-more-images-directory` channel. `study:get-latest-model-options` is what the modal calls on open to pre-fill / lock those choices.
 
 ### Video Transcoding
 

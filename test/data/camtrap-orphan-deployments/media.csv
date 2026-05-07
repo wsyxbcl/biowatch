@@ -1,0 +1,6 @@
+mediaID,deploymentID,filePath,fileName,timestamp
+media001,deploy001,images/forest/IMG001.JPG,IMG001.JPG,2023-03-20T14:30:15Z
+media002,deploy002,images/meadow/IMG002.JPG,IMG002.JPG,2023-04-10T16:20:10Z
+media003,deploy002,images/meadow/IMG003.JPG,IMG003.JPG,2023-04-12T08:00:00Z
+media004,deploy999,images/orphan/IMG004.JPG,IMG004.JPG,2023-05-01T12:00:00Z
+media005,deploy999,images/orphan/IMG005.JPG,IMG005.JPG,2023-05-15T18:30:00Z

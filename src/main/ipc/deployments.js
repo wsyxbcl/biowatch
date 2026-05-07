@@ -13,7 +13,10 @@ import {
   closeStudyDatabase,
   getDeploymentLocations,
   getAllDeployments,
-  getSpeciesForDeployment
+  getSpeciesForDeployment,
+  getMediaCountForDeployment,
+  getObservationCountForDeployment,
+  getBlankMediaCountForDeployment
 } from '../database/index.js'
 import { runInWorker } from '../services/sequences/runInWorker.js'
 
@@ -74,6 +77,30 @@ export function registerDeploymentsIPCHandlers() {
       return { data: result }
     } catch (error) {
       log.error('Error getting species for deployment:', error)
+      return { error: error.message }
+    }
+  })
+
+  // At-a-glance stats for a single deployment — used by the deployment
+  // settings popover. blankCount is media-level (matches the BLANK_SENTINEL
+  // count shown in the species-filter popover).
+  ipcMain.handle('deployments:get-stats', async (_, studyId, deploymentID) => {
+    try {
+      const dbPath = getStudyDatabasePath(app.getPath('userData'), studyId)
+      if (!dbPath || !existsSync(dbPath)) {
+        log.warn(`Database not found for study ID: ${studyId}`)
+        return { error: 'Database not found for this study' }
+      }
+
+      const [mediaCount, observationCount, blankCount] = await Promise.all([
+        getMediaCountForDeployment(dbPath, deploymentID),
+        getObservationCountForDeployment(dbPath, deploymentID),
+        getBlankMediaCountForDeployment(dbPath, deploymentID)
+      ])
+
+      return { data: { mediaCount, observationCount, blankCount } }
+    } catch (error) {
+      log.error('Error getting deployment stats:', error)
       return { error: error.message }
     }
   })

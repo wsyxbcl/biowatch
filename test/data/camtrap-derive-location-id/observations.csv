@@ -1,0 +1,2 @@
+observationID,mediaID,deploymentID,eventID,eventStart,eventEnd,scientificName,commonName,classificationProbability,count
+o1,m1,d_curator,e1,2023-03-20T14:30:15Z,2023-03-20T14:30:45Z,Cervus elaphus,Red Deer,0.95,1

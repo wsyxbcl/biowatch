@@ -2,7 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import * as HoverCard from '@radix-ui/react-hover-card'
-import { PawPrint, Camera, CalendarDays, Eye, Image as ImageIcon } from 'lucide-react'
+import {
+  PawPrint,
+  Camera,
+  CalendarDays,
+  Eye,
+  Image as ImageIcon,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react'
 import { useNavigate } from 'react-router'
 import KpiTile from './KpiTile'
 import SpanPicker from './SpanPicker'
@@ -61,6 +69,11 @@ const ICON_SIZE = 14
  * - Span tile is editable (DateTimePicker popover).
  * - Species tile is clickable when threatenedCount > 0 (threatened-list popover).
  *
+ * Renders as a horizontal carousel matching BestMediaCarousel's UX: fixed-width
+ * tiles, snap scroll, scrollbar hidden, chevrons + fade gradients on the edges
+ * when there's more to scroll. On wide screens all 5 tiles fit naturally so
+ * the chevrons stay hidden.
+ *
  * @param {Object} props
  * @param {string} props.studyId
  * @param {Object} props.studyData - The full study `data` object (description, contributors, temporal, …).
@@ -79,6 +92,34 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
   const closePopover = () => setOpenPopover(null)
   const spanTriggerRef = useRef(null)
   const speciesTriggerRef = useRef(null)
+  // Track whether either edge of the scroll area is reached so the chevrons
+  // + fade gradients only render when there's something to scroll toward.
+  const carouselRef = useRef(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  useEffect(() => {
+    const container = carouselRef.current
+    if (!container) return
+    const checkScroll = () => {
+      setCanScrollLeft(container.scrollLeft > 0)
+      setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 5)
+    }
+    container.addEventListener('scroll', checkScroll)
+    window.addEventListener('resize', checkScroll)
+    checkScroll()
+    return () => {
+      container.removeEventListener('scroll', checkScroll)
+      window.removeEventListener('resize', checkScroll)
+    }
+  }, [])
+
+  const scrollCarousel = (direction) => {
+    const container = carouselRef.current
+    if (!container) return
+    const amount = container.clientWidth * 0.75
+    container.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' })
+  }
 
   const { data: stats } = useQuery({
     queryKey: ['overviewStats', studyId],
@@ -125,72 +166,115 @@ export default function KpiBand({ studyId, studyData, isImporting }) {
     closePopover()
   }
 
+  // Tiles are pinned at w-56 to match BestMediaCarousel's MediaCard width.
+  // `py-2` reserves vertical room so tile hover shadows aren't clipped —
+  // `overflow-x: auto` forces y-axis clipping. On wide screens all 5 tiles
+  // fit and the chevrons hide naturally because canScrollRight stays false.
+  const tileWrapperClass = 'flex flex-shrink-0 w-56 snap-start'
+
   return (
-    <div className="grid grid-cols-5 gap-2 @7xl:gap-2.5">
-      <div className="flex" ref={speciesTriggerRef}>
-        <KpiTile
-          icon={<PawPrint size={ICON_SIZE} />}
-          label="Species"
-          value={formatStatNumber(speciesCount)}
-          sub={threatenedCount > 0 ? 'threatened' : null}
-          subAccent={threatenedCount > 0 ? formatStatNumber(threatenedCount) : null}
-          onClick={threatenedCount > 0 ? () => togglePopover('threatened') : undefined}
-        />
-      </div>
-      <PortalPopover
-        open={showThreatened && threatenedSpecies.length > 0}
-        triggerRef={speciesTriggerRef}
+    <div className="relative">
+      {canScrollLeft && (
+        <>
+          <button
+            type="button"
+            onClick={() => scrollCarousel('left')}
+            aria-label="Scroll KPIs left"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 rounded-full p-1 shadow-md border border-gray-200"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent z-[1] pointer-events-none" />
+        </>
+      )}
+      {canScrollRight && (
+        <>
+          <button
+            type="button"
+            onClick={() => scrollCarousel('right')}
+            aria-label="Scroll KPIs right"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 rounded-full p-1 shadow-md border border-gray-200"
+          >
+            <ChevronRight size={20} />
+          </button>
+          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent z-[1] pointer-events-none" />
+        </>
+      )}
+      <div
+        ref={carouselRef}
+        className="flex overflow-x-auto snap-x snap-mandatory gap-3 py-2 scrollbar-hide"
       >
-        <ThreatenedSpeciesPopover
-          studyId={studyId}
-          species={threatenedSpecies}
-          onClose={closePopover}
-          ignoreOutsideClickRef={speciesTriggerRef}
-        />
-      </PortalPopover>
+        <div className={tileWrapperClass} ref={speciesTriggerRef}>
+          <KpiTile
+            icon={<PawPrint size={ICON_SIZE} />}
+            label="Species"
+            value={formatStatNumber(speciesCount)}
+            sub={threatenedCount > 0 ? 'threatened' : null}
+            subAccent={threatenedCount > 0 ? formatStatNumber(threatenedCount) : null}
+            onClick={threatenedCount > 0 ? () => togglePopover('threatened') : undefined}
+          />
+        </div>
+        <PortalPopover
+          open={showThreatened && threatenedSpecies.length > 0}
+          triggerRef={speciesTriggerRef}
+        >
+          <ThreatenedSpeciesPopover
+            studyId={studyId}
+            species={threatenedSpecies}
+            onClose={closePopover}
+            ignoreOutsideClickRef={speciesTriggerRef}
+          />
+        </PortalPopover>
 
-      <KpiTile
-        icon={<Camera size={ICON_SIZE} />}
-        label="Deployments"
-        value={formatStatNumber(cameraCount)}
-        sub={locationCount > 0 ? `across ${formatStatNumber(locationCount)} locations` : null}
-        onClick={cameraCount > 0 ? () => navigate(`/study/${studyId}/deployments`) : undefined}
-      />
+        <div className={tileWrapperClass}>
+          <KpiTile
+            icon={<Camera size={ICON_SIZE} />}
+            label="Deployments"
+            value={formatStatNumber(cameraCount)}
+            sub={locationCount > 0 ? `across ${formatStatNumber(locationCount)} locations` : null}
+            onClick={cameraCount > 0 ? () => navigate(`/study/${studyId}/deployments`) : undefined}
+          />
+        </div>
 
-      <div className="flex" ref={spanTriggerRef}>
-        <KpiTile
-          icon={<CalendarDays size={ICON_SIZE} />}
-          label="Span"
-          value={formatSpan(rangeStart, rangeEnd)}
-          sub={formatRangeShort(rangeStart, rangeEnd)}
-          onEdit={() => togglePopover('span')}
-        />
+        <div className={tileWrapperClass} ref={spanTriggerRef}>
+          <KpiTile
+            icon={<CalendarDays size={ICON_SIZE} />}
+            label="Span"
+            value={formatSpan(rangeStart, rangeEnd)}
+            sub={formatRangeShort(rangeStart, rangeEnd)}
+            onEdit={() => togglePopover('span')}
+          />
+        </div>
+        <PortalPopover open={showPicker} triggerRef={spanTriggerRef}>
+          <SpanPicker
+            startValue={rangeStart}
+            endValue={rangeEnd}
+            onSave={saveRange}
+            onCancel={closePopover}
+            onResetToAuto={resetDatesToAuto}
+            ignoreOutsideClickRef={spanTriggerRef}
+          />
+        </PortalPopover>
+
+        <div className={tileWrapperClass}>
+          <KpiTile
+            icon={<Eye size={ICON_SIZE} />}
+            label="Observations"
+            value={formatStatNumber(observationCount)}
+            sub={cameraDays > 0 ? `from ${formatCompactCount(cameraDays)} camera-days` : null}
+            onClick={observationCount > 0 ? () => navigate(`/study/${studyId}/media`) : undefined}
+          />
+        </div>
+        <div className={tileWrapperClass}>
+          <KpiTile
+            icon={<ImageIcon size={ICON_SIZE} />}
+            label="Media"
+            value={formatStatNumber(mediaCount)}
+            sub={mediaCount > 0 ? 'photos & videos' : null}
+            onClick={mediaCount > 0 ? () => navigate(`/study/${studyId}/media`) : undefined}
+          />
+        </div>
       </div>
-      <PortalPopover open={showPicker} triggerRef={spanTriggerRef}>
-        <SpanPicker
-          startValue={rangeStart}
-          endValue={rangeEnd}
-          onSave={saveRange}
-          onCancel={closePopover}
-          onResetToAuto={resetDatesToAuto}
-          ignoreOutsideClickRef={spanTriggerRef}
-        />
-      </PortalPopover>
-
-      <KpiTile
-        icon={<Eye size={ICON_SIZE} />}
-        label="Observations"
-        value={formatStatNumber(observationCount)}
-        sub={cameraDays > 0 ? `from ${formatCompactCount(cameraDays)} camera-days` : null}
-        onClick={observationCount > 0 ? () => navigate(`/study/${studyId}/media`) : undefined}
-      />
-      <KpiTile
-        icon={<ImageIcon size={ICON_SIZE} />}
-        label="Media"
-        value={formatStatNumber(mediaCount)}
-        sub={mediaCount > 0 ? 'photos & videos' : null}
-        onClick={mediaCount > 0 ? () => navigate(`/study/${studyId}/media`) : undefined}
-      />
     </div>
   )
 }

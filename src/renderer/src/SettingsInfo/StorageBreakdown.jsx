@@ -1,17 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { FolderOpen } from 'lucide-react'
 
-function formatBytes(bytes) {
-  if (!bytes || bytes < 1024) return `${bytes || 0} B`
-  const units = ['KB', 'MB', 'GB', 'TB']
-  let value = bytes / 1024
-  let unitIndex = 0
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024
-    unitIndex++
-  }
-  return `${value.toFixed(value >= 100 ? 0 : 1)} ${units[unitIndex]}`
-}
+import { formatBytes } from '../utils/formatBytes.js'
 
 const ROW_LABELS = {
   models: 'AI Models',

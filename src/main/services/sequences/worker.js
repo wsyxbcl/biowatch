@@ -20,8 +20,10 @@ import {
   getSequenceAwareHeatmapSQL,
   getSequenceAwareDailyActivitySQL,
   getBestMedia,
+  getBestImagePerSpecies,
   getBlankMediaCount,
   getDeploymentsActivity,
+  getSourcesData,
   getOverviewStats
 } from '../../database/index.js'
 import { getPaginatedSequences } from './pagination.js'
@@ -128,6 +130,16 @@ async function run() {
       // src/main/database/queries/best-media.js for the query pipeline.
       return getBestMedia(dbPath, workerData.options || {})
     }
+    case 'best-images-per-species': {
+      // Overview tab's species-distribution hover tooltips. Two SQLite paths,
+      // both expensive on large studies: the full multi-CTE scoring CTE
+      // (~440-840ms on 209k obs / 49k bbox), and — counter-intuitively — the
+      // no-bbox short-circuit probe, which has to scan the entire observations
+      // table looking for a non-null bboxX (~1.3-1.7s cold on 2.7-4M obs
+      // studies that turn out to have no bboxes at all). Off-thread so the
+      // main process keeps responding to other IPC during that window.
+      return getBestImagePerSpecies(dbPath)
+    }
     case 'pagination': {
       // Gallery paginated sequences. Studies with long event-grouped sequences
       // can require scanning hundreds of media to form one page of 15 — running
@@ -139,6 +151,12 @@ async function run() {
       // SUM(CASE) × N scan over observations was locking the renderer for
       // multiple seconds on first open of large studies.
       return getDeploymentsActivity(dbPath, workerData.periodCount)
+    }
+    case 'sources-data': {
+      // Sources tab rollup. Runs four queries (per-source, per-deployment,
+      // last-model-used, active-run) over media/observations/model_outputs and
+      // would otherwise block the renderer on large studies.
+      return getSourcesData(dbPath)
     }
     case 'overview-stats': {
       // Overview tab's KPI band — counts + derived range in two SQLite

@@ -1,0 +1,12 @@
+{
+  "name": "test-camtrap-derive-location-id",
+  "title": "Test CamTrap Dataset for locationID synthesis",
+  "description": "Fixture: deployments with empty locationID and populated lat/lon should get geo: IDs.",
+  "version": "1.0.0",
+  "created": "2024-01-01T00:00:00Z",
+  "resources": [
+    { "name": "deployments", "path": "deployments.csv" },
+    { "name": "media", "path": "media.csv" },
+    { "name": "observations", "path": "observations.csv" }
+  ]
+}

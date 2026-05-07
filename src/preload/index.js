@@ -45,6 +45,9 @@ const api = {
   getDeploymentSpecies: async (studyId, deploymentID) => {
     return await electronAPI.ipcRenderer.invoke('deployments:get-species', studyId, deploymentID)
   },
+  getDeploymentStats: async (studyId, deploymentID) => {
+    return await electronAPI.ipcRenderer.invoke('deployments:get-stats', studyId, deploymentID)
+  },
   deleteStudyDatabase: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('study:delete-database', studyId)
   },
@@ -56,6 +59,16 @@ const api = {
   },
   setSequenceGap: async (studyId, sequenceGap) => {
     return await electronAPI.ipcRenderer.invoke('study:set-sequence-gap', studyId, sequenceGap)
+  },
+  getStudyCacheStats: async (studyId) => {
+    const response = await electronAPI.ipcRenderer.invoke('study:get-cache-stats', studyId)
+    if (response.error) throw new Error(response.error)
+    return response.data
+  },
+  clearStudyCache: async (studyId) => {
+    const response = await electronAPI.ipcRenderer.invoke('study:clear-cache', studyId)
+    if (response.error) throw new Error(response.error)
+    return response.data
   },
   getLocationsActivity: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('locations:get-activity', studyId)
@@ -205,8 +218,17 @@ const api = {
   resumeImport: async (id) => {
     return await electronAPI.ipcRenderer.invoke('importer:resume', id)
   },
-  selectMoreImagesDirectory: async (id) => {
-    return await electronAPI.ipcRenderer.invoke('importer:select-more-images-directory', id)
+  getStudyLatestModelOptions: async (id) => {
+    return await electronAPI.ipcRenderer.invoke('study:get-latest-model-options', id)
+  },
+  addFolder: async (id, directoryPath, modelReference, country) => {
+    return await electronAPI.ipcRenderer.invoke(
+      'importer:add-folder',
+      id,
+      directoryPath,
+      modelReference,
+      country
+    )
   },
   setDeploymentLatitude: async (studyId, deploymentID, latitude) => {
     return await electronAPI.ipcRenderer.invoke(
@@ -241,8 +263,8 @@ const api = {
   countMediaWithNullTimestamps: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('media:count-null-timestamps', studyId)
   },
-  getFilesData: async (studyId) => {
-    return await electronAPI.ipcRenderer.invoke('files:get-data', studyId)
+  getSourcesData: async (studyId) => {
+    return await electronAPI.ipcRenderer.invoke('sources:get-data', studyId)
   },
   exportImageDirectories: async (studyId, options = {}) => {
     return await electronAPI.ipcRenderer.invoke('export:image-directories', studyId, options)

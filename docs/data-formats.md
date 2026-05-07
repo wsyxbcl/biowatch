@@ -56,6 +56,22 @@ dataset/
 > tags are stripped, `<ulink>` URLs are inlined as `text (url)`, and common
 > HTML entities are decoded.
 
+> **Note on synthesized `locationID`:** Camtrap DP packages that leave
+> `locationID` blank but provide `latitude` / `longitude` get a deterministic
+> identifier of the form `biowatch-geo:<lat>,<lon>` written to
+> `deployments.locationID` at import time (4 decimal places ≈ 11 m precision).
+> The CamTrap-DP exporter strips this prefix back to empty so the original
+> CSV shape is preserved on round-trip. See `import-export.md` ("Synthesized
+> `locationID` from coordinates").
+
+> **Note on synthesized deployments:** When `media.csv` or `observations.csv`
+> reference `deploymentID`s missing from `deployments.csv`, the importer
+> writes stub rows so the FK constraints hold. Stubs are stored with
+> `locationID = deploymentID`, `locationName = NULL`, `latitude / longitude /
+> cameraID / cameraModel / coordinateUncertainty = NULL`, and `deploymentStart`
+> / `deploymentEnd` derived from the referencing rows' min/max timestamps.
+> See `import-export.md` ("Orphan deploymentID recovery") for the full flow.
+
 ### deployments.csv
 
 | Column | Type | Description |
