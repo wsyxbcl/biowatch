@@ -114,6 +114,8 @@ export function buildServalTaxonomyResolver(rows) {
     addAlias(aliasMap, tag, resolved)
     addAlias(aliasMap, scientificName, resolved)
     addAlias(aliasMap, chineseName, resolved)
+    addAlias(aliasMap, `${tag} ${chineseName}`, resolved)
+    addAlias(aliasMap, `${tag}${chineseName}`, resolved)
   }
 
   return {
@@ -160,7 +162,10 @@ async function readServalTaxonomy(taglistPath) {
 }
 
 function candidateBundledTaglistPaths() {
-  const candidates = [path.join(PROJECT_ROOT, BUNDLED_TAGLIST_RELATIVE_PATH)]
+  const candidates = [
+    path.join(process.cwd(), BUNDLED_TAGLIST_RELATIVE_PATH),
+    path.join(PROJECT_ROOT, BUNDLED_TAGLIST_RELATIVE_PATH)
+  ]
 
   if (process.resourcesPath) {
     candidates.push(

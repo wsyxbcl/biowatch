@@ -9,6 +9,7 @@ import csv from 'csv-parser'
 
 import {
   buildServalTaxonomyResolver,
+  findServalTaglistPath,
   importServalDatasetWithPath
 } from '../../../../src/main/services/import/parsers/serval.js'
 
@@ -48,6 +49,16 @@ describe('Serval taxonomy resolver', () => {
 
   test('resolves Chinese labels through mazeNameCN', () => {
     assert.deepEqual(resolver.resolve('领岩鹨'), {
+      matched: true,
+      blank: false,
+      scientificName: 'prunella collaris',
+      commonName: 'alpine accentor',
+      sourceLabel: 'Alpine accentor'
+    })
+  })
+
+  test('resolves mixed English and Chinese Serval labels', () => {
+    assert.deepEqual(resolver.resolve('Alpine accentor 领岩鹨'), {
       matched: true,
       blank: false,
       scientificName: 'prunella collaris',
@@ -165,6 +176,33 @@ describe('Serval CSV import', () => {
 })
 
 describe('bundled Serval taglist', () => {
+  test('resolves the bundled taglist from the current working directory', () => {
+    const root = join(tmpdir(), 'biowatch-serval-cwd-test', Date.now().toString())
+    const inputDir = join(root, 'input')
+    const bundledDir = join(root, 'resources', 'taxonomy')
+    const originalCwd = process.cwd()
+
+    mkdirSync(inputDir, { recursive: true })
+    mkdirSync(bundledDir, { recursive: true })
+
+    try {
+      const tagsPath = join(inputDir, 'tags.csv')
+      const taglistPath = join(bundledDir, 'serval-taglist.csv')
+      writeFileSync(tagsPath, 'path,deployment,time,species,event_id\n')
+      writeFileSync(
+        taglistPath,
+        ['tag,mazeScientificName,mazeNameCN', 'Blank,Blank,无动物'].join('\n')
+      )
+
+      process.chdir(root)
+
+      assert.equal(findServalTaglistPath(tagsPath), taglistPath)
+    } finally {
+      process.chdir(originalCwd)
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
   test('ships as a complete three-column Biowatch-compatible CSV', async () => {
     const taglistPath = join(process.cwd(), 'resources', 'taxonomy', 'serval-taglist.csv')
     assert.equal(existsSync(taglistPath), true, 'Bundled Serval taglist should exist')
