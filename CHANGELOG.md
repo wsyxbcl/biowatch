@@ -5,6 +5,26 @@ All notable changes to Biowatch will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.7-maze.1] - 2026-05-07
+
+### Added
+
+- Serval CSV import for `tags.csv`, with bundled Biowatch-compatible taxonomy lookup.
+- Serval labels can resolve from English tags, Chinese names, scientific names, and English+Chinese combined labels.
+- Packaged builds can use local/offline Python environment archives for model setup.
+
+### Changed
+
+- Info/support links identify this build as the `wsyxbcl` / maze fork while keeping an upstream Biowatch link available.
+
+### Fixed
+
+- Serval taglist lookup works correctly in packaged app builds.
+- Serval labels that cannot be mapped to taxonomy are preserved as display names while still appearing in species distribution counts.
+- Video playback is more reliable for local media that require byte-range streaming.
+- ML model startup falls back to a free local port when the preferred port is occupied.
+- Video transcoding works in packaged builds by locating the bundled FFmpeg binary.
+
 ## [1.8.7] - 2026-05-05
 
 ### Added
