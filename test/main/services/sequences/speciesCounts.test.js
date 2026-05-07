@@ -61,11 +61,14 @@ describe('calculateSequenceAwareSpeciesCounts', () => {
 
   describe('basic counting', () => {
     test('single observation returns correct count', () => {
-      const observations = [createObservationAtOffset('Deer', 'media1', baseTime, 0, 3)]
+      const observations = [
+        { ...createObservationAtOffset('Deer', 'media1', baseTime, 0, 3), commonName: 'Deer tag' }
+      ]
       const result = calculateSequenceAwareSpeciesCounts(observations, 60)
 
       assert.equal(result.length, 1)
       assert.equal(result[0].scientificName, 'Deer')
+      assert.equal(result[0].commonName, 'Deer tag')
       assert.equal(result[0].count, 3)
     })
 

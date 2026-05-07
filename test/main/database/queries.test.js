@@ -248,6 +248,7 @@ describe('Database Query Functions Tests', () => {
 
       assert(redDeer, 'Should include Red Deer')
       assert.equal(redDeer.count, 2, 'Red Deer should have count of 2')
+      assert.equal(redDeer.commonName, 'Red Deer', 'Red Deer should include stored common name')
 
       assert(redFox, 'Should include Red Fox')
       assert.equal(redFox.count, 1, 'Red Fox should have count of 1')

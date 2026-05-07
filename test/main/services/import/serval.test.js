@@ -72,7 +72,7 @@ describe('Serval taxonomy resolver', () => {
       matched: false,
       blank: false,
       scientificName: '斑嘴鸭',
-      commonName: null,
+      commonName: '斑嘴鸭',
       sourceLabel: '斑嘴鸭'
     })
 
@@ -80,7 +80,7 @@ describe('Serval taxonomy resolver', () => {
       matched: false,
       blank: false,
       scientificName: 'snake spp.',
-      commonName: null,
+      commonName: 'Snake spp.',
       sourceLabel: 'Snake spp.'
     })
   })

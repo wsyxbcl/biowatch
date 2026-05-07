@@ -231,7 +231,7 @@ function SpeciesDistribution({
             const isPseudo = isBlankEntry || isVehicleEntry
             const storedCommonName = isPseudo
               ? null
-              : scientificToCommonMap[species.scientificName] || null
+              : species.commonName || scientificToCommonMap[species.scientificName] || null
             return (
               <SpeciesRow
                 key={species.scientificName || index}

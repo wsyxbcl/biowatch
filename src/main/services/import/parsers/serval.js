@@ -78,7 +78,7 @@ function unresolvedTaxon(rawLabel) {
     matched: false,
     blank: false,
     scientificName: normalizeScientificName(sourceLabel),
-    commonName: null,
+    commonName: sourceLabel || null,
     sourceLabel
   }
 }

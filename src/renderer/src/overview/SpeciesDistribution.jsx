@@ -177,7 +177,8 @@ export default function SpeciesDistribution({ studyId, speciesData, taxonomicDat
             onScroll={handleScroll}
           >
             {sortedSpecies.map((species) => {
-              const storedCommonName = scientificToCommonMap[species.scientificName] || null
+              const storedCommonName =
+                species.commonName || scientificToCommonMap[species.scientificName] || null
               return (
                 <SpeciesRow
                   key={species.scientificName}

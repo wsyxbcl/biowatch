@@ -40,6 +40,7 @@ export async function getSpeciesDistribution(dbPath) {
     const result = await db
       .select({
         scientificName: observations.scientificName,
+        commonName: sql`MAX(NULLIF(${observations.commonName}, ''))`.as('commonName'),
         count: count(observations.observationID).as('count')
       })
       .from(observations)
@@ -171,6 +172,7 @@ export async function getSpeciesDistributionByMedia(dbPath) {
     const result = await db
       .select({
         scientificName: observations.scientificName,
+        commonName: sql`MAX(NULLIF(${observations.commonName}, ''))`.as('commonName'),
         mediaID: media.mediaID,
         timestamp: media.timestamp,
         deploymentID: media.deploymentID,
@@ -256,6 +258,7 @@ export async function getSequenceAwareSpeciesCountsSQL(dbPath, gapSeconds) {
           `
           WITH per_media AS (
             SELECT o.scientificName AS scientificName,
+                   MAX(NULLIF(o.commonName, '')) AS commonName,
                    o.eventID AS eventID,
                    m.mediaID AS mediaID,
                    m.timestamp AS timestamp,
@@ -266,7 +269,7 @@ export async function getSequenceAwareSpeciesCountsSQL(dbPath, gapSeconds) {
               GROUP BY o.scientificName, m.mediaID
           ),
           classified AS (
-            SELECT scientificName, eventID, mediaID, cnt,
+            SELECT scientificName, commonName, eventID, mediaID, cnt,
                    CASE
                      WHEN timestamp IS NULL OR timestamp = '' OR julianday(timestamp) IS NULL
                      THEN 1 ELSE 0
@@ -275,6 +278,7 @@ export async function getSequenceAwareSpeciesCountsSQL(dbPath, gapSeconds) {
           ),
           valid_per_event AS (
             SELECT scientificName,
+                   MAX(commonName) AS commonName,
                    COALESCE(NULLIF(eventID, ''), 'solo:' || mediaID) AS event_key,
                    MAX(cnt) AS max_cnt
               FROM classified
@@ -282,18 +286,18 @@ export async function getSequenceAwareSpeciesCountsSQL(dbPath, gapSeconds) {
               GROUP BY scientificName, event_key
           ),
           valid_totals AS (
-            SELECT scientificName, SUM(max_cnt) AS count
+            SELECT scientificName, MAX(commonName) AS commonName, SUM(max_cnt) AS count
               FROM valid_per_event GROUP BY scientificName
           ),
           null_ts_totals AS (
-            SELECT scientificName, SUM(cnt) AS count
+            SELECT scientificName, MAX(commonName) AS commonName, SUM(cnt) AS count
               FROM classified WHERE is_null_ts = 1
               GROUP BY scientificName
           )
-          SELECT scientificName, SUM(count) AS count FROM (
-            SELECT scientificName, count FROM valid_totals
+          SELECT scientificName, MAX(commonName) AS commonName, SUM(count) AS count FROM (
+            SELECT scientificName, commonName, count FROM valid_totals
             UNION ALL
-            SELECT scientificName, count FROM null_ts_totals
+            SELECT scientificName, commonName, count FROM null_ts_totals
           )
           GROUP BY scientificName ORDER BY count DESC
         `
@@ -306,6 +310,7 @@ export async function getSequenceAwareSpeciesCountsSQL(dbPath, gapSeconds) {
         .prepare(
           `
           SELECT o.scientificName AS scientificName,
+                 MAX(NULLIF(o.commonName, '')) AS commonName,
                  COUNT(o.observationID) AS count
             FROM observations o
             INNER JOIN media m ON o.mediaID = m.mediaID

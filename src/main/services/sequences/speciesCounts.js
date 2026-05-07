@@ -41,10 +41,20 @@ export function calculateSequenceAwareSpeciesCounts(observationsByMedia, gapSeco
   const mediaMap = new Map()
   // Create a map of (mediaID, scientificName) -> count
   const mediaSpeciesCounts = new Map()
+  // Keep one stored display name per scientificName so importers can preserve
+  // non-taxonomic labels without changing the species-count contract.
+  const commonNamesBySpecies = new Map()
 
   for (const obs of observationsByMedia) {
     const key = `${obs.mediaID}:${obs.scientificName}`
     mediaSpeciesCounts.set(key, obs.count)
+    if (
+      !commonNamesBySpecies.has(obs.scientificName) &&
+      typeof obs.commonName === 'string' &&
+      obs.commonName.trim() !== ''
+    ) {
+      commonNamesBySpecies.set(obs.scientificName, obs.commonName)
+    }
 
     if (!mediaMap.has(obs.mediaID)) {
       mediaMap.set(obs.mediaID, {
@@ -131,7 +141,11 @@ export function calculateSequenceAwareSpeciesCounts(observationsByMedia, gapSeco
 
   // Convert to array and sort by count descending
   const result = Array.from(speciesCounts.entries())
-    .map(([scientificName, count]) => ({ scientificName, count }))
+    .map(([scientificName, count]) => ({
+      scientificName,
+      commonName: commonNamesBySpecies.get(scientificName) || null,
+      count
+    }))
     .sort((a, b) => b.count - a.count)
 
   return result
