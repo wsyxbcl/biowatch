@@ -2,17 +2,11 @@
  * Media-related database queries
  */
 
-import {
-  getDrizzleDb,
-  media,
-  observations,
-  modelRuns,
-  modelOutputs,
-  deployments
-} from '../index.js'
+import { getDrizzleDb } from '../manager.js'
+import { media, observations, modelRuns, modelOutputs, deployments } from '../models.js'
 import { eq, and, desc, count, sql, isNotNull, inArray, isNull } from 'drizzle-orm'
 import { DateTime } from 'luxon'
-import log from 'electron-log'
+import log from '../../services/logger.js'
 import { getStudyIdFromPath, formatToMatchOriginal } from './utils.js'
 import { transformBboxToCamtrapDP, detectModelType } from '../../utils/bbox.js'
 
@@ -171,6 +165,40 @@ export async function checkMediaHaveBboxes(dbPath, mediaIDs) {
     return hasBboxes
   } catch (error) {
     log.error(`Error checking bbox existence: ${error.message}`)
+    throw error
+  }
+}
+
+/**
+ * Check if the study has any drawable bboxes anywhere — study-wide existence
+ * check used to decide whether to render the "show boxes" toggle in the
+ * Media tab's right-pane display strip.
+ *
+ * Requires bboxWidth AND bboxHeight to be non-null, not just bboxX. Some
+ * CamtrapDP datasets record an animal's position as a point (X/Y only, no
+ * width/height) — those aren't drawable boxes so the toggle would be
+ * meaningless. Coarser than checkMediaHaveBboxes (which is scoped to a list
+ * of media IDs) but with the same drawability requirement.
+ * @param {string} dbPath - Path to the SQLite database
+ * @returns {Promise<boolean>} - True if any observation has a drawable bbox
+ */
+export async function studyHasAnyBboxes(dbPath) {
+  const startTime = Date.now()
+  try {
+    const studyId = getStudyIdFromPath(dbPath)
+    const db = await getDrizzleDb(studyId, dbPath)
+
+    const result = await db
+      .select({ exists: sql`1` })
+      .from(observations)
+      .where(and(isNotNull(observations.bboxWidth), isNotNull(observations.bboxHeight)))
+      .limit(1)
+
+    const hasBboxes = result.length > 0
+    log.info(`studyHasAnyBboxes completed in ${Date.now() - startTime}ms: ${hasBboxes}`)
+    return hasBboxes
+  } catch (error) {
+    log.error(`Error in studyHasAnyBboxes: ${error.message}`)
     throw error
   }
 }
@@ -355,7 +383,14 @@ export async function insertMedia(manager, mediaData) {
             filePath: item.filePath,
             fileName: item.fileName,
             importFolder: item.importFolder || null,
-            folderName: item.folderName || null
+            folderName: item.folderName || null,
+            // IANA media type ('image/jpeg', 'video/mp4', …); drives the Media
+            // tab's image/video filter. Falls back to the column default when
+            // the caller doesn't specify one.
+            fileMediatype: item.fileMediatype ?? 'image/jpeg',
+            // Passed through when present (default false) so callers/tests can
+            // seed favorite media; preserves prior behavior for existing callers.
+            favorite: item.favorite === true
           })
           .run()
 
@@ -451,6 +486,22 @@ export async function countMediaWithNullTimestamps(dbPath) {
     log.error(`Error counting media with null timestamps: ${error.message}`)
     throw error
   }
+}
+
+/**
+ * Count media files marked as favorite.
+ * @param {string} dbPath - Path to the SQLite database
+ * @returns {Promise<number>} - Count of favorite media files
+ */
+export async function countFavoriteMedia(dbPath) {
+  const studyId = getStudyIdFromPath(dbPath)
+  const db = await getDrizzleDb(studyId, dbPath)
+  const result = await db
+    .select({ count: count().as('count') })
+    .from(media)
+    .where(eq(media.favorite, true))
+    .get()
+  return Number(result?.count || 0)
 }
 
 /**

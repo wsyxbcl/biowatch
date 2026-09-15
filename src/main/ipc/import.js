@@ -5,11 +5,12 @@
 import { spawn } from 'child_process'
 import crypto from 'crypto'
 import { app, dialog, ipcMain } from 'electron'
-import log from 'electron-log'
+import log from '../services/logger.js'
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import { closeStudyDatabase } from '../database/index.js'
-import { getStudyPath } from '../services/paths.js'
+import { getBiowatchDataPath, getStudyPath } from '../services/paths.js'
+import { runCamtrapImportInWorker } from '../services/import/runCamtrapImportInWorker.js'
 import { processDataset } from '../services/extractor.js'
 import {
   sendGbifImportProgress,
@@ -655,10 +656,15 @@ export function registerImportIPCHandlers() {
         datasetTitle
       })
 
-      const { data, synthesized } = await importCamTrapDataset(
+      // importFolderOverride: null — the package directory's basename is
+      // dataset-internal (e.g. "national_monitoring") and not user-meaningful.
+      // Falling back to studyName in the Sources tab reads better.
+      const { data, synthesized } = await runCamtrapImportInWorker({
         camtrapDpDirPath,
         id,
-        (csvProgress) => {
+        biowatchDataPath: getBiowatchDataPath(),
+        options: { nameOverride: datasetTitle, importFolderOverride: null },
+        onProgress: (csvProgress) => {
           sendGbifImportProgress({
             stage: 'importing_csvs',
             stageIndex: 3,
@@ -676,11 +682,8 @@ export function registerImportIPCHandlers() {
             }
           })
         },
-        // importFolderOverride: null — the package directory's basename is
-        // dataset-internal (e.g. "national_monitoring") and not user-meaningful.
-        // Falling back to studyName in the Sources tab reads better.
-        { signal, nameOverride: datasetTitle, importFolderOverride: null }
-      )
+        signal
+      })
 
       const result = {
         path: camtrapDpDirPath,

@@ -13,11 +13,12 @@ Biowatch uses an **HTTP-based ML model serving architecture** where each machine
 
 ### Supported Models
 
-| Model | Focus | Species Coverage |
-|-------|-------|------------------|
-| **SpeciesNet** (Google) | Global wildlife | 2,000+ species worldwide |
-| **DeepFaune** (CNRS) | European fauna | 34 European species |
-| **Manas** (OSI-Panthera) | Central Asian fauna | Snow leopard and 11 regional species |
+| Model                                     | Focus                              | Species Coverage                              |
+| ----------------------------------------- | ---------------------------------- | --------------------------------------------- |
+| **SpeciesNet** (Google)                   | Global wildlife                    | 2,000+ species worldwide                      |
+| **DeepFaune** (CNRS)                      | European fauna                     | 34 European species                           |
+| **Manas** (OSI-Panthera)                  | Central Asian fauna                | Snow leopard and 11 regional species          |
+| **MegaDetector** (Microsoft AI for Earth) | Blank filter / worldwide detection | 3 categories (animal, person, vehicle)        |
 
 ### Technology Stack
 
@@ -98,7 +99,8 @@ src/
 python-environments/common/
 ├── run_speciesnet_server.py    # SpeciesNet LitServe implementation
 ├── run_deepfaune_server.py     # DeepFaune LitServe implementation
-└── run_manas_server.py         # Manas LitServe implementation
+├── run_manas_server.py         # Manas LitServe implementation
+└── run_megadetector_server.py  # MegaDetector LitServe implementation (detection-only)
 ```
 
 ## How HTTP Servers Work
@@ -284,18 +286,38 @@ All models are defined in `src/shared/mlmodels.js`. Each model entry has the fol
 
 ```javascript
 {
-  reference: { id: 'speciesnet', version: '4.0.1a' },
-  pythonEnvironment: { id: 'common', version: '0.1.3' },
+  reference: { id: 'speciesnet', version: '4.0.2a' },
+  pythonEnvironment: { id: 'common', version: '0.1.4' },
   name: 'SpeciesNet',
   size_in_MB: 468,
   files: 6,
-  downloadURL: 'https://huggingface.co/earthtoolsmaker/speciesnet/resolve/main/4.0.1a.tar.gz?download=true',
+  downloadURL: 'https://huggingface.co/earthtoolsmaker/speciesnet/resolve/main/4.0.2a.tar.gz?download=true',
   description: "Google's SpeciesNet is an open-source AI model...",
   website: 'https://github.com/google/cameratrapai',
   logo: 'google',
   detectionConfidenceThreshold: 0.5
 }
 ```
+
+## Packaging Model Tarballs
+
+Model `downloadURL`s in the zoo point at tarballs we host on Hugging Face. For SpeciesNet, the tarball is built from the public Kaggle archive plus a bundled copy of MegaDetector (so the model runs fully offline after first download).
+
+To produce a new SpeciesNet tarball ready for upload:
+
+```sh
+python3 scripts/build-speciesnet-tarball.py --version 4.0.2a
+# → dist/4.0.2a.tar.gz, with size + SHA256 printed at the end
+```
+
+The script:
+
+- pulls `kaggle:google/speciesnet/pyTorch/v<version>/1` from Kaggle's public download endpoint (no auth needed),
+- downloads `md_v5a.0.0.pt` from the MegaDetector v5.0 GitHub release and verifies its SHA256,
+- rewrites `info.json`'s `detector` field from a URL to the bundled local filename,
+- tar-gzips the layout into `dist/<version>.tar.gz`.
+
+Upload the resulting file to `huggingface.co/earthtoolsmaker/speciesnet` (manual step — needs HF credentials), then bump `mlmodels.js` to reference the new `downloadURL`, `size_in_MB`, and `version`.
 
 ## Adding a New ML Model
 
@@ -413,6 +435,7 @@ if __name__ == "__main__":
 ```
 
 **Reference implementations:**
+
 - `python-environments/common/run_speciesnet_server.py` - Uses external library
 - `python-environments/common/run_deepfaune_server.py` - Custom model loading
 
@@ -427,12 +450,12 @@ export const modelZoo = [
     reference: { id: 'yourmodel', version: '1.0' },
     pythonEnvironment: { id: 'common', version: '0.1.3' },
     name: 'YourModel',
-    size_in_MB: 500,  // Size of the downloaded archive
-    files: 3,          // Number of files in the archive
+    size_in_MB: 500, // Size of the downloaded archive
+    files: 3, // Number of files in the archive
     downloadURL: 'https://your-model-host.com/yourmodel-1.0.tar.gz',
     description: 'Description of what your model does...',
     website: 'https://your-model-website.com',
-    logo: 'yourlogo',  // Add corresponding logo asset
+    logo: 'yourlogo', // Add corresponding logo asset
     detectionConfidenceThreshold: 0.5
   }
 ]
@@ -443,12 +466,7 @@ export const modelZoo = [
 Add a new function in `src/main/services/ml/server.ts`:
 
 ```typescript
-async function startYourModelHTTPServer({
-  port,
-  weightsFilepath,
-  timeout,
-  pythonEnvironment
-}) {
+async function startYourModelHTTPServer({ port, weightsFilepath, timeout, pythonEnvironment }) {
   log.info('Starting YourModel HTTP Server')
 
   const localInstalRootDirPythonEnvironment = join(
@@ -466,11 +484,7 @@ async function startYourModelHTTPServer({
       ? join(localInstalRootDirPythonEnvironment, 'python.exe')
       : join(localInstalRootDirPythonEnvironment, 'bin', 'python')
 
-  const scriptArgs = [
-    '--port', port,
-    '--filepath-weights', weightsFilepath,
-    '--timeout', timeout
-  ]
+  const scriptArgs = ['--port', port, '--filepath-weights', weightsFilepath, '--timeout', timeout]
 
   const shutdownApiKey = crypto.randomUUID()
 
@@ -530,7 +544,7 @@ function parseScientificName({ modelId, label }) {
     case 'yourmodel':
       // Parse your model's prediction format
       if (label === 'blank' || label === 'empty') return null
-      return label  // Or transform as needed
+      return label // Or transform as needed
 
     default:
       return null
@@ -541,6 +555,7 @@ function parseScientificName({ modelId, label }) {
 ### Step 6: Test the Integration
 
 1. **Start the application in development mode:**
+
    ```bash
    npm run dev
    ```
@@ -571,11 +586,13 @@ All HTTP ML model servers expose these endpoints via LitServe:
 Returns server health status.
 
 **Response:**
+
 ```
 "ok"
 ```
 
 **Status codes:**
+
 - `200`: Server is healthy and ready
 - `503`: Server is starting up or unhealthy
 
@@ -584,12 +601,13 @@ Returns server health status.
 Returns server and model metadata.
 
 **Response:**
+
 ```json
 {
   "model": {
     "name": "speciesnet",
     "type": "speciesnet",
-    "version": "4.0.1a"
+    "version": "4.0.2a"
   },
   "server": {
     "devices": [["cuda:0"]],
@@ -607,16 +625,15 @@ Returns server and model metadata.
 Run inference on images. Supports streaming responses.
 
 **Request:**
+
 ```json
 {
-  "instances": [
-    { "filepath": "/path/to/image1.jpg" },
-    { "filepath": "/path/to/image2.jpg" }
-  ]
+  "instances": [{ "filepath": "/path/to/image1.jpg" }, { "filepath": "/path/to/image2.jpg" }]
 }
 ```
 
 **Response (streaming, newline-delimited JSON):**
+
 ```json
 {"output": {"predictions": [{"filepath": "/path/to/image1.jpg", "prediction": "species_name", "prediction_score": 0.95, ...}]}}
 {"output": {"predictions": [{"filepath": "/path/to/image2.jpg", "prediction": "other_species", "prediction_score": 0.87, ...}]}}
@@ -637,6 +654,7 @@ Run inference on images. Supports streaming responses.
 Gracefully shut down the server. Requires API key authentication.
 
 **Headers:**
+
 ```
 Authorization: Bearer {shutdownApiKey}
 ```
@@ -654,6 +672,7 @@ Interactive Swagger/OpenAPI documentation (browser-friendly).
 **Symptom:** "Server failed to start in the expected time" error
 
 **Causes and solutions:**
+
 1. **Model weights not found**: Verify the model is fully downloaded
 2. **Insufficient memory**: Close other applications, check system RAM
 3. **GPU initialization slow**: First startup with GPU can take longer; increase timeout if needed
@@ -666,6 +685,7 @@ Interactive Swagger/OpenAPI documentation (browser-friendly).
 **Symptom:** Server starts but health check fails
 
 **Solution:**
+
 ```bash
 # Find what's using the port
 lsof -i :8000
@@ -679,6 +699,7 @@ kill -9 <PID>
 **Symptom:** Python error about missing file
 
 **Solution:**
+
 1. Check model download completed (no partial download)
 2. Verify path in logs matches actual file location
 3. Re-download the model if corrupted
@@ -688,6 +709,7 @@ kill -9 <PID>
 **Symptom:** Import errors or missing modules
 
 **Solution:**
+
 1. Delete the Python environment directory
 2. Re-download from the Models tab
 3. Check that the environment version matches the model requirement
@@ -697,6 +719,7 @@ kill -9 <PID>
 **Symptom:** Out of memory errors, slow inference
 
 **Solutions:**
+
 - **GPU memory**: Close other GPU-intensive applications
 - **System RAM**: Ensure at least 8GB available for most models
 - **CPU fallback**: Models will automatically use CPU if no GPU is available (slower but works)

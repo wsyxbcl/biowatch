@@ -43,6 +43,7 @@ export function transformBboxToCamtrapDP(detection, modelType) {
     }
 
     case 'manas':
+    case 'megadetector':
     case 'deepfaune': {
       // DeepFaune/Manas xywhn format: [x_center, y_center, width, height] (normalized 0-1, center format)
       if (!detection.xywhn || !Array.isArray(detection.xywhn) || detection.xywhn.length < 4) {
@@ -84,7 +85,7 @@ export function detectModelType(prediction) {
   // Check model_version format to determine model type
   const version = prediction.model_version || ''
 
-  // SpeciesNet versions typically look like "4.0.1a", "4.0.0a"
+  // SpeciesNet versions typically look like "4.0.2a", "4.0.1a"
   if (version.match(/^\d+\.\d+\.\d+[a-z]?$/)) {
     return 'speciesnet'
   }
@@ -92,6 +93,12 @@ export function detectModelType(prediction) {
   // Manas version is "1.0" and uses xywhn format
   if (version === '1.0' && prediction.detections?.[0]?.xywhn) {
     return 'manas'
+  }
+
+  // MegaDetector v6.0 also uses xywhn (ultralytics YOLO output) and ships model_version '6.0'.
+  // Branch before the generic xywhn fallback so it doesn't get misrouted as 'deepfaune'.
+  if (version === '6.0' && prediction.detections?.[0]?.xywhn) {
+    return 'megadetector'
   }
 
   // DeepFaune versions typically look like "1.3"

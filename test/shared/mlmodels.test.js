@@ -168,11 +168,11 @@ describe('ML Model Management Tests', () => {
 
   describe('findModel', () => {
     test('should find existing model', () => {
-      const result = findModel({ id: 'speciesnet', version: '4.0.1a' })
+      const result = findModel({ id: 'speciesnet', version: '4.0.2a' })
 
       assert(result, 'Should find the model')
       assert.equal(result.reference.id, 'speciesnet', 'Should have correct id')
-      assert.equal(result.reference.version, '4.0.1a', 'Should have correct version')
+      assert.equal(result.reference.version, '4.0.2a', 'Should have correct version')
       assert(result.downloadURL, 'Should have download URL')
     })
 
@@ -186,6 +186,18 @@ describe('ML Model Management Tests', () => {
       const result = findModel({ id: 'speciesnet', version: '999.0.0' })
 
       assert.equal(result, null, 'Should return null for wrong version')
+    })
+
+    test('should find megadetector entry with detectionOnly flag', () => {
+      const md = findModel({ id: 'megadetector', version: '6.0' })
+      assert(md, 'megadetector entry should exist')
+      assert.equal(md.detectionOnly, true, 'megadetector should be marked detectionOnly')
+      assert.equal(md.region, 'worldwide', 'megadetector should be worldwide')
+      assert.equal(md.species_count, 3, 'megadetector should report 3 categories')
+      assert(
+        md.downloadURL.includes('earthtoolsmaker/megadetector'),
+        'should download from ETM HF repo'
+      )
     })
   })
 

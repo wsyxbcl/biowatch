@@ -1,63 +1,112 @@
 import { getMapDisplayName } from '../utils/commonNames'
 import { formatScientificName } from '../utils/scientificName'
+import { COUNT_METRIC_INDIVIDUALS, COUNT_METRIC_OBSERVATIONS } from '../../../shared/countMetric.js'
 
-// Static React tooltip card for Leaflet markers and clusters in the Activity
-// map. Rendered to HTML via renderToStaticMarkup, then handed to
-// `marker.bindTooltip` / `cluster.bindTooltip`. The outer chrome (white
-// background, rounded corners, border, shadow) comes from the
-// `.leaflet-tooltip.species-map-tooltip` CSS rule in main.css — this
-// component only renders the inner content.
-export default function MarkerHoverCard({ counts, selectedSpecies, palette, scientificToCommon }) {
+// Inner content for the Explore map's species hover card, rendered live (as a
+// real React node) inside the animated `.species-hovercard` overlay — see
+// HoverCardOverlay in explore.jsx. The outer chrome (background, rounded
+// corners, border, shadow) and the pop/fade animation come from the
+// `.species-hovercard` CSS rules in main.css; this component only renders the
+// inner composition breakdown.
+//
+// Layout: a "Composition" header with the total, a stacked composition bar
+// (the pie marker flattened into one bar), then one row per species with its
+// color, common/scientific name, share (%) and raw count.
+export default function MarkerHoverCard({
+  counts,
+  selectedSpecies,
+  palette,
+  scientificToCommon,
+  countMetric = COUNT_METRIC_INDIVIDUALS
+}) {
   const entries = Object.entries(counts)
     .filter(([species]) => selectedSpecies.some((s) => s.scientificName === species))
     .sort((a, b) => b[1] - a[1])
 
   const total = entries.reduce((sum, [, count]) => sum + count, 0)
 
+  const colorFor = (species) => {
+    const index = selectedSpecies.findIndex((s) => s.scientificName === species)
+    return palette[(index >= 0 ? index : 0) % palette.length]
+  }
+  const share = (count) => (total > 0 ? Math.round((count / total) * 100) : 0)
+
   return (
-    <div style={{ padding: '8px', minWidth: '180px' }}>
+    <div style={{ padding: '11px 13px', minWidth: '210px' }}>
       <div
         style={{
-          fontSize: '11px',
-          fontWeight: 500,
-          color: '#6b7280',
-          marginBottom: '4px',
-          paddingBottom: '4px',
-          borderBottom: '1px solid #e5e7eb'
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          marginBottom: '8px',
+          paddingBottom: '8px',
+          borderBottom: '1px solid var(--color-border)'
         }}
       >
-        {total} observation{total !== 1 ? 's' : ''}
+        <span
+          style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            color: 'var(--color-muted-foreground)'
+          }}
+        >
+          Composition
+        </span>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-0.01em' }}>{total}</div>
+          <div style={{ fontSize: '9px', color: 'var(--color-muted-foreground)' }}>
+            {countMetric === COUNT_METRIC_OBSERVATIONS ? 'Independent observations' : 'Individuals'}
+          </div>
+        </div>
       </div>
+
+      <div
+        className="species-hovercard__bar"
+        style={{
+          display: 'flex',
+          height: '8px',
+          borderRadius: '5px',
+          overflow: 'hidden',
+          margin: '2px 0 11px'
+        }}
+      >
+        {entries.map(([species, count]) => (
+          <span
+            key={species}
+            style={{
+              width: `${total > 0 ? (count / total) * 100 : 0}%`,
+              backgroundColor: colorFor(species)
+            }}
+          />
+        ))}
+      </div>
+
       {entries.map(([species, count]) => {
-        const index = selectedSpecies.findIndex((s) => s.scientificName === species)
-        const color = palette[index % palette.length]
         const common = getMapDisplayName(species, scientificToCommon)
         const showSci = common && common !== species
         return (
           <div
             key={species}
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '8px',
-              padding: '3px 0'
-            }}
+            style={{ display: 'flex', alignItems: 'flex-start', gap: '9px', padding: '4px 0' }}
           >
             <span
               style={{
-                width: '8px',
-                height: '8px',
+                width: '9px',
+                height: '9px',
                 borderRadius: '50%',
                 flexShrink: 0,
-                backgroundColor: color,
-                marginTop: '5px'
+                backgroundColor: colorFor(species),
+                marginTop: '4px'
               }}
             />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
-                  fontSize: '12px',
-                  color: '#111827',
+                  fontSize: '12.5px',
+                  lineHeight: 1.25,
+                  color: 'var(--color-foreground)',
                   textTransform: common ? 'capitalize' : 'none',
                   fontStyle: common ? 'normal' : 'italic'
                 }}
@@ -68,7 +117,8 @@ export default function MarkerHoverCard({ counts, selectedSpecies, palette, scie
                 <div
                   style={{
                     fontSize: '10px',
-                    color: '#6b7280',
+                    lineHeight: 1.2,
+                    color: 'var(--color-muted-foreground)',
                     fontStyle: 'italic'
                   }}
                 >
@@ -76,7 +126,30 @@ export default function MarkerHoverCard({ counts, selectedSpecies, palette, scie
                 </div>
               )}
             </div>
-            <span style={{ fontSize: '11px', color: '#6b7280', flexShrink: 0 }}>{count}</span>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: '7px',
+                flexShrink: 0,
+                marginTop: '1px'
+              }}
+            >
+              <span
+                style={{ fontSize: '11px', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
+              >
+                {share(count)}%
+              </span>
+              <span
+                style={{
+                  fontSize: '10.5px',
+                  color: 'var(--color-muted-foreground)',
+                  fontVariantNumeric: 'tabular-nums'
+                }}
+              >
+                {count}
+              </span>
+            </div>
           </div>
         )
       })}

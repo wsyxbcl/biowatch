@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 code {
   font-weight: 600;
   padding: 3px 5px;
@@ -66,8 +68,50 @@ code {
   }
 }
 
+.dark {
+  --color-background: #0f172a;
+  --color-foreground: #fafafa;
+  --color-card: #1e293b;
+  --color-card-foreground: #fafafa;
+  --color-popover: #1e293b;
+  --color-popover-foreground: #fafafa;
+  --color-primary: oklch(0.985 0 0);
+  --color-primary-foreground: #030213;
+  --color-secondary: #334155;
+  --color-secondary-foreground: #fafafa;
+  --color-muted: #334155;
+  --color-muted-foreground: #a1a1aa;
+  --color-accent: #334155;
+  --color-accent-foreground: #fafafa;
+  --color-destructive: #f87171;
+  --color-destructive-foreground: #ffffff;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-input: transparent;
+  --color-input-background: #1e293b;
+  --color-switch-background: #475569;
+  --color-ring: oklch(0.708 0 0);
+  --color-chart-1: oklch(0.7 0.18 41);
+  --color-chart-2: oklch(0.65 0.14 184);
+  --color-chart-3: oklch(0.55 0.16 227);
+  --color-chart-4: oklch(0.78 0.18 84);
+  --color-chart-5: oklch(0.72 0.2 70);
+  --color-sidebar: #0a0f1f;
+  --color-sidebar-foreground: #cbd5e1;
+  --color-sidebar-primary: oklch(0.985 0 0);
+  --color-sidebar-primary-foreground: #030213;
+  --color-sidebar-accent: #1e293b;
+  --color-sidebar-accent-foreground: #fafafa;
+  --color-sidebar-border: rgba(255, 255, 255, 0.08);
+  --color-sidebar-ring: oklch(0.708 0 0);
+}
+
 body {
   background-color: rgb(250, 250, 250);
+  color: var(--color-foreground);
+}
+
+.dark body {
+  background-color: var(--color-background);
 }
 
 .logo {
@@ -291,24 +335,124 @@ input::-webkit-inner-spin-button {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
 }
 
-/* Radix Tooltip animations */
-[data-radix-tooltip-content][data-state='delayed-open'],
-[data-radix-tooltip-content][data-state='instant-open'] {
-  animation: tooltip-fade-in 150ms ease-out;
+/* Radix Tooltip animations — subtle slide from the trigger side + spring fade */
+[data-radix-tooltip-content][data-state='delayed-open'][data-side='top'],
+[data-radix-tooltip-content][data-state='instant-open'][data-side='top'] {
+  animation: tooltip-slide-up 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-radix-tooltip-content][data-state='delayed-open'][data-side='bottom'],
+[data-radix-tooltip-content][data-state='instant-open'][data-side='bottom'] {
+  animation: tooltip-slide-down 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-radix-tooltip-content][data-state='delayed-open'][data-side='left'],
+[data-radix-tooltip-content][data-state='instant-open'][data-side='left'] {
+  animation: tooltip-slide-left 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-radix-tooltip-content][data-state='delayed-open'][data-side='right'],
+[data-radix-tooltip-content][data-state='instant-open'][data-side='right'] {
+  animation: tooltip-slide-right 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 [data-radix-tooltip-content][data-state='closed'] {
   animation: tooltip-fade-out 100ms ease-in;
 }
 
-@keyframes tooltip-fade-in {
+/* Species detail hover card (Best captures + Featured species) — spring pop in,
+   gentle fade out. The pop is a pure scale, so it's direction-independent. */
+.species-hovercard[data-state='open'] {
+  animation: hovercard-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.species-hovercard[data-state='closed'] {
+  animation: tooltip-fade-out 100ms ease-in;
+}
+
+@keyframes hovercard-pop {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.82);
   }
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+/* Study sidebar hover card — same spring pop, but it always flies out to the
+   right of the sidebar, so grow it from its left edge (the anchor) rather than
+   its center. */
+.study-hovercard[data-state='open'] {
+  transform-origin: left center;
+  animation: hovercard-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.study-hovercard[data-state='closed'] {
+  animation: tooltip-fade-out 100ms ease-in;
+}
+
+/* Add-study hover card — opens below and right-aligned to the sidebar "+"
+   button, so grow it from its top-right corner (the anchor). */
+.add-study-hovercard[data-state='open'] {
+  transform-origin: top right;
+  animation: hovercard-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.add-study-hovercard[data-state='closed'] {
+  animation: tooltip-fade-out 100ms ease-in;
+}
+
+/* Respect reduced-motion: drop the pop/slide entrances for the hover cards
+   and tooltips, leaving them to appear instantly. */
+@media (prefers-reduced-motion: reduce) {
+  .species-hovercard[data-state='open'],
+  .species-hovercard[data-state='closed'],
+  .study-hovercard[data-state='open'],
+  .study-hovercard[data-state='closed'],
+  .add-study-hovercard[data-state='open'],
+  .add-study-hovercard[data-state='closed'],
+  [data-radix-tooltip-content] {
+    animation: none;
+  }
+}
+
+@keyframes tooltip-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes tooltip-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes tooltip-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes tooltip-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
   }
 }
 
@@ -319,36 +463,64 @@ input::-webkit-inner-spin-button {
   }
   to {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
 }
 
-/* Activity map species tooltip styles */
-.leaflet-tooltip.species-map-tooltip {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+/* Explore map species composition hover card. A React-controlled overlay
+   (HoverCardOverlay in explore.jsx) — NOT a Leaflet tooltip — so we get full
+   enter/exit animation. `--visible` is toggled on once the card has mounted and
+   removed on leave, driving the pop-in / fade-out via CSS transitions.
+
+   Pop uses an overshoot easing (the 1.56 control point) so scale .86 → 1 springs
+   slightly past 1, matching the playful pop of the study sidebar card. The exit
+   is a quicker plain fade. transform-origin is set inline per side (left/right of
+   the marker) so the card grows out of the pie it belongs to. */
+.species-hovercard {
+  background: var(--color-card);
+  color: var(--color-card-foreground);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
   box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  padding: 0;
-  opacity: 1 !important;
+    0 8px 24px -8px rgba(0, 0, 0, 0.22),
+    0 2px 6px -2px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+/* The explore overlay drives its own enter/exit through the --visible toggle and
+   has no Radix data-state, so the hidden default + transition live only here.
+   Radix species cards (KpiBand) animate via .species-hovercard[data-state] and
+   must keep their natural opacity:1 once the keyframe finishes — otherwise they
+   pop in and immediately vanish (the keyframe has no animation-fill-mode). */
+.species-hovercard:not([data-state]) {
+  opacity: 0;
+  transform: scale(0.86);
+  transition:
+    opacity 0.16s ease,
+    transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.species-hovercard:not([data-state]).species-hovercard--visible {
+  opacity: 1;
+  transform: scale(1);
 }
 
-.leaflet-tooltip.species-map-tooltip::before {
-  display: none;
+/* The stacked composition bar wipes in from the left as the card pops, so the
+   "pie flattened into a bar" reads as drawing itself. Collapses back on exit,
+   but the faster fade hides that. */
+.species-hovercard__bar {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) 0.08s;
+}
+.species-hovercard--visible .species-hovercard__bar {
+  transform: scaleX(1);
 }
 
-/* Push the hovercard sideways off the pie marker so it sits BESIDE the
-   camembert rather than overlapping its right or left half. The pie marker
-   scales up to 60px wide; 36px clears the largest pie with a small gap.
-   `direction: 'auto'` on the tooltip resolves to either 'right' or 'left'
-   based on map-center, so we cover both cases. */
-.leaflet-tooltip-right.species-map-tooltip {
-  margin-left: 36px;
-}
-.leaflet-tooltip-left.species-map-tooltip {
-  margin-left: -36px;
+@media (prefers-reduced-motion: reduce) {
+  .species-hovercard,
+  .species-hovercard__bar {
+    transition: opacity 0.12s ease;
+    transform: none;
+  }
 }
 
 /* Brief outline pulse on a bbox after undo/redo so the user can see which

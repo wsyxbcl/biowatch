@@ -5,6 +5,213 @@ All notable changes to Biowatch will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.5-maze.1] - 2026-09-15
+
+Synced the fork onto upstream 1.9.5 (614 upstream commits, 1.8.7 → 1.9.5).
+
+### Added
+
+- `commonName` is now carried through every sequence-aware species-count SQL path
+  added upstream in 1.9.x (positive-gap N obs., eventID N obs.), so importer-supplied
+  display names survive the new count-metric toggle and map-area (bbox) filters.
+
+### Changed
+
+- Version scheme follows upstream again: `1.9.5-maze.1`.
+
+### Removed
+
+- The unused `disableGbifCommonNames` wiring in the old Media tab, which upstream
+  replaced with the Explore tab and the `media/` components in 1.9.3-1.9.4. The prop
+  was computed and passed but never consumed.
+- Fork carries of the ML port fallback and the `ffmpeg-static` asar unpack fix,
+  both now present upstream.
+
+## [1.9.5] - 2026-06-19
+
+### Added
+
+- **AMMonitor Camera Traps** is now available in the LILA import dropdown alongside the other LILA datasets (~1.86M images, 76 non-blank categories), imported through the existing streaming path. AMMonitor common-name labels are mapped to scientific names so most species resolve to clean binomials or a higher rank.
+
+### Changed
+
+- **Activity charts normalize per species** so curves can be compared by shape: the daytime radar/line charts and the timeline chart now scale each selected species to its own peak, instead of plotting raw counts on a shared scale where an abundant species flattened sparser ones. The line charts also gained 10% Y-axis headroom so peaks aren't clipped at the top edge.
+- "unlabeled" now sorts to the bottom of the species lists (Overview, Explore, Media), matching how blank/vehicle labels are already handled.
+
+## [1.9.4] - 2026-06-05
+
+### Added
+
+- **Revamped Media tab.** A sortable **Table view** (now the default, virtualized for large studies) sits alongside the Grid view, with a Type column (sequence frame count / video / photo icon), per-species counts, a row-number column, and Title Case common names; the lightbox's next/prev follows the table's column sort.
+- **Quick views** moved into a toolbar dropdown (Detections — the new default — plus Favorites, No-timestamp, and more) with explanatory copy; choosing one resets the active facet filters.
+- **In-flow filter pane** that pushes the grid/table aside (animated) instead of floating over it: Species and Deployment shown as distribution bars with observation counts, a **media-type filter** (images / videos), collapsible per-list search, and a count ↔ A–Z sort toggle. Active filters now persist across tab navigation.
+- **Rich hover cards** on active filter pills (per-facet icons) and on deployment rows — a location map with faint markers for other survey deployments (drag-to-pan, scroll-to-zoom), a survey-wide activity heatmap, and an images/videos breakdown.
+- **Deep links** into the Media tab from the Deployments and Sources tabs.
+- **Activity charts in the Explore species hover card**, shown alongside the photo.
+- **Species tooltips fall back to a study photo** when there is no bbox-scored "best" image (e.g. CamTrap DP / GBIF imports), with a polished "No photo available" empty state when nothing can be shown.
+
+### Changed
+
+- **"Blank" is now defined at the whole-sequence level** consistently across the app: a sequence counts as blank only when every frame is a non-detection. The Media table, deployment composition, Blank badge, and Blank filter all agree; vehicle media counts as a detection, not blank.
+- Deployment filter bars show detections-vs-blank composition and share-of-total fills that match the species bars.
+
+### Fixed
+
+- Media pagination cursor could skip most sequences past the first page, and dropped one sequence at large-sequence page boundaries.
+- Species/deployment hover cards now close when the filter list or page scrolls instead of riding along; the map composition hover card is raised above other overlays.
+- Deployment-detail Blank counts are sequence-aware, matching the Media tab.
+- Recent-release notes in Settings render inline markdown.
+
+### Performance
+
+- Deployment composition runs in the sequences worker so it no longer blocks the UI.
+- Table thumbnails load at low resolution and are cached, keeping scrolling smooth.
+- The "usable bbox geometry" probe behind best-media and per-species image selection is backed by a new partial index — an instant index lookup instead of a multi-second full table scan on large studies with no bounding boxes.
+
+## [1.9.3] - 2026-06-02
+
+### Added
+
+- **Merge a study as a source** via a new **Add Source wizard** on the Sources tab: pick the source type, choose a folder or an existing study, and review a pre-flight summary (image/video/observation/deployment counts, contributors, descriptions) before merging. The merge runs in a worker thread so the UI stays responsive, reports progress on the review modal, and is cancellable mid-run (the transaction rolls back). Contributor lists and descriptions are merged with plain-language origin labels, and deleting a study that backs merged sources now asks for confirmation first.
+- **Explore tab** (renamed from Activity) consolidates the species-distribution map and media gallery into one view with a **Map / Gallery / Both** toggle (defaults to Both on wide screens, Map otherwise). Includes a collapsible species rail with chips and hover cards, animated view-toggle and pane transitions, and a media gallery that zooms thumbnails on hover.
+- **Map encoding modes** for the species-distribution map: markers, density heatmap, and hex-grid, with the chosen mode persisted across reloads.
+- **Daytime activity filter**: select a time-of-day range to filter the activity widgets via a polar selection ring on the radar or a line-mode selection track below the axis.
+- **Map area filter** on the Explore tab: drag a box on the map to filter the activity widgets and the gallery media, with a re-applyable area pill and inline clear.
+- Clicking a **threatened species in the Overview** now opens the Explore tab focused on that species.
+- Explanatory tooltips across the app: Deployments CSV import/export actions, the sparkline toggle, the activity chart-shape toggle, and the Explore view toggle.
+- A hover card on the **Add Study** sidebar button, and spring-pop hover-card / zoom animations on the study sidebar, Overview capture and species cards, and the map composition card.
+
+### Changed
+
+- **CamtrapDP / GBIF imports now run in a worker thread** with real-time progress: expansion is paginated by source observations and logged per batch, so progress and logs flow immediately instead of in bursts.
+- Density heatmap opacity floor raised for visibility; density and hex-grid surfaces fade outside the active area filter.
+- Sources tab rows now show a per-source type icon and a humanized importer label (e.g. "Camtrap DP").
+- Logging unified through the `services/logger.js` wrapper instead of importing `electron-log` directly.
+- The Activity tab and route were renamed to **Explore** (`/explore`).
+
+### Fixed
+
+- Overview map cluster now shows the total number of deployments rather than the count of unique coordinates.
+- Sources tab no longer shows a misleading per-source deployment count.
+- Overview species-name rows truncate with an ellipsis instead of wrapping to a second line.
+- Import correctly links observations to their media.
+- Tooltips swap cleanly between adjacent triggers, and the native title tooltip no longer appears on study-tab hover.
+- Radix species hover cards stay visible after their pop animation.
+- Merge of multi-million-row studies no longer runs out of memory (rows are streamed via prepared statements instead of loaded into JS).
+
+### Performance
+
+- Sequence worker: added out-of-memory diagnostics and repro tooling, plus a configurable old-space cap for large studies.
+- Explore map: area filtering no longer freezes the map; out-of-box markers fade instead of being recomputed.
+
+## [1.9.2] - 2026-05-18
+
+### Added
+
+- **MegaDetector v6** as a detection-only model choice: LitServe HTTP server, main-process launcher, bbox routing via a new `detectModelType` branch, MD v6 entry in the model zoo with `detectionOnly` flag, MD card hides the species panel and shows a "detection only" label, model picker dropdown labels MD with "detection only", and `person` labels are mapped to the `Homo sapiens` binomial. Common-name source for `animal` / `person` / `vehicle` labels added. Downloader entry + Makefile env var, HF tarball build script, and e2e tests included.
+- **Rich-card model picker dropdown** (`ModelSelect`): used across the Import and Add-source flows, with install-status helper (unit-tested), highlight-on-mount for a target model from route state, and synchronous hover via Radix `data-[highlighted]`. The standalone "Install AI Models" CTA in the import flow is replaced by the dropdown.
+- **"Starting import…" modal** in the new-study flow: keeps the modal open with a transitional view until the first job lands, shows a live progress bar with counts and ETA, and guarantees a 3 s minimum display before auto-close.
+- Import status header in the study bar redesigned with behavior tooltips.
+
+### Changed
+
+- **SpeciesNet upgraded to 4.0.2a**. Same classifier weights as 4.0.1a — only geofencing rules and taxonomy were updated upstream (e.g. `cetartiodactyla` → `artiodactyla`, `coati family` → `procyonidae family`, `emys marmorata` → `actinemys marmorata`). New imports use 4.0.2a; existing 4.0.1a predictions remain tagged historically and continue to display correctly.
+- MegaDetector positioned second in the model zoo.
+- Delete-study modal: tighter red danger box, clarified that original media files on disk are not deleted, duplicate phrasing dropped.
+- Daily-activity radar clipped to stay inside the visible clock ring.
+- Timeline x-axis tick count scales with chart width.
+- AI Models tab: "Get in touch" button moved to the top-right of the custom model card.
+
+### Fixed
+
+- MegaDetector: per-detection `classificationProbability` (no classifier path), mean-confidence weighted vote for video winner selection, `parseScientificName` branch for MD simple labels, `prediction_score` omitted on blank predictions (was `null` and rejected by Zod), MD pseudo-species map to the correct Camtrap DP `observationType` on export.
+- ML inference: handle corrupt-image partial-failure predictions gracefully.
+- ML server: reject corrupt video metadata so false-positive `animal` tags don't slip through.
+- Model picker dropdown: drop the `ItemText` element that rendered a duplicate model name; use Radix `Select.Item` directly so rich-card content renders.
+- Import-status tooltip: hide stale Speed / Finishes while paused.
+- Add-source: read live cache for the done snapshot instead of a stale closure; min-display timer starts when the study ID is known (not on modal open).
+
+### Notes
+
+- If you continue importing media into an existing 4.0.1a study, new predictions are tagged `4.0.2a`. Geofence verdicts may differ between rows in the same study (e.g. bears in the UK are now blocked) — this is expected upstream behavior.
+- If you have a SpeciesNet import in progress when you upgrade, let it finish (or cancel it) before updating the app. Resumed 4.0.1a jobs can't find their model after the upgrade.
+
+## [1.9.1] - 2026-05-14
+
+### Added
+
+- **Deployments CSV import/export** on the Deployments tab: always-visible header strip with segmented Export / Import actions, visible even when a study has no timestamps (LILA, COCO — the studies that most need this). Export opens a preview modal (read-only table + editable-column hints) then writes a CSV. Import opens a drag-and-drop picker modal → virtualised diff-preview modal (`old → new` cells, row-level highlighting, cell tooltips, clickable summary tiles that filter rows) → single-transaction apply. Edits `latitude`, `longitude`, and `locationName`; `locationName` propagates across `locationID`. Backed by a pure parser/validator + Drizzle transactional applier with 24 unit/integration tests. (#519)
+
+### Changed
+
+- CSV import gating switched from cell-level skipping to row-level blocking: any row with a warning is excluded from apply. Preview counts, row highlighting, legend, and `Apply (N)` button reflect the row-level model; parser exposes `applyCount` + `rowsBlockedByWarningCount` as the single source of truth. (#524, #532)
+- Study-page tabs: tighter vertical padding; map-only top padding on the Deployments tab
+- Deployments actions strip aligned with the timeline header (padding, right edge to the sparkline toggle)
+
+### Fixed
+
+- Study layout `gap-4` restored after deployments-specific offsets had been over-reverted
+
+## [1.9.0] - 2026-05-13
+
+### Added
+
+- **Sources tab** (renamed from Files tab): rebuilt around a per-source view with image/video/observation/deployment counts, last model used, in-flight progress bars, deployment sub-rows, host-server line for remote sources, and a skeleton loader; tab is always visible
+- **"Add images directory" modal** with model/country/folder picker, enabled for all study types (including CamTrap-DP and LILA); locked-model warnings and an empty-state CTA when no models are installed
+- **Dark theme** with a new Appearance settings tab (System / Light / Dark); `useTheme` hook syncs `<html class="dark">` from a preload script, leaflet dark tiles, sonner toast theming, `matchMedia` fallback for Linux when `nativeTheme` lags, and a persisted preferences store backed by a JSON file
+- **Day-period preset chips** (Dawn / Day / Dusk / Night) on Media and Activity tabs with rich tooltips, contiguous-arc merging, and full-day default; backed by a multi-range `timeRange` filter in `getSequenceAwareHeatmap`, `getMediaForSequencePagination`, and `hasTimestampedMedia`
+- **DailyActivityLine**: x-y twin of the polar clock chart, switchable via a segmented `ChartShapeToggle`; drag-to-select custom hour range when chips are inactive, pan-the-band that wraps midnight, draggable start/end edges, dynamic cursor (move / ew-resize / crosshair), drag continues outside the chart area
+- **Timeline brush + zoom** on the Deployments tab: scroll-wheel zoom, live pan, line+dot handles with filled band, native-event gesture model, a filter pill summarising the active date range, and per-study persistence
+- **Best-captures modal redesign**: species overlay, deployment link pill, and modal chrome aligned with the media modal
+- **Media-modal → deployment link** via a shared `DeploymentLinkPill` (also used in the best-captures modal); `sequences:get-paginated`, `getBestMediaForSpecies` and `getFavoriteBestMedia` now return `locationID` / `locationName`
+- **Deployment settings popover** in the Deployments pane header showing media + observation counts (`deployments:get-stats` IPC, `getMediaCountForDeployment` / `getObservationCountForDeployment` queries)
+- **Study settings → Cache section** with per-study cache stats and a Clear-cache action (`study:get-cache-stats`, `study:clear-cache` IPC)
+- **Filter-charts row toggle** on Media and Activity tabs (from the gap-slider strip), with active-filter blue dot indicator and the strip mirrored across both tabs
+- **Activity tab**: export species-distribution map as PNG
+- Pseudo-species (Blank, Vehicle) styled with hover-card descriptions in the species list
+- Year included in the media grid-cell timestamp overlay
+
+### Changed
+
+- Files tab → Sources tab; `getFilesData` removed and `getSourcesData` runs in a worker thread, rewritten to avoid `COUNT(DISTINCT)` over joins, on a readonly DB connection, with model rows aggregated by `(folder, run)`
+- Sources rows merge transient duplicate deployments by label, sort alphabetically, render basename + full path, and show `activeRun` so in-flight model runs surface a progress bar
+- Sources: videos classified by file extension (fixes LILA studies that lacked `fileMediatype`); deployment label coalesces to `(unknown)` when all rows are null; max width bounded and counts wrap below the name on narrow windows
+- Demo + GBIF imports extract into the persistent study directory instead of `/tmp` so media keeps resolving after restart
+- CamTrap-DP import: more resilient to spec deviations; `media.importFolder` set to the package directory (LILA import sets it to the dataset name)
+- Overview KPI band becomes a horizontal carousel on narrow viewports; `getBestImagePerSpecies` moved to the sequences worker
+- Sequence filter helpers: new `normalizeTimeRange` util; `getMediaForSequencePagination` and `hasTimestampedMedia` accept multi-range `timeRange`
+- `getSequenceAwareHeatmap` arg shape switched from positional `startHour` / `endHour` to a `timeRange` object
+- Leaflet attribution prefix hidden on all maps
+- GBIF picker: "Forest First Mammals" dataset hidden
+- Study settings: Export / Clear cache / Delete buttons unified to `h-9`, flat, with sources-style hover and default cursor
+
+### Fixed
+
+- Species distribution bar widths match across Media and Activity tabs; selected row clarified and italic-clip avoided
+- Species list hover / active background reaches the pseudo-species divider; pseudo-species hover styling aligned
+- Filter row: mount-time ease-in suppressed when navigating between Media and Activity tabs
+- Sequence-gap slider thumb dimmed when the slider is off
+- Activity-line: cursor styled inline, recharts cursor inheritance forced, latest drag state committed on release, text selection suppressed during drag
+- Polar clock: chart-shape toggle floats absolutely, hour labels move inside the SVG for predictable spacing, drag-arc suppressed at full-day, contiguous chip arcs merge correctly
+- Chart-shape toggle: segmented control with a theme-blue active state
+- Filter chip tooltips: rich time-range + wildlife description, anchored above the chip, no arrow chevron
+- Best-media modal: scientific name readable on the dark heading pill; species-row scientific-only fallback no longer italic and first letter capitalised
+- Add-study and sequence-grouping tooltips use the shared theme-aware popover style
+- Gallery: `timeRange.ranges` included in the React Query key so chip changes invalidate the cache
+- Import: status polling fires unconditionally so the global progress bar catches new imports; import-status polling scoped and modal invalidates queries on Import
+- Deployments tab lists deployments without timestamps (LILA Biome Health support)
+- Sources: when a study's locked model has been uninstalled, Import is blocked with a warning; country pre-selection skipped when the study has no prior run
+- Many dark-theme polish fixes: sidebar contrast and breathing room, AI Models species panel, annotation rail, media modal top/bottom bars, deployments hover + sparkline empty period, AddSourceModal, species hovercard, sex/life-stage pill text, activity-map pie marker hovercard contrast
+
+### Removed
+
+- `getFilesData` query (replaced by `getSourcesData`)
+- `selectMoreImagesDirectory` IPC (replaced by `importer:add-folder`)
+
+### Chore
+
+- Documentation updates across architecture, IPC API, troubleshooting, development, and import/export for the dark theme, Sources tab, and new IPC handlers (`importer:add-folder`, `study:get-latest-model-options`, `deployments:get-stats`, `study:get-cache-stats`, `study:clear-cache`)
+
 ## [1.8.7-maze.1] - 2026-05-07
 
 ### Added
@@ -585,6 +792,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Activity heatmaps
 - Overview statistics
 
+[1.9.5]: https://github.com/earthtoolsmaker/biowatch/compare/v1.9.4...v1.9.5
+[1.9.4]: https://github.com/earthtoolsmaker/biowatch/compare/v1.9.3...v1.9.4
+[1.9.3]: https://github.com/earthtoolsmaker/biowatch/compare/v1.9.2...v1.9.3
+[1.9.2]: https://github.com/earthtoolsmaker/biowatch/compare/v1.9.1...v1.9.2
+[1.9.1]: https://github.com/earthtoolsmaker/biowatch/compare/v1.9.0...v1.9.1
+[1.9.0]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.7...v1.9.0
 [1.8.7]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.6...v1.8.7
 [1.8.6]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.5...v1.8.6
 [1.8.5]: https://github.com/earthtoolsmaker/biowatch/compare/v1.8.4...v1.8.5

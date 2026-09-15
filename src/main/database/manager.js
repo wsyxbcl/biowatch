@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { existsSync, mkdirSync } from 'fs'
 import { dirname } from 'path'
-import log from 'electron-log'
+import log from '../services/logger.js'
 import * as schema from './models.js'
 import { getValidatedMigrationsPath } from './migrations-utils.js'
 
@@ -327,4 +327,48 @@ export async function closeAllDatabases() {
 
   dbConnections.clear()
   log.info('[DB] All database connections closed')
+}
+
+/**
+ * Helper function to get Drizzle database instance for a study
+ * @param {string} studyId - Study identifier
+ * @param {string} dbPath - Path to database file
+ * @param {Object} options - Database options (e.g., {readonly: true})
+ * @returns {Promise<Object>} Drizzle database instance
+ */
+export async function getDrizzleDb(studyId, dbPath, options = {}) {
+  const manager = await getStudyDatabase(studyId, dbPath, options)
+  return manager.getDb()
+}
+
+/**
+ * Helper function to get a readonly Drizzle database instance for a study
+ * @param {string} studyId - Study identifier
+ * @param {string} dbPath - Path to database file
+ * @returns {Promise<Object>} Readonly Drizzle database instance
+ */
+export async function getReadonlyDrizzleDb(studyId, dbPath) {
+  const manager = await getStudyDatabase(studyId, dbPath, { readonly: true })
+  return manager.getDb()
+}
+
+/**
+ * Helper function to execute raw SQL queries when needed
+ * @param {string} studyId - Study identifier
+ * @param {string} dbPath - Path to database file
+ * @param {string} query - SQL query
+ * @param {Array} params - Query parameters
+ * @returns {Promise<Array>} Query results
+ */
+export async function executeRawQuery(studyId, dbPath, query, params = []) {
+  const manager = await getStudyDatabase(studyId, dbPath)
+  const sqlite = manager.getSqlite()
+
+  try {
+    const statement = sqlite.prepare(query)
+    return statement.all(params)
+  } catch (error) {
+    log.error(`[DB] Raw query failed for study ${studyId}:`, error)
+    throw error
+  }
 }

@@ -1,4 +1,5 @@
 import { sqliteTable, text, real, integer, unique, index } from 'drizzle-orm/sqlite-core'
+import { sql } from 'drizzle-orm'
 
 // Persistent job queue for async work (ML inference, OCR, etc.)
 export const jobs = sqliteTable(
@@ -6,7 +7,7 @@ export const jobs = sqliteTable(
   {
     id: text('id').primaryKey(),
     kind: text('kind').notNull(), // 'ml-inference', 'ocr', etc.
-    topic: text('topic'), // Sub-grouping: 'speciesnet:4.0.1a', 'deepfaune:1.2', etc.
+    topic: text('topic'), // Sub-grouping: 'speciesnet:4.0.2a', 'deepfaune:1.2', etc.
     status: text('status').notNull().default('pending'), // pending, processing, completed, failed, cancelled
     payload: text('payload', { mode: 'json' }).notNull(), // Job-specific data (mediaId, filePath, etc.)
     error: text('error'), // Error message on failure
@@ -85,7 +86,7 @@ export const modelRuns = sqliteTable(
   {
     id: text('id').primaryKey(), // UUID via crypto.randomUUID()
     modelID: text('modelID').notNull(), // 'speciesnet', 'deepfaune'
-    modelVersion: text('modelVersion').notNull(), // '4.0.1a', '1.3'
+    modelVersion: text('modelVersion').notNull(), // '4.0.2a', '1.3'
     startedAt: text('startedAt').notNull(), // ISO timestamp
     status: text('status').default('running'), // 'running', 'completed', 'failed'
     importPath: text('importPath'), // Directory path for this run
@@ -142,7 +143,7 @@ export const observations = sqliteTable(
     modelOutputID: text('modelOutputID').references(() => modelOutputs.id),
     // Camtrap DP classification fields (all nullable)
     classificationMethod: text('classificationMethod'), // 'machine' | 'human'
-    classifiedBy: text('classifiedBy'), // 'SpeciesNet 4.0.1a' or 'John Doe'
+    classifiedBy: text('classifiedBy'), // 'SpeciesNet 4.0.2a' or 'John Doe'
     classificationTimestamp: text('classificationTimestamp') // ISO 8601 with timezone
   },
   (table) => [
@@ -152,13 +153,13 @@ export const observations = sqliteTable(
     index('idx_observations_eventStart').on(table.eventStart),
     index('idx_observations_scientificName_eventStart').on(table.scientificName, table.eventStart),
     index('idx_observations_mediaID_deploymentID').on(table.mediaID, table.deploymentID),
-    // Used by getVehicleMediaCount and the Vehicle pseudo-species filter in
-    // getMediaForSequencePagination — without this, vehicle queries do a
-    // full scan of `observations` (3s+ on a 2.7M-row study).
+    // Used by the Vehicle pseudo-species filter in getMediaForSequencePagination
+    // and the deployment composition's isVehicle flag — without this, vehicle
+    // queries do a full scan of `observations` (3s+ on a 2.7M-row study).
     index('idx_observations_observationType').on(table.observationType),
     // Covering index for the blank-media notExists pattern used by
-    // getBlankMediaCount, getBlankMediaCountForDeployment, and the
-    // sequences.js blank arm. The query checks per-media that no observation
+    // getBlankMediaCountForDeployment, the deployment composition's isDetection
+    // flag, and the sequences.js blank arm. The query checks per-media that no observation
     // names a real species AND has no vehicle observation; with this index
     // SQLite can evaluate both predicates from index alone (~5× faster on
     // a 2.7M-row study: 2.3s → 465ms).
@@ -166,6 +167,15 @@ export const observations = sqliteTable(
       table.mediaID,
       table.scientificName,
       table.observationType
-    )
+    ),
+    // Partial index over rows with drawable bbox geometry. getBestMedia and
+    // getBestImagePerSpecies gate their scoring CTE on a "has any usable bbox?"
+    // EXISTS probe; without this index that probe is a full table SCAN that, on
+    // no-bbox studies (CamTrap DP / GBIF imports), reads every row to confirm
+    // absence (~5-8s cold on 2.7-4M-row studies). The partial index is empty on
+    // such studies, so the probe becomes an instant index seek (SCAN → SEARCH).
+    index('idx_observations_usable_bbox')
+      .on(table.bboxWidth)
+      .where(sql`${table.bboxWidth} > 0 AND ${table.bboxHeight} > 0`)
   ]
 )

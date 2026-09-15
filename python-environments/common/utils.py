@@ -70,6 +70,13 @@ def get_video_metadata(video_path: str) -> dict[str, float]:
 
     Returns:
         Dictionary with 'fps' and 'duration' keys
+
+    Raises:
+        ValueError: if the video cannot be opened, or if OpenCV reports
+            implausible metadata (corrupt files often surface as a hugely
+            negative frame_count from a uint64 underflow, which yields a
+            nonsense duration and would otherwise let a single garbage
+            frame leak through to inference).
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -79,6 +86,14 @@ def get_video_metadata(video_path: str) -> dict[str, float]:
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     duration = frame_count / fps if fps > 0 else 0
     cap.release()
+
+    # 24h ceiling is well above any realistic camera-trap clip but well below
+    # the absurd values OpenCV surfaces on corrupt containers.
+    MAX_REASONABLE_DURATION_S = 24 * 60 * 60
+    if fps <= 0 or frame_count <= 0 or not (0 < duration <= MAX_REASONABLE_DURATION_S):
+        raise ValueError(
+            f"Invalid video metadata (fps={fps}, frame_count={frame_count}, duration={duration}): {video_path}"
+        )
 
     return {"fps": fps, "duration": duration}
 
@@ -158,6 +173,43 @@ class VideoCapableLitAPI(ABC):
         """
         pass
 
+    @staticmethod
+    def _normalize_failed_predictions(result: dict, fallback_filepath: str) -> dict:
+        """Convert partial-failure predictions to the standard error format.
+
+        Some models (notably SpeciesNet) swallow image-loading errors internally
+        and return a prediction dict with a `failures` field but no `prediction`
+        field. Downstream JS validation expects every prediction to carry the
+        required fields, so a partial-failure record fails validation and
+        aborts the whole batch. Rewrite those records into the same shape that
+        the `except` handler emits so consumers see uniform output.
+
+        Args:
+            result: Dict returned by `_predict_single_image` (or a frame thereof).
+            fallback_filepath: Filepath to use if the prediction omits one.
+
+        Returns:
+            New dict with the same shape as `result`, with any partial-failure
+            predictions replaced by standard error predictions.
+        """
+        normalized = []
+        for pred in result.get("predictions", []):
+            if pred.get("prediction") is None:
+                normalized.append(
+                    {
+                        "filepath": pred.get("filepath", str(fallback_filepath)),
+                        "prediction": "error",
+                        "prediction_score": 0.0,
+                        "error": f"Inference failed: {pred.get('failures', ['unknown'])}",
+                        "classifications": {},
+                        "detections": [],
+                        "model_version": pred.get("model_version", "unknown"),
+                    }
+                )
+            else:
+                normalized.append(pred)
+        return {"predictions": normalized}
+
     def predict_with_video_support(self, x, **kwargs):
         """
         Main predict method with automatic video support.
@@ -185,10 +237,11 @@ class VideoCapableLitAPI(ABC):
 
             try:
                 if is_video_file(filepath):
-                    yield from self._predict_video(filepath, sample_fps, **kwargs)
+                    for frame_result in self._predict_video(filepath, sample_fps, **kwargs):
+                        yield self._normalize_failed_predictions(frame_result, filepath)
                 else:
-                    # For images, just pass through to single image prediction
-                    yield self._predict_single_image(filepath, **kwargs)
+                    result = self._predict_single_image(filepath, **kwargs)
+                    yield self._normalize_failed_predictions(result, filepath)
             except Exception as e:
                 logger.error(f"Skipping file due to error: {filepath!r} - {e}")
                 yield {
@@ -200,6 +253,7 @@ class VideoCapableLitAPI(ABC):
                             "error": str(e),
                             "classifications": {},
                             "detections": [],
+                            "model_version": "unknown",
                         }
                     ]
                 }

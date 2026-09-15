@@ -2,7 +2,7 @@
  * Shared Gallery + ImageModal + supporting components.
  *
  * Used by:
- *   - src/renderer/src/media.jsx (the Media tab — study-wide)
+ *   - src/renderer/src/media/MediaGridView.jsx (the Media tab — study-wide)
  *   - src/renderer/src/media/DeploymentMediaGallery.jsx (the Deployments tab — deployment-scoped)
  *
  * Both consumers pass species/date/time filter inputs. The deployment-scoped
@@ -22,8 +22,6 @@ import {
   Layers,
   Play,
   Loader2,
-  ChevronDown,
-  ChevronUp,
   ChevronLeft,
   ChevronRight,
   Heart,
@@ -35,7 +33,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient, useMutation, useInfiniteQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router'
-import * as Tooltip from '@radix-ui/react-tooltip'
 import DeploymentLinkPill from './DeploymentLinkPill'
 import EditableBbox from '../ui/EditableBbox'
 import VideoBboxOverlay from '../ui/VideoBboxOverlay.jsx'
@@ -56,10 +53,12 @@ import {
   getSpeciesCountsFromSequence
 } from '../utils/speciesFromBboxes'
 import { SpeciesCountLabel } from '../ui/SpeciesLabel'
+import MediaTableView, { MediaTableHeader } from './MediaTableView.jsx'
+import { sortSequences } from './tableRows.js'
 import { formatGridTimestamp } from '../utils/formatTimestamp'
 import { useSequenceGap } from '../hooks/useSequenceGap'
+import { useShowThumbnailBboxes } from '../hooks/useShowThumbnailBboxes'
 import DateTimePicker from '../ui/DateTimePicker'
-import { SequenceGapSlider } from '../ui/SequenceGapSlider'
 
 function DrawingOverlay({ imageRef, containerRef, onComplete, zoomTransform }) {
   const [drawStart, setDrawStart] = useState(null)
@@ -202,7 +201,7 @@ function DrawingOverlay({ imageRef, containerRef, onComplete, zoomTransform }) {
       )}
 
       {/* Draw mode indicator */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg pointer-events-none">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg pointer-events-none dark:bg-blue-400">
         Click and drag to draw a box
       </div>
     </>
@@ -487,8 +486,9 @@ function ImageModal({
       queryClient.invalidateQueries({ queryKey: ['sequenceAwareTimeseries', studyId] })
       queryClient.invalidateQueries({ queryKey: ['sequenceAwareDailyActivity', studyId] })
       queryClient.invalidateQueries({ queryKey: ['sequenceAwareHeatmap', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['blankMediaCount', studyId] })
-      queryClient.invalidateQueries({ queryKey: ['vehicleMediaCount', studyId] })
+      // Blank/Vehicle counts are derived from the sequence-aware deployment
+      // composition now, so refresh that cache instead of the old media counts.
+      queryClient.invalidateQueries({ queryKey: ['mediaFilterDeploymentDistribution', studyId] })
       queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
 
       setShowDatePicker(false)
@@ -573,8 +573,9 @@ function ImageModal({
     queryClient.invalidateQueries({ queryKey: ['sequenceAwareTimeseries', studyId] })
     queryClient.invalidateQueries({ queryKey: ['sequenceAwareDailyActivity', studyId] })
     queryClient.invalidateQueries({ queryKey: ['sequenceAwareHeatmap', studyId] })
-    queryClient.invalidateQueries({ queryKey: ['blankMediaCount', studyId] })
-    queryClient.invalidateQueries({ queryKey: ['vehicleMediaCount', studyId] })
+    // Blank/Vehicle counts are derived from the sequence-aware deployment
+    // composition now, so refresh that cache instead of the old media counts.
+    queryClient.invalidateQueries({ queryKey: ['mediaFilterDeploymentDistribution', studyId] })
     queryClient.invalidateQueries({ queryKey: ['bestMedia', studyId] })
   }, [queryClient, studyId, media?.mediaID])
 
@@ -1023,12 +1024,12 @@ function ImageModal({
     >
       <div className="relative max-w-7xl w-full h-full flex items-center justify-center">
         <div
-          className="bg-white rounded-lg overflow-hidden shadow-2xl max-h-[90vh] flex flex-col max-w-full"
+          className="bg-card rounded-lg overflow-hidden shadow-2xl max-h-[90vh] flex flex-col max-w-full"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top toolbar - nav + sequence + timestamp on the left, actions on the right */}
-          <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-gray-200 bg-white">
-            <div className="flex items-center gap-2 min-w-0 flex-1 text-xs text-gray-500">
+          <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border bg-card">
+            <div className="flex items-center gap-2 min-w-0 flex-1 text-xs text-muted-foreground">
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -1041,7 +1042,7 @@ function ImageModal({
                   isDrawMode ||
                   (!hasPreviousInSequence && !hasPrevious)
                 }
-                className="w-8 h-8 rounded-md flex items-center justify-center text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                className="w-8 h-8 rounded-md flex items-center justify-center text-muted-foreground hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                 aria-label="Previous image"
                 title="Previous (←)"
               >
@@ -1059,14 +1060,14 @@ function ImageModal({
                   isDrawMode ||
                   (!hasNextInSequence && !hasNext)
                 }
-                className="w-8 h-8 rounded-md flex items-center justify-center text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                className="w-8 h-8 rounded-md flex items-center justify-center text-muted-foreground hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                 aria-label="Next image"
                 title="Next (→)"
               >
                 <ChevronRight size={18} />
               </button>
               {sequence && sequence.items.length > 1 && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 font-medium text-[11px] flex-shrink-0">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted text-muted-foreground font-medium text-[11px] flex-shrink-0">
                   <Layers size={11} />
                   {sequenceIndex + 1} / {sequence.items.length}
                 </span>
@@ -1079,7 +1080,7 @@ function ImageModal({
                       value={inlineTimestamp}
                       onChange={(e) => setInlineTimestamp(e.target.value)}
                       onKeyDown={handleInlineKeyDown}
-                      className="text-xs text-gray-700 border border-gray-300 rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[180px]"
+                      className="text-xs text-foreground border border-border rounded px-2 py-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[180px]"
                       autoFocus
                       disabled={isSaving}
                       placeholder="Enter date/time..."
@@ -1087,7 +1088,7 @@ function ImageModal({
                     <button
                       onClick={handleInlineSave}
                       disabled={isSaving}
-                      className="text-blue-600 hover:text-blue-700 disabled:opacity-50 p-0.5"
+                      className="text-blue-600 hover:text-blue-700 disabled:opacity-50 p-0.5 dark:text-blue-400 dark:hover:text-blue-400"
                       title="Save (Enter)"
                     >
                       <Check size={14} />
@@ -1095,7 +1096,7 @@ function ImageModal({
                     <button
                       onClick={handleInlineCancel}
                       disabled={isSaving}
-                      className="text-gray-400 hover:text-gray-600 disabled:opacity-50 p-0.5"
+                      className="text-muted-foreground hover:text-muted-foreground disabled:opacity-50 p-0.5"
                       title="Cancel (Escape)"
                     >
                       <X size={14} />
@@ -1104,7 +1105,7 @@ function ImageModal({
                 ) : (
                   <>
                     <span
-                      className="cursor-pointer hover:text-gray-900 hover:underline truncate"
+                      className="cursor-pointer hover:text-foreground hover:underline truncate"
                       onClick={handleInlineEdit}
                       title="Click to edit timestamp"
                     >
@@ -1114,14 +1115,14 @@ function ImageModal({
                     </span>
                     <button
                       onClick={handleInlineEdit}
-                      className="text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 flex-shrink-0"
+                      className="text-muted-foreground hover:text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity p-0.5 flex-shrink-0"
                       title="Edit timestamp inline"
                     >
                       <Pencil size={11} />
                     </button>
                     <button
                       onClick={() => setShowDatePicker(true)}
-                      className="text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 flex-shrink-0"
+                      className="text-muted-foreground hover:text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity p-0.5 flex-shrink-0"
                       title="Open date picker"
                     >
                       <Calendar size={11} />
@@ -1138,9 +1139,9 @@ function ImageModal({
                   </div>
                 )}
               </div>
-              {error && <span className="text-[11px] text-red-500">{error}</span>}
+              {error && <span className="text-[11px] text-red-500 dark:text-red-400">{error}</span>}
               {isSaving && (
-                <span className="text-[11px] text-gray-400 animate-pulse">Saving...</span>
+                <span className="text-[11px] text-muted-foreground animate-pulse">Saving...</span>
               )}
             </div>
 
@@ -1152,8 +1153,8 @@ function ImageModal({
                 }}
                 className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
                   isFavorite
-                    ? 'text-red-600 bg-red-50 hover:bg-red-100'
-                    : 'text-gray-500 hover:bg-gray-100'
+                    ? 'text-red-600 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-500/20 dark:bg-red-500/15'
+                    : 'text-muted-foreground hover:bg-accent'
                 }`}
                 aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                 title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
@@ -1161,7 +1162,7 @@ function ImageModal({
                 <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
               </button>
 
-              {hasBboxes && <div className="w-px h-5 bg-gray-200 mx-1" />}
+              {hasBboxes && <div className="w-px h-5 bg-muted mx-1" />}
 
               {hasBboxes && (
                 <button
@@ -1171,8 +1172,8 @@ function ImageModal({
                   }}
                   className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
                     showBboxes
-                      ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
-                      : 'text-gray-500 hover:bg-gray-100'
+                      ? 'text-blue-600 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-500/25 dark:bg-blue-500/15'
+                      : 'text-muted-foreground hover:bg-accent'
                   }`}
                   aria-label={showBboxes ? 'Hide bounding boxes' : 'Show bounding boxes'}
                   title={`${showBboxes ? 'Hide' : 'Show'} bounding boxes (B)`}
@@ -1189,8 +1190,8 @@ function ImageModal({
                 }}
                 className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
                   showShortcuts
-                    ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
-                    : 'text-gray-500 hover:bg-gray-100'
+                    ? 'text-blue-600 bg-blue-50 hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-500/25 dark:bg-blue-500/15'
+                    : 'text-muted-foreground hover:bg-accent'
                 }`}
                 aria-label="Toggle keyboard shortcuts"
                 aria-pressed={showShortcuts}
@@ -1207,7 +1208,7 @@ function ImageModal({
                         e.stopPropagation()
                         zoomIn()
                       }}
-                      className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                      className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-accent transition-colors"
                       aria-label="Zoom in"
                       title="Zoom in (+)"
                     >
@@ -1221,13 +1222,13 @@ function ImageModal({
                           zoomOut()
                         }}
                         disabled={zoomTransform.scale <= 1}
-                        className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         aria-label="Zoom out"
                         title="Zoom out (-)"
                       >
                         <ZoomOut size={18} />
                       </button>
-                      <span className="text-xs text-gray-600 font-medium min-w-[2.75rem] text-center tabular-nums">
+                      <span className="text-xs text-muted-foreground font-medium min-w-[2.75rem] text-center tabular-nums">
                         {Math.round(zoomTransform.scale * 100)}%
                       </span>
                       <button
@@ -1236,7 +1237,7 @@ function ImageModal({
                           zoomIn()
                         }}
                         disabled={zoomTransform.scale >= 5}
-                        className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         aria-label="Zoom in"
                         title="Zoom in (+)"
                       >
@@ -1247,7 +1248,7 @@ function ImageModal({
                           e.stopPropagation()
                           resetZoom()
                         }}
-                        className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-accent transition-colors"
                         aria-label="Reset zoom"
                         title="Reset zoom (0)"
                       >
@@ -1258,11 +1259,11 @@ function ImageModal({
                 </>
               )}
 
-              <div className="w-px h-5 bg-gray-200 mx-1" />
+              <div className="w-px h-5 bg-muted mx-1" />
 
               <button
                 onClick={onClose}
-                className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-accent transition-colors"
                 aria-label="Close modal"
                 title="Close (Esc)"
               >
@@ -1303,48 +1304,53 @@ function ImageModal({
               {isVideoMedia(media) ? (
                 // Transcoding states
                 transcodeState === 'checking' ? (
-                  <div className="flex flex-col items-center justify-center p-8 text-gray-500 min-h-[300px]">
-                    <Loader2 size={48} className="animate-spin text-blue-500" />
+                  <div className="flex flex-col items-center justify-center p-8 text-muted-foreground min-h-[300px]">
+                    <Loader2 size={48} className="animate-spin text-blue-500 dark:text-blue-400" />
                     <span className="mt-4 text-lg font-medium">Checking video format...</span>
                   </div>
                 ) : transcodeState === 'transcoding' ? (
-                  <div className="flex flex-col items-center justify-center p-8 text-gray-500 min-h-[300px]">
+                  <div className="flex flex-col items-center justify-center p-8 text-muted-foreground min-h-[300px]">
                     <div className="relative">
-                      <Loader2 size={64} className="animate-spin text-blue-500" />
+                      <Loader2
+                        size={64}
+                        className="animate-spin text-blue-500 dark:text-blue-400"
+                      />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-sm font-bold text-blue-600">
+                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
                           {transcodeProgress}%
                         </span>
                       </div>
                     </div>
                     <span className="mt-4 text-lg font-medium">Converting video...</span>
-                    <span className="mt-2 text-sm text-gray-400">
+                    <span className="mt-2 text-sm text-muted-foreground">
                       This format requires conversion for browser playback
                     </span>
                     {/* Progress bar */}
-                    <div className="mt-4 w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="mt-4 w-64 h-2 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-blue-500 transition-all duration-300"
+                        className="h-full bg-blue-500 transition-all duration-300 dark:bg-blue-400"
                         style={{ width: `${transcodeProgress}%` }}
                       />
                     </div>
-                    <span className="mt-2 text-xs text-gray-400">{media.fileName}</span>
+                    <span className="mt-2 text-xs text-muted-foreground">{media.fileName}</span>
                   </div>
                 ) : transcodeState === 'error' ? (
-                  <div className="flex flex-col items-center justify-center p-8 text-gray-500 min-h-[300px]">
-                    <Play size={64} className="text-red-400" />
-                    <span className="mt-4 text-lg font-medium text-red-500">Conversion failed</span>
-                    <span className="mt-2 text-sm text-gray-400">{transcodeError}</span>
-                    <span className="mt-1 text-xs text-gray-400">{media.fileName}</span>
+                  <div className="flex flex-col items-center justify-center p-8 text-muted-foreground min-h-[300px]">
+                    <Play size={64} className="text-red-400 dark:text-red-300" />
+                    <span className="mt-4 text-lg font-medium text-red-500 dark:text-red-400">
+                      Conversion failed
+                    </span>
+                    <span className="mt-2 text-sm text-muted-foreground">{transcodeError}</span>
+                    <span className="mt-1 text-xs text-muted-foreground">{media.fileName}</span>
                   </div>
                 ) : videoError && transcodeState !== 'ready' ? (
-                  <div className="flex flex-col items-center justify-center p-8 text-gray-500 min-h-[300px]">
+                  <div className="flex flex-col items-center justify-center p-8 text-muted-foreground min-h-[300px]">
                     <Play size={64} />
                     <span className="mt-4 text-lg font-medium">Video</span>
-                    <span className="mt-2 text-sm text-gray-400">
+                    <span className="mt-2 text-sm text-muted-foreground">
                       Format not supported by browser
                     </span>
-                    <span className="mt-1 text-xs text-gray-400">{media.fileName}</span>
+                    <span className="mt-1 text-xs text-muted-foreground">{media.fileName}</span>
                   </div>
                 ) : (
                   <div ref={videoContainerRef} className="relative">
@@ -1407,7 +1413,7 @@ function ImageModal({
                   </div>
                 )
               ) : imageError ? (
-                <div className="flex flex-col items-center justify-center bg-gray-800 text-gray-400 aspect-[4/3] min-w-[70vw] max-h-[calc(90vh-152px)]">
+                <div className="flex flex-col items-center justify-center bg-gray-800 text-muted-foreground aspect-[4/3] min-w-[70vw] max-h-[calc(90vh-152px)]">
                   <CameraOff size={128} />
                   <span className="mt-4 text-lg font-medium">Image not available</span>
                   <span className="mt-2 text-sm">{media.fileName}</span>
@@ -1530,10 +1536,10 @@ function ImageModal({
           </div>
 
           {/* Footer - filename + deployment link */}
-          <div className="px-4 py-2.5 bg-gray-50 flex-shrink-0 border-t border-gray-200 text-xs text-gray-600">
+          <div className="px-4 py-2.5 bg-card flex-shrink-0 border-t border-border text-xs text-muted-foreground">
             <div className="flex items-center gap-3">
               {media.fileName && (
-                <span className="font-mono text-[11px] text-gray-400 truncate min-w-0 flex-1">
+                <span className="font-mono text-[11px] text-muted-foreground truncate min-w-0 flex-1">
                   {media.fileName}
                 </span>
               )}
@@ -1550,96 +1556,17 @@ function ImageModal({
             </div>
 
             {classificationUpdatePending && (
-              <p className="text-[11px] text-blue-500 mt-1">Updating classification...</p>
+              <p className="text-[11px] text-blue-500 mt-1 dark:text-blue-400">
+                Updating classification...
+              </p>
             )}
             {classificationUpdateError && (
-              <p className="text-[11px] text-red-500 mt-1">
+              <p className="text-[11px] text-red-500 mt-1 dark:text-red-400">
                 Error: {classificationUpdateError?.message || 'Failed to update'}
               </p>
             )}
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-/**
- * Collapsible control bar for gallery view options
- */
-function GalleryControls({
-  showBboxes,
-  onToggleBboxes,
-  hasBboxes,
-  sequenceGap,
-  onSequenceGapChange,
-  isExpanded,
-  onToggleExpanded
-}) {
-  // Collapsed state: tiny chevron on the right
-  if (!isExpanded) {
-    return (
-      <div className="flex items-center justify-end px-3 py-1 border-b border-gray-200 flex-shrink-0">
-        <button
-          onClick={onToggleExpanded}
-          className="p-1 text-gray-300 hover:text-gray-400 hover:bg-gray-100 rounded transition-colors"
-          title="Show gallery controls"
-        >
-          <ChevronDown size={14} />
-        </button>
-      </div>
-    )
-  }
-
-  // Expanded state: full controls with chevron-up on the right
-  return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-200 flex-shrink-0">
-      {/* Sequence Gap Slider */}
-      <SequenceGapSlider value={sequenceGap} onChange={onSequenceGapChange} variant="compact" />
-
-      <div className="flex items-center gap-2">
-        {/* Show Bboxes Toggle - only render if bboxes exist */}
-        {hasBboxes && (
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>
-              <button
-                onClick={onToggleBboxes}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  showBboxes
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {showBboxes ? <Eye size={16} /> : <EyeOff size={16} />}
-                <span>Boxes</span>
-              </button>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content
-                side="bottom"
-                sideOffset={8}
-                align="end"
-                className="z-[10000] max-w-xs px-3 py-2 bg-gray-900 text-white text-xs rounded-md shadow-lg"
-              >
-                <p className="font-medium mb-1">Bounding Boxes</p>
-                <p className="text-gray-300">
-                  Show detection boxes on thumbnails highlighting where animals were identified by
-                  the AI model.
-                </p>
-                <Tooltip.Arrow className="fill-gray-900" />
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        )}
-
-        {/* Collapse toggle - chevron-up on the right */}
-        <button
-          onClick={onToggleExpanded}
-          className="p-1 text-gray-300 hover:text-gray-400 hover:bg-gray-100 rounded transition-colors"
-          title="Hide gallery controls"
-        >
-          <ChevronUp size={14} />
-        </button>
       </div>
     </div>
   )
@@ -1690,7 +1617,7 @@ function ThumbnailBboxOverlay({ bboxes, imageRef, containerRef }) {
   const { offsetX, offsetY, renderedWidth, renderedHeight } = imageBounds
 
   return (
-    <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
+    <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 transition-transform duration-300 ease-out group-hover:scale-110">
       {drawableBboxes.map((bbox, index) => {
         const isValidated = bbox.classificationMethod === 'human'
         return (
@@ -1776,7 +1703,7 @@ function ThumbnailCard({
 
   return (
     <div
-      className="border border-gray-300 rounded-lg overflow-hidden flex flex-col transition-all"
+      className="group border border-border rounded-lg overflow-hidden flex flex-col transition-all"
       style={{ width: itemWidth ? `${itemWidth}px` : undefined }}
     >
       <div
@@ -1787,7 +1714,7 @@ function ThumbnailCard({
         {isVideo ? (
           <>
             {/* Video placeholder background - always visible */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-gray-400">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-muted-foreground">
               {isExtractingThumbnail ? (
                 <>
                   <Loader2 size={32} className="animate-spin" />
@@ -1806,7 +1733,7 @@ function ThumbnailCard({
                 ref={imageRef}
                 src={thumbnailUrl}
                 alt={media.fileName || `Video ${media.mediaID}`}
-                className="relative z-10 w-full h-full object-contain"
+                className="relative z-10 w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-110"
                 loading="lazy"
               />
             ) : (
@@ -1814,7 +1741,7 @@ function ThumbnailCard({
               <video
                 ref={imageRef}
                 src={constructImageUrl(media.filePath)}
-                className={`relative z-10 w-full h-full object-contain ${imageErrors[media.mediaID] ? 'hidden' : ''}`}
+                className={`relative z-10 w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-110 ${imageErrors[media.mediaID] ? 'hidden' : ''}`}
                 onError={() => setImageErrors((prev) => ({ ...prev, [media.mediaID]: true }))}
                 muted
                 preload="metadata"
@@ -1829,7 +1756,7 @@ function ThumbnailCard({
           <>
             {/* Loading placeholder for images */}
             {isImageLoading && !imageErrors[media.mediaID] && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black text-gray-400 z-0">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black text-muted-foreground z-0">
                 <Loader2 size={32} className="animate-spin" />
               </div>
             )}
@@ -1838,7 +1765,7 @@ function ThumbnailCard({
               src={constructImageUrl(media.filePath)}
               alt={media.fileName || `Media ${media.mediaID}`}
               data-image={media.filePath}
-              className={`w-full h-full object-contain ${imageErrors[media.mediaID] ? 'hidden' : ''} ${isImageLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
+              className={`w-full h-full object-contain ${imageErrors[media.mediaID] ? 'hidden' : ''} ${isImageLoading ? 'opacity-0' : 'opacity-100'} transition duration-300 ease-out group-hover:scale-110`}
               onLoad={() => setIsImageLoading(false)}
               onError={() => {
                 setImageErrors((prev) => ({ ...prev, [media.mediaID]: true }))
@@ -1857,7 +1784,7 @@ function ThumbnailCard({
         {/* Image error fallback - only for non-video */}
         {!isVideo && imageErrors[media.mediaID] && (
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-gray-400"
+            className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-muted-foreground"
             title="Image not available"
           >
             <CameraOff size={32} />
@@ -1997,7 +1924,7 @@ function SequenceCard({
 
   return (
     <div
-      className="border border-gray-300 rounded-lg overflow-hidden flex flex-col transition-all relative group"
+      className="border border-border rounded-lg overflow-hidden flex flex-col transition-all relative group"
       style={{ width: itemWidth ? `${itemWidth}px` : undefined }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => {
@@ -2012,7 +1939,7 @@ function SequenceCard({
       </div>
 
       {/* Stacked effect (visual indicator) */}
-      <div className="absolute -top-1 -right-1 w-full h-full border border-gray-200 rounded-lg bg-gray-100 -z-10 transform translate-x-1 -translate-y-1" />
+      <div className="absolute -top-1 -right-1 w-full h-full border border-border rounded-lg bg-muted -z-10 transform translate-x-1 -translate-y-1" />
 
       {/* Media container */}
       <div
@@ -2023,7 +1950,7 @@ function SequenceCard({
         {isVideo ? (
           <>
             {/* Video placeholder background - always visible */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-gray-400">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-muted-foreground">
               {isExtractingCurrentThumbnail ? (
                 <>
                   <Loader2 size={32} className="animate-spin" />
@@ -2042,7 +1969,7 @@ function SequenceCard({
                 ref={imageRef}
                 src={currentThumbnailUrl}
                 alt={currentMedia.fileName || `Video ${currentMedia.mediaID}`}
-                className="relative z-10 w-full h-full object-contain transition-opacity duration-300"
+                className="relative z-10 w-full h-full object-contain transition duration-300 ease-out group-hover:scale-110"
                 loading="lazy"
               />
             ) : (
@@ -2050,7 +1977,7 @@ function SequenceCard({
               <video
                 ref={imageRef}
                 src={constructImageUrl(currentMedia.filePath)}
-                className={`relative z-10 w-full h-full object-contain transition-opacity duration-300 ${imageErrors[currentMedia.mediaID] ? 'hidden' : ''}`}
+                className={`relative z-10 w-full h-full object-contain transition duration-300 ease-out group-hover:scale-110 ${imageErrors[currentMedia.mediaID] ? 'hidden' : ''}`}
                 onError={() =>
                   setImageErrors((prev) => ({ ...prev, [currentMedia.mediaID]: true }))
                 }
@@ -2067,7 +1994,7 @@ function SequenceCard({
           <>
             {/* Loading placeholder for images */}
             {!loadedImages[currentMedia.mediaID] && !imageErrors[currentMedia.mediaID] && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black text-gray-400 z-0">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black text-muted-foreground z-0">
                 <Loader2 size={32} className="animate-spin" />
               </div>
             )}
@@ -2075,7 +2002,7 @@ function SequenceCard({
               ref={imageRef}
               src={constructImageUrl(currentMedia.filePath)}
               alt={currentMedia.fileName || `Media ${currentMedia.mediaID}`}
-              className={`w-full h-full object-contain transition-opacity duration-300 ${imageErrors[currentMedia.mediaID] ? 'hidden' : ''} ${!loadedImages[currentMedia.mediaID] ? 'opacity-0' : 'opacity-100'}`}
+              className={`w-full h-full object-contain transition duration-300 ease-out group-hover:scale-110 ${imageErrors[currentMedia.mediaID] ? 'hidden' : ''} ${!loadedImages[currentMedia.mediaID] ? 'opacity-0' : 'opacity-100'}`}
               onLoad={() => setLoadedImages((prev) => ({ ...prev, [currentMedia.mediaID]: true }))}
               onError={() => {
                 setImageErrors((prev) => ({ ...prev, [currentMedia.mediaID]: true }))
@@ -2098,7 +2025,7 @@ function SequenceCard({
         {/* Image error fallback - only for non-video */}
         {!isVideo && imageErrors[currentMedia.mediaID] && (
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-gray-400"
+            className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-muted-foreground"
             title="Image not available"
           >
             <CameraOff size={32} />
@@ -2114,7 +2041,7 @@ function SequenceCard({
                 <div
                   key={idx}
                   className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                    idx === currentIndex ? 'bg-blue-500' : 'bg-white/60'
+                    idx === currentIndex ? 'bg-blue-500 dark:bg-blue-400' : 'bg-card/60'
                   }`}
                 />
               ))
@@ -2172,7 +2099,15 @@ function Gallery({
   includeNullTimestamps = false,
   speciesReady = false,
   deploymentID = null,
-  embedded = false
+  mediaTypes = [],
+  sort = 'newest',
+  favorite = false,
+  hideBlank = false,
+  onlyNullTimestamps = false,
+  areaFilter = null,
+  onLoadedChange,
+  embedded = false,
+  view = 'grid'
 }) {
   const [imageErrors, setImageErrors] = useState(() => {
     const initial = {}
@@ -2204,21 +2139,9 @@ function Gallery({
   const { id } = useParams()
   const queryClient = useQueryClient()
 
-  // Grid controls state - persisted per study in localStorage
-  const showBboxesKey = `showBboxes:${id}`
-  const [showThumbnailBboxes, setShowThumbnailBboxes] = useState(() => {
-    const saved = localStorage.getItem(showBboxesKey)
-    return saved !== null ? JSON.parse(saved) : false
-  })
+  const { showThumbnailBboxes } = useShowThumbnailBboxes(id)
 
   const [itemWidth, setItemWidth] = useState(null)
-
-  const [controlsExpanded, setControlsExpanded] = useState(false)
-
-  // Persist showThumbnailBboxes to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem(showBboxesKey, JSON.stringify(showThumbnailBboxes))
-  }, [showThumbnailBboxes, showBboxesKey])
 
   // Auto-switch grid columns and calculate exact item width based on container width
   useEffect(() => {
@@ -2257,48 +2180,67 @@ function Gallery({
 
   // Sequence gap - uses React Query cache for cross-component sync
   // Default value is set during study import based on whether the dataset has eventIDs
-  const { sequenceGap, setSequenceGap, isLoading: isSequenceGapLoading } = useSequenceGap(id)
+  const { sequenceGap, isLoading: isSequenceGapLoading } = useSequenceGap(id)
 
   // Fetch pre-grouped sequences from main process with cursor-based pagination
   // This moves the grouping logic to the main process, keeping the client "dumb"
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
-    queryKey: [
-      'sequences',
-      id,
-      sequenceGap,
-      deploymentID,
-      JSON.stringify(species),
-      dateRange[0]?.toISOString(),
-      dateRange[1]?.toISOString(),
-      timeRange.start,
-      timeRange.end,
-      includeNullTimestamps
-    ],
-    queryFn: async ({ pageParam = null }) => {
-      const response = await window.api.getSequences(id, {
-        gapSeconds: sequenceGap,
-        limit: PAGE_SIZE,
-        cursor: pageParam,
-        filters: {
-          species,
-          dateRange: dateRange[0] && dateRange[1] ? { start: dateRange[0], end: dateRange[1] } : {},
-          timeRange,
-          deploymentID
-        }
-      })
-      if (response.error) throw new Error(response.error)
-      return response.data
-    },
-    getNextPageParam: (lastPage) => {
-      // Use cursor-based pagination - server returns nextCursor
-      return lastPage.hasMore ? lastPage.nextCursor : undefined
-    },
-    enabled:
-      !!id &&
-      (includeNullTimestamps || (!!dateRange[0] && !!dateRange[1])) &&
-      !isSequenceGapLoading &&
-      speciesReady
-  })
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isSuccess } =
+    useInfiniteQuery({
+      queryKey: [
+        'sequences',
+        id,
+        sequenceGap,
+        deploymentID,
+        JSON.stringify(mediaTypes),
+        sort,
+        favorite,
+        hideBlank,
+        onlyNullTimestamps,
+        JSON.stringify(species),
+        dateRange[0]?.toISOString(),
+        dateRange[1]?.toISOString(),
+        JSON.stringify(timeRange.ranges ?? [{ start: timeRange.start, end: timeRange.end }]),
+        includeNullTimestamps,
+        JSON.stringify(areaFilter)
+      ],
+      queryFn: async ({ pageParam = null }) => {
+        const response = await window.api.getSequences(id, {
+          gapSeconds: sequenceGap,
+          limit: PAGE_SIZE,
+          cursor: pageParam,
+          sort,
+          filters: {
+            species,
+            dateRange:
+              dateRange[0] && dateRange[1] ? { start: dateRange[0], end: dateRange[1] } : {},
+            timeRange,
+            deploymentID,
+            mediaTypes,
+            favorite,
+            hideBlank,
+            onlyNullTimestamps,
+            bbox: areaFilter
+          }
+        })
+        if (response.error) throw new Error(response.error)
+        return response.data
+      },
+      getNextPageParam: (lastPage) => {
+        // Use cursor-based pagination - server returns nextCursor
+        return lastPage.hasMore ? lastPage.nextCursor : undefined
+      },
+      enabled:
+        !!id &&
+        (includeNullTimestamps || (!!dateRange[0] && !!dateRange[1])) &&
+        !isSequenceGapLoading &&
+        speciesReady
+    })
+
+  // Notify the parent once the first page has resolved — lets the Explore tab
+  // hold the map full-size until the gallery has media to show.
+  useEffect(() => {
+    if (isSuccess) onLoadedChange?.()
+  }, [isSuccess, onLoadedChange])
 
   // Flatten all pages of sequences into a single array
   // Server already handles null-timestamp media as individual sequences at the end
@@ -2326,16 +2268,44 @@ function Gallery({
     staleTime: 60000
   })
 
-  // Check if any media have bboxes (lightweight check for showing/hiding toggle)
-  const { data: anyMediaHaveBboxes = false } = useQuery({
-    queryKey: ['mediaHaveBboxes', id, mediaIDs],
-    queryFn: async () => {
-      const response = await window.api.checkMediaHaveBboxes(id, mediaIDs)
-      return response.data || false
-    },
-    enabled: mediaIDs.length > 0 && !!id,
-    staleTime: 60000
-  })
+  // Width of the scroll container's scrollbar gutter, measured so the table
+  // header (which sits OUTSIDE the scroller) can reserve the same right-edge
+  // space and keep its columns aligned with the scrolling rows. 0 on overlay-
+  // scrollbar platforms (macOS), where scrollbar-gutter reserves nothing.
+  const [scrollbarGutter, setScrollbarGutter] = useState(0)
+  useEffect(() => {
+    const el = gridContainerRef.current
+    if (!el || view !== 'table') return
+    const measure = () => setScrollbarGutter(el.offsetWidth - el.clientWidth)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [view])
+
+  // Table column sort (client-side), lifted here so one sorted order drives both
+  // the table render and the modal's next/prev navigation.
+  const [tableSort, setTableSort] = useState({ col: null, dir: 'asc' })
+  const handleTableSort = useCallback((col) => {
+    setTableSort((prev) =>
+      prev.col === col ? { col, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: 'asc' }
+    )
+  }, [])
+
+  // The order the user actually sees: when the Table view has an active column
+  // sort, order the loaded sequences the same way; otherwise keep server order.
+  // Modal navigation and the table both read this so they stay in lockstep.
+  const navigableItems = useMemo(() => {
+    if (view !== 'table' || !tableSort.col) return allNavigableItems
+    return sortSequences(
+      allNavigableItems,
+      bboxesByMedia,
+      isVideoMedia,
+      tableSort.col,
+      tableSort.dir
+    )
+    // isVideoMedia is a stable module-level function, not a dependency.
+  }, [view, tableSort, allNavigableItems, bboxesByMedia])
 
   // Set up Intersection Observer for infinite scrolling
   useEffect(() => {
@@ -2361,17 +2331,22 @@ function Gallery({
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  const constructImageUrl = (fullFilePath) => {
-    if (fullFilePath.startsWith('http')) {
-      // Use cached-image protocol for remote URLs to enable disk caching
-      if (id) {
-        return `cached-image://cache?studyId=${encodeURIComponent(id)}&url=${encodeURIComponent(fullFilePath)}`
+  // Stable across renders (depends only on the study id) so memoized children —
+  // notably the Table view's rows — aren't invalidated every parent render.
+  const constructImageUrl = useCallback(
+    (fullFilePath) => {
+      if (fullFilePath.startsWith('http')) {
+        // Use cached-image protocol for remote URLs to enable disk caching
+        if (id) {
+          return `cached-image://cache?studyId=${encodeURIComponent(id)}&url=${encodeURIComponent(fullFilePath)}`
+        }
+        return fullFilePath
       }
-      return fullFilePath
-    }
 
-    return `local-file://get?path=${encodeURIComponent(fullFilePath)}`
-  }
+      return `local-file://get?path=${encodeURIComponent(fullFilePath)}`
+    },
+    [id]
+  )
 
   // Image prefetching for smooth modal navigation
   const { prefetchNeighbors } = useImagePrefetch({
@@ -2407,8 +2382,8 @@ function Gallery({
 
       // Prefetch when at last item in sequence (next ArrowRight moves to next sequence)
       if (nextIndex === currentSequence.items.length - 1) {
-        const currentSeqIdx = allNavigableItems.findIndex((s) => s.id === currentSequence.id)
-        const sequencesRemaining = allNavigableItems.length - 1 - currentSeqIdx
+        const currentSeqIdx = navigableItems.findIndex((s) => s.id === currentSequence.id)
+        const sequencesRemaining = navigableItems.length - 1 - currentSeqIdx
         if (sequencesRemaining <= PREFETCH_THRESHOLD && hasNextPage && !isFetchingNextPage) {
           fetchNextPage()
         }
@@ -2417,7 +2392,7 @@ function Gallery({
   }, [
     currentSequence,
     currentSequenceIndex,
-    allNavigableItems,
+    navigableItems,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage
@@ -2436,36 +2411,36 @@ function Gallery({
   const handleNextImage = useCallback(() => {
     if (!selectedMedia) return
 
-    // Find current sequence index in allNavigableItems (includes null-timestamp media)
-    const currentSeqIdx = allNavigableItems.findIndex((s) =>
+    // Find current sequence index in the displayed (sorted) order
+    const currentSeqIdx = navigableItems.findIndex((s) =>
       s.items.some((m) => m.mediaID === selectedMedia.mediaID)
     )
 
     // Prefetch when approaching end of loaded data
-    const sequencesRemaining = allNavigableItems.length - 1 - currentSeqIdx
+    const sequencesRemaining = navigableItems.length - 1 - currentSeqIdx
     if (sequencesRemaining <= PREFETCH_THRESHOLD && hasNextPage && !isFetchingNextPage) {
       fetchNextPage()
     }
 
-    if (currentSeqIdx < allNavigableItems.length - 1) {
-      const nextSequence = allNavigableItems[currentSeqIdx + 1]
+    if (currentSeqIdx < navigableItems.length - 1) {
+      const nextSequence = navigableItems[currentSeqIdx + 1]
       const isMultiItem = nextSequence.items.length > 1
       setCurrentSequence(isMultiItem ? nextSequence : null)
       setCurrentSequenceIndex(0)
       setSelectedMedia(nextSequence.items[0])
     }
-  }, [selectedMedia, allNavigableItems, hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [selectedMedia, navigableItems, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   // Navigate to previous sequence/item globally
   const handlePreviousImage = useCallback(() => {
     if (!selectedMedia) return
 
-    const currentSeqIdx = allNavigableItems.findIndex((s) =>
+    const currentSeqIdx = navigableItems.findIndex((s) =>
       s.items.some((m) => m.mediaID === selectedMedia.mediaID)
     )
 
     if (currentSeqIdx > 0) {
-      const prevSequence = allNavigableItems[currentSeqIdx - 1]
+      const prevSequence = navigableItems[currentSeqIdx - 1]
       const isMultiItem = prevSequence.items.length > 1
       setCurrentSequence(isMultiItem ? prevSequence : null)
       // Start at end of previous sequence
@@ -2473,7 +2448,7 @@ function Gallery({
       setCurrentSequenceIndex(lastIndex)
       setSelectedMedia(prevSequence.items[lastIndex])
     }
-  }, [selectedMedia, allNavigableItems])
+  }, [selectedMedia, navigableItems])
 
   // Handle optimistic timestamp update
   const handleTimestampUpdate = useCallback(
@@ -2509,7 +2484,7 @@ function Gallery({
   const navigateToMediaId = useCallback(
     async (targetMediaId) => {
       if (!targetMediaId || selectedMediaIdRef.current === targetMediaId) return
-      const seq = allNavigableItems.find((s) => s.items.some((m) => m.mediaID === targetMediaId))
+      const seq = navigableItems.find((s) => s.items.some((m) => m.mediaID === targetMediaId))
       if (!seq) return // target not in currently loaded pages — best-effort no-op
       const itemIdx = seq.items.findIndex((m) => m.mediaID === targetMediaId)
       const safeIdx = itemIdx >= 0 ? itemIdx : 0
@@ -2518,14 +2493,14 @@ function Gallery({
       setCurrentSequenceIndex(safeIdx)
       setSelectedMedia(seq.items[safeIdx])
     },
-    [allNavigableItems]
+    [navigableItems]
   )
 
   // Calculate navigation availability based on sequences
   const currentSeqIdx = selectedMedia
-    ? allNavigableItems.findIndex((s) => s.items.some((m) => m.mediaID === selectedMedia.mediaID))
+    ? navigableItems.findIndex((s) => s.items.some((m) => m.mediaID === selectedMedia.mediaID))
     : -1
-  const hasNextSequence = currentSeqIdx >= 0 && currentSeqIdx < allNavigableItems.length - 1
+  const hasNextSequence = currentSeqIdx >= 0 && currentSeqIdx < navigableItems.length - 1
   const hasPreviousSequence = currentSeqIdx > 0
 
   // For sequence navigation within modal
@@ -2536,9 +2511,9 @@ function Gallery({
   // Prefetch neighboring images when modal is open
   useEffect(() => {
     if (isModalOpen && currentSeqIdx >= 0) {
-      prefetchNeighbors(allNavigableItems, currentSeqIdx)
+      prefetchNeighbors(navigableItems, currentSeqIdx)
     }
-  }, [isModalOpen, currentSeqIdx, allNavigableItems, prefetchNeighbors])
+  }, [isModalOpen, currentSeqIdx, navigableItems, prefetchNeighbors])
 
   return (
     <>
@@ -2572,87 +2547,106 @@ function Gallery({
       <div
         className={
           embedded
-            ? 'flex flex-col h-full overflow-hidden'
-            : 'flex flex-col h-full bg-white rounded border border-gray-200 overflow-hidden'
+            ? 'relative flex flex-col h-full overflow-hidden'
+            : 'relative flex flex-col h-full bg-card rounded border border-border overflow-hidden'
         }
       >
-        {/* Collapsible Control Bar — hidden when embedded (e.g. inside the
-            Deployments tab's detail pane, which provides its own chrome). */}
-        {!embedded && (
-          <GalleryControls
-            showBboxes={showThumbnailBboxes}
-            onToggleBboxes={() => setShowThumbnailBboxes((prev) => !prev)}
-            hasBboxes={anyMediaHaveBboxes}
-            sequenceGap={sequenceGap}
-            onSequenceGapChange={setSequenceGap}
-            isExpanded={controlsExpanded}
-            onToggleExpanded={() => setControlsExpanded((prev) => !prev)}
+        {/* Table header lives outside the scroll container so the body's
+            scrollbar doesn't run up alongside it; it reserves the measured
+            gutter to stay column-aligned with the rows. */}
+        {view === 'table' && (
+          <MediaTableHeader
+            sortCol={tableSort.col}
+            sortDir={tableSort.dir}
+            onSort={handleTableSort}
+            gutter={scrollbarGutter}
           />
         )}
-
         {/* Grid — drop horizontal padding when embedded so the first
             image cell aligns with the panel's left edge (matches the map
             in the Deployments tab). */}
         <div
           ref={gridContainerRef}
+          style={view === 'table' ? { scrollbarGutter: 'stable' } : undefined}
           className={`flex flex-wrap gap-[12px] flex-1 overflow-auto content-start ${
-            embedded ? 'py-3' : 'p-3'
+            embedded ? (view === 'table' ? 'pb-3' : 'py-3') : 'p-3'
           }`}
         >
           {/* Sequences are returned pre-grouped from server, including null-timestamp items as individual sequences */}
-          {allNavigableItems.map((sequence) => {
-            const isMultiItem = sequence.items.length > 1
+          {view === 'table' ? (
+            <MediaTableView
+              sequences={navigableItems}
+              bboxesByMedia={bboxesByMedia}
+              constructImageUrl={constructImageUrl}
+              isVideoMedia={isVideoMedia}
+              onRowClick={handleImageClick}
+              scrollRef={gridContainerRef}
+            />
+          ) : (
+            allNavigableItems.map((sequence) => {
+              const isMultiItem = sequence.items.length > 1
 
-            if (isMultiItem) {
+              if (isMultiItem) {
+                return (
+                  <SequenceCard
+                    key={sequence.id}
+                    sequence={sequence}
+                    constructImageUrl={constructImageUrl}
+                    onSequenceClick={handleImageClick}
+                    imageErrors={imageErrors}
+                    setImageErrors={setImageErrorsWithCache}
+                    showBboxes={showThumbnailBboxes}
+                    bboxesByMedia={bboxesByMedia}
+                    itemWidth={itemWidth}
+                    isVideoMedia={isVideoMedia}
+                    studyId={id}
+                  />
+                )
+              }
+
+              // Single item - use existing ThumbnailCard
+              const media = sequence.items[0]
               return (
-                <SequenceCard
-                  key={sequence.id}
-                  sequence={sequence}
+                <ThumbnailCard
+                  key={media.mediaID}
+                  media={media}
                   constructImageUrl={constructImageUrl}
-                  onSequenceClick={handleImageClick}
+                  onImageClick={(m) => handleImageClick(m, null)}
                   imageErrors={imageErrors}
                   setImageErrors={setImageErrorsWithCache}
                   showBboxes={showThumbnailBboxes}
-                  bboxesByMedia={bboxesByMedia}
+                  bboxes={bboxesByMedia[media.mediaID] || []}
                   itemWidth={itemWidth}
                   isVideoMedia={isVideoMedia}
                   studyId={id}
                 />
               )
-            }
-
-            // Single item - use existing ThumbnailCard
-            const media = sequence.items[0]
-            return (
-              <ThumbnailCard
-                key={media.mediaID}
-                media={media}
-                constructImageUrl={constructImageUrl}
-                onImageClick={(m) => handleImageClick(m, null)}
-                imageErrors={imageErrors}
-                setImageErrors={setImageErrorsWithCache}
-                showBboxes={showThumbnailBboxes}
-                bboxes={bboxesByMedia[media.mediaID] || []}
-                itemWidth={itemWidth}
-                isVideoMedia={isVideoMedia}
-                studyId={id}
-              />
-            )
-          })}
+            })
+          )}
 
           {/* Loading indicator and intersection target */}
           <div ref={loaderRef} className="w-full flex justify-center p-4">
+            {/* Initial load — show a spinner, never the empty-state copy, until
+                the query has actually resolved (a disabled/not-yet-enabled
+                infinite query reports isLoading === false, so gating the empty
+                message on isLoading alone flashes "no media" before fetch). */}
+            {isLoading && mediaFiles.length === 0 && (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground"></div>
+                <span className="ml-2">Loading…</span>
+              </div>
+            )}
             {isFetchingNextPage && (
               <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground"></div>
                 <span className="ml-2">Loading more...</span>
               </div>
             )}
             {!hasNextPage && mediaFiles.length > 0 && !isFetchingNextPage && (
-              <p className="text-gray-500 text-sm">No more media to load</p>
+              <p className="text-muted-foreground text-sm">No more media to load</p>
             )}
-            {!hasNextPage && mediaFiles.length === 0 && !isLoading && (
-              <p className="text-gray-500">No media files match the selected filters</p>
+            {!hasNextPage && mediaFiles.length === 0 && isSuccess && (
+              <p className="text-muted-foreground">No media files match the selected filters</p>
             )}
           </div>
         </div>

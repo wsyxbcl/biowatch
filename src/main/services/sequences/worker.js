@@ -9,6 +9,8 @@
  */
 
 import { parentPort, workerData } from 'worker_threads'
+import { getHeapStatistics } from 'v8'
+import log from '../logger.js'
 import {
   getDrizzleDb,
   getMetadata,
@@ -21,12 +23,13 @@ import {
   getSequenceAwareDailyActivitySQL,
   getBestMedia,
   getBestImagePerSpecies,
-  getBlankMediaCount,
   getDeploymentsActivity,
   getSourcesData,
   getOverviewStats
 } from '../../database/index.js'
 import { getPaginatedSequences } from './pagination.js'
+import { getDeploymentComposition } from './deploymentComposition.js'
+import { COUNT_METRIC_INDIVIDUALS } from '../../../shared/countMetric.js'
 import {
   calculateSequenceAwareSpeciesCounts,
   calculateSequenceAwareTimeseries,
@@ -35,6 +38,12 @@ import {
   pivotPreAggregatedDailyActivity,
   pivotPreAggregatedHeatmap
 } from './speciesCounts.js'
+
+// Live heap usage in MB — cheap to call, used to trace memory growth across
+// the row-dump + JS aggregation fallbacks that can OOM the worker.
+function heapMb() {
+  return Math.round(process.memoryUsage().heapUsed / 1048576)
+}
 
 async function run() {
   const {
@@ -45,9 +54,10 @@ async function run() {
     speciesNames,
     startDate,
     endDate,
-    startHour,
-    endHour,
-    includeNullTimestamps
+    timeRange,
+    includeNullTimestamps,
+    bbox,
+    countMetric = COUNT_METRIC_INDIVIDUALS
   } = workerData
 
   // Fetch gapSeconds from metadata if not provided
@@ -58,31 +68,54 @@ async function run() {
     effectiveGapSeconds = meta?.sequenceGap ?? null
   }
 
+  const tag = `[seq-worker:${type}]`
+  const heapLimitMb = Math.round(getHeapStatistics().heap_size_limit / 1048576)
+  log.info(
+    `${tag} start gap=${effectiveGapSeconds} metric=${countMetric} bbox=${bbox ? 'yes' : 'no'} ` +
+      `species=${speciesNames?.length ?? 0} heap=${heapMb()}/${heapLimitMb}MB`
+  )
+
   switch (type) {
     case 'species-distribution': {
-      // Fast path: SQL aggregate handles gapSeconds === null and === 0, returns
-      // the final [{scientificName, count}] directly (83 rows, not 1.65M).
-      // Returns null for positive gapSeconds, in which case we fall back to the
-      // row-dump + JS sequence grouping below.
-      const fast = await getSequenceAwareSpeciesCountsSQL(dbPath, effectiveGapSeconds)
+      // SQL returns final [{scientificName, count}] rows directly. Positive-gap
+      // N ind. retains the established JS path; N obs. stays in SQL for every
+      // grouping mode because each species/sequence contributes exactly one.
+      const fast = await getSequenceAwareSpeciesCountsSQL(
+        dbPath,
+        effectiveGapSeconds,
+        bbox,
+        countMetric
+      )
       if (fast !== null) return fast
-      const rawData = await getSpeciesDistributionByMedia(dbPath)
-      return calculateSequenceAwareSpeciesCounts(rawData, effectiveGapSeconds)
+      log.warn(
+        `${tag} SLOW PATH (gap=${effectiveGapSeconds}): SQL fast-path returned null, dumping rows`
+      )
+      const rawData = await getSpeciesDistributionByMedia(dbPath, bbox)
+      log.info(`${tag} loaded ${rawData.length} rows, heap=${heapMb()}MB — starting JS aggregation`)
+      const result = calculateSequenceAwareSpeciesCounts(rawData, effectiveGapSeconds, countMetric)
+      log.info(`${tag} aggregation done: ${result.length} species, heap=${heapMb()}MB`)
+      return result
     }
     case 'timeseries': {
-      // Fast path: SQL aggregate handles gapSeconds === null and === 0,
-      // returns pre-grouped (species, week, count) rows — orders of magnitude
-      // smaller than the raw observation-per-media dump the JS path needs.
-      // Returns null for positive gapSeconds → fall back to the JS path for
-      // time-gap-based sequence grouping.
+      // SQL returns pre-grouped (species, week, count) rows. Positive-gap
+      // N ind. retains the established JS fallback; N obs. has an SQL path for
+      // every grouping mode.
       const fastRows = await getSequenceAwareTimeseriesSQL(
         dbPath,
         speciesNames,
-        effectiveGapSeconds
+        effectiveGapSeconds,
+        bbox,
+        countMetric
       )
       if (fastRows !== null) return pivotPreAggregatedTimeseries(fastRows)
-      const rawData = await getSpeciesTimeseriesByMedia(dbPath, speciesNames)
-      return calculateSequenceAwareTimeseries(rawData, effectiveGapSeconds)
+      log.warn(
+        `${tag} SLOW PATH (gap=${effectiveGapSeconds}): SQL fast-path returned null, dumping rows`
+      )
+      const rawData = await getSpeciesTimeseriesByMedia(dbPath, speciesNames, bbox)
+      log.info(`${tag} loaded ${rawData.length} rows, heap=${heapMb()}MB — starting JS aggregation`)
+      const result = calculateSequenceAwareTimeseries(rawData, effectiveGapSeconds, countMetric)
+      log.info(`${tag} aggregation done, heap=${heapMb()}MB`)
+      return result
     }
     case 'heatmap': {
       // Fast path: SQL aggregate handles all three gap cases (per-media,
@@ -97,22 +130,27 @@ async function run() {
         speciesNames,
         startDate,
         endDate,
-        startHour,
-        endHour,
+        timeRange,
         includeNullTimestamps,
-        effectiveGapSeconds
+        effectiveGapSeconds,
+        countMetric
       )
       if (fastRows !== null) return pivotPreAggregatedHeatmap(fastRows)
+      log.warn(
+        `${tag} SLOW PATH (gap=${effectiveGapSeconds}): SQL fast-path returned null, dumping rows`
+      )
       const rawData = await getSpeciesHeatmapDataByMedia(
         dbPath,
         speciesNames,
         startDate,
         endDate,
-        startHour,
-        endHour,
+        timeRange,
         includeNullTimestamps
       )
-      return calculateSequenceAwareHeatmap(rawData, effectiveGapSeconds)
+      log.info(`${tag} loaded ${rawData.length} rows, heap=${heapMb()}MB — starting JS aggregation`)
+      const result = calculateSequenceAwareHeatmap(rawData, effectiveGapSeconds, countMetric)
+      log.info(`${tag} aggregation done, heap=${heapMb()}MB`)
+      return result
     }
     case 'daily-activity': {
       const rows = await getSequenceAwareDailyActivitySQL(
@@ -120,7 +158,9 @@ async function run() {
         speciesNames,
         startDate,
         endDate,
-        effectiveGapSeconds
+        effectiveGapSeconds,
+        bbox,
+        countMetric
       )
       return pivotPreAggregatedDailyActivity(rows || [], speciesNames)
     }
@@ -152,6 +192,13 @@ async function run() {
       // multiple seconds on first open of large studies.
       return getDeploymentsActivity(dbPath, workerData.periodCount)
     }
+    case 'deployment-composition': {
+      // Media tab's per-deployment blank/detection composition. Fetches ALL
+      // media (synchronous better-sqlite3) and groups it into sequences in JS
+      // — O(media) work that froze the main process for seconds on large
+      // studies. Off-thread keeps the renderer responsive while it loads.
+      return getDeploymentComposition(dbPath, effectiveGapSeconds)
+    }
     case 'sources-data': {
       // Sources tab rollup. Runs four queries (per-source, per-deployment,
       // last-model-used, active-run) over media/observations/model_outputs and
@@ -164,14 +211,6 @@ async function run() {
       // observations / deployments / media are O(table size) and large
       // studies show multi-hundred-ms latency.
       return getOverviewStats(dbPath)
-    }
-    case 'blank-count': {
-      // Library/Deployments tabs both call this on first open. The
-      // notExists scan is O(media × matching observations); even with the
-      // covering index on (mediaID, scientificName, observationType) it
-      // takes ~465ms on the largest GMU8-pattern study (2.7M observations).
-      // Off the main thread to avoid renderer jank.
-      return getBlankMediaCount(dbPath)
     }
     default:
       throw new Error(`Unknown worker task type: ${type}`)

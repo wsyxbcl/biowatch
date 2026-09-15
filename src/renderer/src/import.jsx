@@ -1,10 +1,12 @@
 import 'leaflet/dist/leaflet.css'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import { modelZoo } from '../../shared/mlmodels.js'
 import { getGbifTitle, isGbifAvailable } from '../../shared/gbifTitles.js'
 import { useQueryClient } from '@tanstack/react-query'
 import CountryPickerModal from './CountryPickerModal.jsx'
+import StartingImportModal from './StartingImportModal.jsx'
+import { useImportStatus } from './hooks/import'
 import GbifImportProgress from './GbifImportProgress.jsx'
 import DemoImportProgress from './DemoImportProgress.jsx'
 import LilaImportProgress from './LilaImportProgress.jsx'
@@ -23,18 +25,22 @@ import {
 import { Button } from './ui/button.jsx'
 import { Card, CardContent } from './ui/card.jsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select.jsx'
+import ModelSelect from './models/ModelSelect.jsx'
+import { getModelInstallStatus } from './models/installStatus.js'
 
 function SourceRow({ icon: Icon, title, description, children, className = '' }) {
   return (
     <Card className={`shadow-none hover:border-blue-500/30 transition-colors ${className}`}>
       <CardContent className="p-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="size-8 rounded-md bg-gray-100 flex items-center justify-center shrink-0">
-            <Icon className="size-4 text-gray-500" />
+          <div className="size-8 rounded-md bg-muted flex items-center justify-center shrink-0">
+            <Icon className="size-4 text-muted-foreground" />
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="text-sm font-medium leading-tight">{title}</h4>
-            {description && <p className="text-xs text-gray-500 truncate mt-0.5">{description}</p>}
+            {description && (
+              <p className="text-xs text-muted-foreground truncate mt-0.5">{description}</p>
+            )}
           </div>
           {children}
         </div>
@@ -46,13 +52,78 @@ function SourceRow({ icon: Icon, title, description, children, className = '' })
 export default function Import({ studiesCount = 0 }) {
   const navigate = useNavigate()
   const isFirstTimeUser = studiesCount === 0
-  const [selectedModel, setSelectedModel] = useState(modelZoo[0]?.reference || null)
+  const [selectedModel, setSelectedModel] = useState(null)
   const [installedModels, setInstalledModels] = useState([])
   const [installedEnvironments, setInstalledEnvironments] = useState([])
   const [showCountryPicker, setShowCountryPicker] = useState(false)
   const [pendingDirectoryPath, setPendingDirectoryPath] = useState(null)
   const [showMoreFormats, setShowMoreFormats] = useState(false)
   const queryClient = useQueryClient()
+
+  // Local-folder import: transitional modal shown from the moment the user
+  // commits a folder until the new study is ready and the first job has
+  // landed (or a few safety nets fire). Without this, the renderer
+  // navigates straight to the empty study page and the customer reports
+  // it feels stuck.
+  const [startingFolder, setStartingFolder] = useState(null) // string | null
+  const [pendingStudyId, setPendingStudyId] = useState(null) // string | null
+  const [minDisplayElapsed, setMinDisplayElapsed] = useState(false)
+  const navigateTargetRef = useRef(null)
+
+  const { importStatus: pendingStudyStatus } = useImportStatus(pendingStudyId)
+
+  // Single place that closes the modal and (if we have a study ID) navigates.
+  const finishStartingImport = useCallback(() => {
+    const target = navigateTargetRef.current
+    setStartingFolder(null)
+    setPendingStudyId(null)
+    setMinDisplayElapsed(false)
+    navigateTargetRef.current = null
+    if (target) {
+      queryClient.invalidateQueries({ queryKey: ['studies'] })
+      navigate(`/study/${target}`)
+    }
+  }, [navigate, queryClient])
+
+  // 3s minimum display before any auto-close fires. The timer starts once
+  // the study ID is known (i.e. once the progress panel has real data to
+  // show), not when the modal first appears — otherwise a slow
+  // selectImagesDirectoryWithModel call eats the whole window and the user
+  // never sees the live counts. User-initiated dismiss (X / backdrop /
+  // footer button / ESC) still works immediately.
+  useEffect(() => {
+    if (!startingFolder || !pendingStudyId) {
+      setMinDisplayElapsed(false)
+      return
+    }
+    const id = setTimeout(() => setMinDisplayElapsed(true), 3000)
+    return () => clearTimeout(id)
+  }, [startingFolder, pendingStudyId])
+
+  // Auto-close once the first job for the new study lands. New studies
+  // start at done=0, so no snapshot is needed.
+  useEffect(() => {
+    if (!startingFolder || !minDisplayElapsed) return
+    if (!pendingStudyId) return
+    if ((pendingStudyStatus?.done ?? 0) > 0) {
+      finishStartingImport()
+    }
+  }, [
+    startingFolder,
+    minDisplayElapsed,
+    pendingStudyId,
+    pendingStudyStatus?.done,
+    finishStartingImport
+  ])
+
+  // Failsafe: if 15s pass after the study ID is known with no first
+  // completion, dismiss anyway. The import is queued — trapping the user
+  // here would be worse than continuing.
+  useEffect(() => {
+    if (!startingFolder || !pendingStudyId) return
+    const id = setTimeout(() => finishStartingImport(), 15000)
+    return () => clearTimeout(id)
+  }, [startingFolder, pendingStudyId, finishStartingImport])
 
   // GBIF import progress state
   const [gbifImportProgress, setGbifImportProgress] = useState(null)
@@ -157,27 +228,6 @@ export default function Import({ studiesCount = 0 }) {
     fetchLilaDatasets()
   }, [])
 
-  const isModelInstalled = useCallback(
-    (modelReference) => {
-      return installedModels.some(
-        (installed) =>
-          installed.id === modelReference.id && installed.version === modelReference.version
-      )
-    },
-    [installedModels]
-  )
-
-  const isEnvironmentInstalled = useCallback(
-    (environmentReference) => {
-      return installedEnvironments.some(
-        (installed) =>
-          installed.id === environmentReference.id &&
-          installed.version === environmentReference.version
-      )
-    },
-    [installedEnvironments]
-  )
-
   const isModelCompletelyInstalled = useCallback(
     (modelReference) => {
       const model = modelZoo.find(
@@ -185,10 +235,9 @@ export default function Import({ studiesCount = 0 }) {
           m.reference.id === modelReference.id && m.reference.version === modelReference.version
       )
       if (!model) return false
-
-      return isModelInstalled(model.reference) && isEnvironmentInstalled(model.pythonEnvironment)
+      return getModelInstallStatus(model, installedModels, installedEnvironments) === 'installed'
     },
-    [isModelInstalled, isEnvironmentInstalled]
+    [installedModels, installedEnvironments]
   )
 
   useEffect(() => {
@@ -202,27 +251,14 @@ export default function Import({ studiesCount = 0 }) {
         setInstalledModels(models)
         setInstalledEnvironments(environments)
 
-        // Set the selected model to the first completely installed model
-        const completelyInstalledModels = modelZoo.filter((model) => {
-          const modelInstalled = models.some(
-            (inst) => inst.id === model.reference.id && inst.version === model.reference.version
-          )
-          const envInstalled = environments.some(
-            (env) =>
-              env.id === model.pythonEnvironment.id &&
-              env.version === model.pythonEnvironment.version
-          )
-          return modelInstalled && envInstalled
-        })
+        const completelyInstalledModels = modelZoo.filter(
+          (m) => getModelInstallStatus(m, models, environments) === 'installed'
+        )
 
         if (completelyInstalledModels.length > 0) {
           const firstCompleteModel = completelyInstalledModels[0]
-          // Use functional update to avoid depending on selectedModel in deps
           setSelectedModel((currentSelected) => {
-            if (!currentSelected) {
-              return firstCompleteModel.reference
-            }
-            // Check if current selection is still valid
+            if (!currentSelected) return firstCompleteModel.reference
             const isCurrentValid = completelyInstalledModels.some(
               (m) =>
                 m.reference.id === currentSelected.id &&
@@ -230,6 +266,10 @@ export default function Import({ studiesCount = 0 }) {
             )
             return isCurrentValid ? currentSelected : firstCompleteModel.reference
           })
+        } else {
+          // Zero installed: drop any stale selection so the dropdown shows
+          // the placeholder and "Select Folder" stays disabled.
+          setSelectedModel(null)
         }
       } catch (error) {
         console.error('Failed to fetch installed models and environments:', error)
@@ -239,13 +279,6 @@ export default function Import({ studiesCount = 0 }) {
     }
     fetchInstalledData()
   }, []) // Run only on mount - callbacks close over current state
-
-  const getCompletelyInstalledModels = () => {
-    return modelZoo.filter(
-      (model) =>
-        isModelInstalled(model.reference) && isEnvironmentInstalled(model.pythonEnvironment)
-    )
-  }
 
   const handleCamTrapDP = async () => {
     try {
@@ -360,36 +393,42 @@ export default function Import({ studiesCount = 0 }) {
       setShowCountryPicker(true)
     } else {
       // For DeepFaune and other models, import directly with model (no country needed)
-      const { id } = await window.api.selectImagesDirectoryWithModel(
+      setStartingFolder(result.directoryPath)
+      const res = await window.api.selectImagesDirectoryWithModel(
         result.directoryPath,
         selectedModel,
         null // no country needed
       )
       // Errors (e.g., ML server failed to start) are handled via IPC event in base.jsx
-      if (!id) return
-      await queryClient.invalidateQueries({ queryKey: ['studies'] })
-      navigate(`/study/${id}`)
+      if (!res?.id) {
+        setStartingFolder(null)
+        return
+      }
+      navigateTargetRef.current = res.id
+      setPendingStudyId(res.id)
     }
   }
 
   const handleCountrySelected = async (countryCode) => {
     if (!pendingDirectoryPath) return
 
-    // Close modal immediately - don't wait for server startup
     const directoryPath = pendingDirectoryPath
     setShowCountryPicker(false)
     setPendingDirectoryPath(null)
+    setStartingFolder(directoryPath)
 
-    const { id } = await window.api.selectImagesDirectoryWithModel(
+    const res = await window.api.selectImagesDirectoryWithModel(
       directoryPath,
       selectedModel,
       countryCode
     )
     // Errors (e.g., ML server failed to start) are handled via IPC event in base.jsx
-    if (!id) return
-
-    await queryClient.invalidateQueries({ queryKey: ['studies'] })
-    navigate(`/study/${id}`)
+    if (!res?.id) {
+      setStartingFolder(null)
+      return
+    }
+    navigateTargetRef.current = res.id
+    setPendingStudyId(res.id)
   }
 
   const handleCountryPickerCancel = () => {
@@ -495,61 +534,17 @@ export default function Import({ studiesCount = 0 }) {
     await handleLilaImport(selectedLilaDataset.id)
   }
 
-  const hasInstalledModels = getCompletelyInstalledModels().length > 0
-
   const modelSelect = (
-    <Select
-      value={selectedModel ? `${selectedModel.id}-${selectedModel.version}` : ''}
-      onValueChange={(value) => {
-        const [id, version] = value.split('-')
-        const model = modelZoo.find((m) => m.reference.id === id && m.reference.version === version)
-        if (model && isModelCompletelyInstalled(model.reference)) {
-          setSelectedModel(model.reference)
-        }
-      }}
-    >
-      <SelectTrigger className="w-full sm:max-w-lg bg-white border-gray-200">
-        <SelectValue>
-          {selectedModel
-            ? (() => {
-                const model = modelZoo.find(
-                  (m) =>
-                    m.reference.id === selectedModel.id &&
-                    m.reference.version === selectedModel.version
-                )
-                return model ? `${model.name} v${model.reference.version}` : ''
-              })()
-            : 'Select a model'}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        {modelZoo.map((model) => {
-          const modelInstalled = isModelInstalled(model.reference)
-          const envInstalled = isEnvironmentInstalled(model.pythonEnvironment)
-          const completelyInstalled = modelInstalled && envInstalled
-
-          let statusText = ''
-          if (!modelInstalled) {
-            statusText = ' (not installed)'
-          } else if (!envInstalled) {
-            statusText = ' (environment missing)'
-          }
-
-          return (
-            <SelectItem
-              key={`${model.reference.id}-${model.reference.version}`}
-              value={`${model.reference.id}-${model.reference.version}`}
-              disabled={!completelyInstalled}
-              className={!completelyInstalled ? 'opacity-50 cursor-not-allowed' : ''}
-            >
-              {model.name} v{model.reference.version}
-              {statusText}
-            </SelectItem>
-          )
-        })}
-      </SelectContent>
-    </Select>
+    <ModelSelect
+      value={selectedModel}
+      onChange={setSelectedModel}
+      installedModels={installedModels}
+      installedEnvironments={installedEnvironments}
+      triggerClassName="w-full sm:max-w-lg bg-card border-border"
+    />
   )
+
+  const canImport = selectedModel != null && isModelCompletelyInstalled(selectedModel)
 
   return (
     <div className="h-full overflow-y-auto">
@@ -559,7 +554,7 @@ export default function Import({ studiesCount = 0 }) {
           <h1 className="text-2xl font-semibold mb-1">
             {studiesCount === 0 ? 'Create Your First Study' : 'Create New Study'}
           </h1>
-          <p className="text-sm text-gray-500">Choose a data source below.</p>
+          <p className="text-sm text-muted-foreground">Choose a data source below.</p>
         </div>
 
         {/* Hero — recommended path (lighter treatment) */}
@@ -567,15 +562,15 @@ export default function Import({ studiesCount = 0 }) {
           <Card className="mb-3 shadow-none border-l-[3px] border-l-blue-500">
             <CardContent className="p-4">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="size-9 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
-                  <Sparkles className="size-4 text-blue-600" />
+                <div className="size-9 rounded-md bg-blue-50 flex items-center justify-center shrink-0 dark:bg-blue-500/15">
+                  <Sparkles className="size-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium">Demo Dataset</h3>
-                    <span className="text-xs text-blue-600">Recommended</span>
+                    <span className="text-xs text-blue-600 dark:text-blue-400">Recommended</span>
                   </div>
-                  <p className="text-sm text-gray-500 mt-0.5">
+                  <p className="text-sm text-muted-foreground mt-0.5">
                     Explore all features with sample camera trap data.
                   </p>
                 </div>
@@ -593,34 +588,30 @@ export default function Import({ studiesCount = 0 }) {
           <Card className="mb-3 shadow-none border-l-[3px] border-l-blue-500">
             <CardContent className="p-4">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="size-9 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
-                  <FolderOpen className="size-4 text-blue-600" />
+                <div className="size-9 rounded-md bg-blue-50 flex items-center justify-center shrink-0 dark:bg-blue-500/15">
+                  <FolderOpen className="size-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium">Images Directory</h3>
-                    <span className="text-xs text-blue-600">Recommended</span>
+                    <span className="text-xs text-blue-600 dark:text-blue-400">Recommended</span>
                   </div>
-                  <p className="text-sm text-gray-500 mt-0.5">
+                  <p className="text-sm text-muted-foreground mt-0.5">
                     Import images and detect species using AI models.
-                    {!hasInstalledModels && ' Install an AI model to get started.'}
                   </p>
                 </div>
-                {!hasInstalledModels && (
-                  <Button onClick={() => navigate('/settings/ml_zoo')} className="shrink-0">
-                    Install AI Models
-                  </Button>
-                )}
               </div>
-              {hasInstalledModels && (
-                <div className="flex flex-col sm:flex-row gap-2 mt-3 sm:items-center">
-                  {modelSelect}
-                  <Button onClick={handleImportImages} className="shrink-0 sm:ml-auto sm:w-40">
-                    <FolderOpen className="size-4 mr-2" />
-                    Select Folder
-                  </Button>
-                </div>
-              )}
+              <div className="flex flex-col sm:flex-row gap-2 mt-3 sm:items-center">
+                {modelSelect}
+                <Button
+                  onClick={handleImportImages}
+                  disabled={!canImport}
+                  className="shrink-0 sm:ml-auto sm:w-40"
+                >
+                  <FolderOpen className="size-4 mr-2" />
+                  Select Folder
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -632,39 +623,27 @@ export default function Import({ studiesCount = 0 }) {
             <Card className="shadow-none hover:border-blue-500/30 transition-colors">
               <CardContent className="p-3">
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="size-8 rounded-md bg-gray-100 flex items-center justify-center shrink-0">
-                    <FolderOpen className="size-4 text-gray-500" />
+                  <div className="size-8 rounded-md bg-muted flex items-center justify-center shrink-0">
+                    <FolderOpen className="size-4 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-medium leading-tight">Images Directory</h4>
-                    <p className="text-xs text-gray-500 truncate mt-0.5">
-                      {hasInstalledModels
-                        ? 'Import images and classify species using AI'
-                        : 'Install an AI model to import an images folder'}
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      Import images and classify species using AI
                     </p>
                   </div>
-                  {!hasInstalledModels ? (
+                  <div className="flex flex-1 sm:flex-none sm:basis-auto basis-full min-w-[240px] gap-2 sm:ml-auto">
+                    <div className="flex-1 min-w-0">{modelSelect}</div>
                     <Button
                       variant="outline"
                       size="sm"
                       className="shrink-0"
-                      onClick={() => navigate('/settings/ml_zoo')}
+                      onClick={handleImportImages}
+                      disabled={!canImport}
                     >
-                      Install AI Models
+                      Select Folder
                     </Button>
-                  ) : (
-                    <div className="flex flex-1 sm:flex-none sm:basis-auto basis-full min-w-[240px] gap-2 sm:ml-auto">
-                      <div className="flex-1 min-w-0">{modelSelect}</div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="shrink-0"
-                        onClick={handleImportImages}
-                      >
-                        Select Folder
-                      </Button>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -701,15 +680,15 @@ export default function Import({ studiesCount = 0 }) {
         </div>
 
         {/* Tier 2 — Online datasets */}
-        <h4 className="text-xs font-medium text-gray-500 mt-6 mb-2 uppercase tracking-wide">
+        <h4 className="text-xs font-medium text-muted-foreground mt-6 mb-2 uppercase tracking-wide">
           Online datasets
         </h4>
         <div className="space-y-2">
           <Card className="shadow-none hover:border-blue-500/30 transition-colors">
             <CardContent className="p-3">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="size-8 rounded-md bg-gray-100 flex items-center justify-center shrink-0">
-                  <Globe className="size-4 text-gray-500" />
+                <div className="size-8 rounded-md bg-muted flex items-center justify-center shrink-0">
+                  <Globe className="size-4 text-muted-foreground" />
                 </div>
                 <h4 className="text-sm font-medium leading-tight">GBIF</h4>
                 <div className="flex flex-1 basis-full sm:basis-auto min-w-[240px] gap-2 sm:ml-auto">
@@ -721,7 +700,7 @@ export default function Import({ studiesCount = 0 }) {
                     }}
                     disabled={loadingGbifDatasets}
                   >
-                    <SelectTrigger className="flex-1 min-w-0 bg-white border-gray-200">
+                    <SelectTrigger className="flex-1 min-w-0 bg-card border-border">
                       <SelectValue className="truncate">
                         {loadingGbifDatasets
                           ? 'Loading datasets...'
@@ -759,8 +738,8 @@ export default function Import({ studiesCount = 0 }) {
           <Card className="shadow-none hover:border-blue-500/30 transition-colors">
             <CardContent className="p-3">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="size-8 rounded-md bg-gray-100 flex items-center justify-center shrink-0">
-                  <Database className="size-4 text-gray-500" />
+                <div className="size-8 rounded-md bg-muted flex items-center justify-center shrink-0">
+                  <Database className="size-4 text-muted-foreground" />
                 </div>
                 <h4 className="text-sm font-medium leading-tight">LILA</h4>
                 <div className="flex flex-1 basis-full sm:basis-auto min-w-[240px] gap-2 sm:ml-auto">
@@ -772,7 +751,7 @@ export default function Import({ studiesCount = 0 }) {
                     }}
                     disabled={loadingLilaDatasets}
                   >
-                    <SelectTrigger className="flex-1 min-w-0 bg-white border-gray-200">
+                    <SelectTrigger className="flex-1 min-w-0 bg-card border-border">
                       <SelectValue className="truncate">
                         {loadingLilaDatasets
                           ? 'Loading datasets...'
@@ -812,7 +791,7 @@ export default function Import({ studiesCount = 0 }) {
         <button
           type="button"
           onClick={() => setShowMoreFormats((v) => !v)}
-          className="flex items-center gap-1 mt-4 mb-2 text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors uppercase tracking-wide"
+          className="flex items-center gap-1 mt-4 mb-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wide"
         >
           {showMoreFormats ? (
             <ChevronDown className="size-3.5" />
@@ -867,6 +846,15 @@ export default function Import({ studiesCount = 0 }) {
         isOpen={showCountryPicker}
         onConfirm={handleCountrySelected}
         onCancel={handleCountryPickerCancel}
+      />
+
+      <StartingImportModal
+        isOpen={!!startingFolder}
+        folderPath={startingFolder}
+        importStatus={pendingStudyStatus}
+        dismissEnabled={!!pendingStudyId}
+        dismissLabel="Open study"
+        onDismiss={finishStartingImport}
       />
 
       <GbifImportProgress

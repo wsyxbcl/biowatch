@@ -32,44 +32,69 @@ const { data, error } = await window.api.getSequences(studyId, { limit: 20 })
 
 ### Studies
 
-| Method                                 | Channel                  | Parameters                   | Returns                    |
-| -------------------------------------- | ------------------------ | ---------------------------- | -------------------------- |
-| `getStudies()`                         | `studies:list`           | -                            | `Study[]`                  |
-| `updateStudy(id, update)`              | `studies:update`         | studyId, update object       | `Study`                    |
-| `deleteStudyDatabase(studyId)`         | `study:delete-database`  | studyId                      | `{ success: boolean }`     |
-| `checkStudyHasEventIDs(studyId)`       | `study:has-event-ids`    | studyId                      | `{ data: boolean }`        |
-| `getSequenceGap(studyId)`              | `study:get-sequence-gap` | studyId                      | `{ data: number \| null }` |
-| `setSequenceGap(studyId, sequenceGap)` | `study:set-sequence-gap` | studyId, sequenceGap (0-600) | `{ data: number }`         |
-| `getStudyCacheStats(studyId)`          | `study:get-cache-stats`  | studyId                      | `{ data: { total: { bytes, files }, breakdown: { transcodes, thumbnails, images, videos } } }` — each breakdown entry is `{ bytes, files }`. Files in `cache/` outside the four known subdirs are counted toward `total` only. |
-| `clearStudyCache(studyId)`             | `study:clear-cache`      | studyId                      | `{ data: { freedBytes, clearedFiles, error? } }` — removes the entire `<study>/cache/` directory; subdirs are recreated lazily by per-cache services on next write. |
+| Method                                     | Channel                        | Parameters                                                                           | Returns                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------ | ------------------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getStudies()`                             | `studies:list`                 | -                                                                                    | `Study[]`                                                                                                                                                                                                                                                                                                                                                                                |
+| `updateStudy(id, update)`                  | `studies:update`               | studyId, update object                                                               | `Study`                                                                                                                                                                                                                                                                                                                                                                                  |
+| `getStudyMetadata(studyId)`                | `study:get-metadata`           | studyId                                                                              | The `metadata` row: `{ id, name, title, description, contributors, startDate, endDate, importerName, ... }` or `null` if the DB is missing.                                                                                                                                                                                                                                              |
+| `deleteStudyDatabase(studyId, options?)`   | `study:delete-database`        | studyId, `{ force?: boolean }`                                                       | `{ success: boolean }` on success. Returns `{ needsConfirm: true, dependentBreaks: [{ studyId, title, brokenMediaCount }] }` instead of deleting when other studies have merged this one in **and** their `media.filePath` points inside this study's directory. The renderer surfaces a confirmation modal and retries with `{ force: true }` to proceed.                               |
+| `listMergedSourceIds(targetStudyId)`       | `study:list-merged-source-ids` | targetStudyId                                                                        | `string[]` — UUIDs of studies already merged into `targetStudyId`, plus `__short:<8-char>` sentinels covering edge cases (used by the merge wizard's StudyPicker to mark candidates as "Already merged").                                                                                                                                                                                |
+| `mergePreflight(targetId, sourceId)`       | `study:merge-preflight`        | targetStudyId, sourceStudyId                                                         | `{ deploymentCount, mediaCount, observationCount, ownedByBiowatchCount, missingFileCount, renameCount, alreadyMerged }`. Pure read; no mutations. Used by the review step of the merge wizard.                                                                                                                                                                                           |
+| `mergeStudy(targetId, sourceId, reviewed)` | `study:merge`                  | targetStudyId, sourceStudyId, `{ description: string, contributorEmails: string[] }` | `{ success: true, missingFileCount }` on success, `{ success: true, alreadyMerged: true }` if already merged, `{ success: true, cancelled: true, exitCode }` if cancelled mid-flight, `{ success: false, error }` on failure. Runs in a worker thread (`out/main/merge-worker.js`). Emits `merge:progress` ticks during execution and a `merge:complete` event on successful completion. |
+| `cancelMerge(targetStudyId)`               | `study:merge-cancel`           | targetStudyId                                                                        | `{ cancelled: boolean, reason?: string }`. Terminates the merge worker for the given study. SQLite WAL rolls back any uncommitted transaction on next DB open.                                                                                                                                                                                                                           |
+| `onMergeProgress(callback)`                | `merge:progress` (event)       | callback                                                                             | Subscribes to `{ phase: 'scanning' \| 'inserting', done, total }` ticks while a merge is running. Emitted every ~2,000 rows. Returns an unsubscribe function.                                                                                                                                                                                                                            |
+| `onMergeComplete(callback)`                | `merge:complete` (event)       | callback                                                                             | Subscribes to `{ studyId }` notifications after a successful merge; returns an unsubscribe function.                                                                                                                                                                                                                                                                                     |
+| `checkStudyHasEventIDs(studyId)`           | `study:has-event-ids`          | studyId                                                                              | `{ data: boolean }`                                                                                                                                                                                                                                                                                                                                                                      |
+| `getSequenceGap(studyId)`                  | `study:get-sequence-gap`       | studyId                                                                              | `{ data: number \| null }`                                                                                                                                                                                                                                                                                                                                                               |
+| `setSequenceGap(studyId, sequenceGap)`     | `study:set-sequence-gap`       | studyId, sequenceGap (0-600)                                                         | `{ data: number }`                                                                                                                                                                                                                                                                                                                                                                       |
+| `getStudyCacheStats(studyId)`              | `study:get-cache-stats`        | studyId                                                                              | `{ data: { total: { bytes, files }, breakdown: { transcodes, thumbnails, images, videos } } }` — each breakdown entry is `{ bytes, files }`. Files in `cache/` outside the four known subdirs are counted toward `total` only.                                                                                                                                                           |
+| `clearStudyCache(studyId)`                 | `study:clear-cache`            | studyId                                                                              | `{ data: { freedBytes, clearedFiles, error? } }` — removes the entire `<study>/cache/` directory; subdirs are recreated lazily by per-cache services on next write.                                                                                                                                                                                                                      |
 
 ### Data Import
 
-| Method                                | Channel                      | Parameters        | Returns                                     |
-| ------------------------------------- | ---------------------------- | ----------------- | ------------------------------------------- |
-| `selectCamtrapDPDataset()`            | `import:select-camtrap-dp`   | -                 | `{ path, data, id }`                        |
-| `selectWildlifeDataset()`             | `import:select-wildlife`     | -                 | `{ path, data, id }`                        |
-| `selectDeepfauneDataset()`            | `import:select-deepfaune`    | -                 | `{ path, data, id }`                        |
-| `downloadDemoDataset()`               | `import:download-demo`       | -                 | `{ path, data, id }`                        |
-| `importGbifDataset(datasetKey)`       | `import:gbif-dataset`        | GBIF dataset key  | `{ path, data, id }` or `null` if cancelled |
-| `cancelGbifImport(datasetKey)`        | `import:cancel-gbif`         | GBIF dataset key  | `boolean` (true if cancelled)               |
-| `cancelLilaImport(datasetId)`         | `import:cancel-lila`         | LILA dataset ID   | `boolean` (true if cancelled)               |
-| `onCamtrapDPImportProgress(callback)` | `camtrap-dp-import:progress` | callback function | unsubscribe function                        |
+| Method                                | Channel                      | Parameters        | Returns                                                                                                                                                                                                                                                                                        |
+| ------------------------------------- | ---------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `selectCamtrapDPDataset()`            | `import:select-camtrap-dp`   | -                 | `{ path, data, id }`                                                                                                                                                                                                                                                                           |
+| `selectWildlifeDataset()`             | `import:select-wildlife`     | -                 | `{ path, data, id }`                                                                                                                                                                                                                                                                           |
+| `selectDeepfauneDataset()`            | `import:select-deepfaune`    | -                 | `{ path, data, id }`                                                                                                                                                                                                                                                                           |
+| `downloadDemoDataset()`               | `import:download-demo`       | -                 | `{ path, data, id }`                                                                                                                                                                                                                                                                           |
+| `importGbifDataset(datasetKey)`       | `import:gbif-dataset`        | GBIF dataset key  | `{ path, data, id }` or `null` if cancelled. The CSV ingest + observation-expansion phase runs in a worker thread (`out/main/camtrap-import-worker.js`) so the UI stays responsive on large imports. Cancel via `import:cancel-gbif` triggers `worker.terminate()` followed by `cleanupStudy`. |
+| `cancelGbifImport(datasetKey)`        | `import:cancel-gbif`         | GBIF dataset key  | `boolean` (true if cancelled)                                                                                                                                                                                                                                                                  |
+| `cancelLilaImport(datasetId)`         | `import:cancel-lila`         | LILA dataset ID   | `boolean` (true if cancelled)                                                                                                                                                                                                                                                                  |
+| `onCamtrapDPImportProgress(callback)` | `camtrap-dp-import:progress` | callback function | unsubscribe function                                                                                                                                                                                                                                                                           |
 
 ### Species & Distribution
 
-| Method                            | Channel                    | Parameters | Returns                    |
-| --------------------------------- | -------------------------- | ---------- | -------------------------- |
-| `getSpeciesDistribution(studyId)` | `species:get-distribution` | studyId    | `{ data: Distribution[] }` |
-| `getDistinctSpecies(studyId)`     | `species:get-distinct`     | studyId    | `{ data: string[] }`       |
-| `getBlankMediaCount(studyId)`     | `species:get-blank-count`  | studyId    | `{ data: number }` — count of media with no animal/human/vehicle observation (covers zero-obs media + media with only `blank`/`unclassified`/`unknown`-typed empty-species rows). |
-| `getVehicleMediaCount(studyId)`   | `species:get-vehicle-count`| studyId    | `{ data: number }` — count of media with at least one `observationType='vehicle'` observation.  |
+| Method                              | Channel                    | Parameters | Returns                        |
+| ----------------------------------- | -------------------------- | ---------- | ------------------------------ |
+| `getSpeciesDistribution(studyId)`   | `species:get-distribution` | studyId    | `{ data: Distribution[] }`     |
+| `getDistinctSpecies(studyId)`       | `species:get-distinct`     | studyId    | `{ data: string[] }`           |
+| `getBestImagePerSpecies(studyId)`   | `species:get-best-images`  | studyId    | `{ data: SpeciesImage[] }`     |
+
+`SpeciesImage` (one representative image per species, for hover tooltips):
+
+```ts
+{
+  scientificName: string
+  filePath: string
+  mediaID: string
+  compositeScore?: number // present only on bbox-scored images
+  isFallback: boolean // true when picked without bbox geometry (see below)
+}
+```
+
+When a study has usable bounding boxes, each species gets a bbox-scored "best"
+image (same formula as `getBestMedia`, `isFallback: false`). Species with no
+scored image — and whole studies with no bbox data (e.g. CamTrap DP / GBIF
+imports like Seattle Camera Traps) — fall back to a representative study photo
+chosen without bbox geometry (`isFallback: true`), so tooltips still show a real
+picture. The tooltip ranks a fallback photo below the Wikipedia thumbnail.
 
 ### Overview
 
-| Method                       | Channel              | Parameters | Returns                  |
-| ---------------------------- | -------------------- | ---------- | ------------------------ |
-| `getOverviewStats(studyId)`  | `overview:get-stats` | studyId    | `{ data: OverviewStats }` |
+| Method                      | Channel              | Parameters | Returns                   |
+| --------------------------- | -------------------- | ---------- | ------------------------- |
+| `getOverviewStats(studyId)` | `overview:get-stats` | studyId    | `{ data: OverviewStats }` |
 
 `OverviewStats`:
 
@@ -77,16 +102,17 @@ const { data, error } = await window.api.getSequences(studyId, { limit: 20 })
 {
   speciesCount: number
   threatenedCount: number
-  threatenedSpecies: Array<{ scientificName: string, iucn: string }>
-  cameraCount: number       // distinct COALESCE(cameraID, deploymentID)
-  locationCount: number     // distinct deployments.locationID
-  observationCount: number  // animal/human (with species) + vehicle observations only;
-                            // excludes blank/unclassified/unknown empty-species rows
-  cameraDays: number        // sum of deployment durations, days
+  threatenedSpecies: Array<{ scientificName: string; iucn: string }>
+  cameraCount: number // distinct COALESCE(cameraID, deploymentID)
+  locationCount: number // distinct deployments.locationID
+  observationCount: number // animal/human (with species) + vehicle observations only;
+  // excludes blank/unclassified/unknown empty-species rows
+  cameraDays: number // sum of deployment durations, days
   mediaCount: number
-  derivedRange: {           // independently per side: override → observations
-    start: string | null    // → deployments → media → null
-    end:   string | null
+  derivedRange: {
+    // independently per side: override → observations
+    start: string | null // → deployments → media → null
+    end: string | null
   }
 }
 ```
@@ -95,18 +121,19 @@ Runs in the sequences worker thread (off the main process). Threatened species a
 
 ### Deployments
 
-| Method                                                         | Channel                         | Parameters                        | Returns                  |
-| -------------------------------------------------------------- | ------------------------------- | --------------------------------- | ------------------------ |
-| `getDeploymentLocations(studyId)`                              | `deployments:get-locations`     | studyId                           | `{ data: Deployment[] }` |
-| `getAllDeployments(studyId)`                                   | `deployments:get-all`           | studyId                           | `{ data: Deployment[] }` |
-| `getDeploymentSpecies(studyId, deploymentID)`                  | `deployments:get-species`       | studyId, deploymentID             | `{ data: { scientificName, count }[] }` |
-| `getDeploymentStats(studyId, deploymentID)`                    | `deployments:get-stats`         | studyId, deploymentID             | `{ data: { mediaCount, observationCount, blankCount } }` — `blankCount` is media-level (count of media with no real animal/human/vehicle observation), matching the species-filter popover's `BLANK_SENTINEL` count. |
-| `getDeploymentsActivity(studyId, periodCount?)`                | `deployments:get-activity`      | studyId, periodCount (optional)   | `{ data: Activity[] }`   |
-| `setDeploymentLatitude(studyId, deploymentID, latitude)`       | `deployments:set-latitude`      | studyId, deploymentID, latitude   | `{ success: boolean }`   |
-| `setDeploymentLongitude(studyId, deploymentID, longitude)`     | `deployments:set-longitude`     | studyId, deploymentID, longitude  | `{ success: boolean }`   |
-| `setDeploymentLocationName(studyId, locationID, locationName)` | `deployments:set-location-name` | studyId, locationID, locationName | `{ success: boolean }`   |
+| Method                                                         | Channel                         | Parameters                        | Returns                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------------------------------------------- | ------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getDeploymentLocations(studyId)`                              | `deployments:get-locations`     | studyId                           | `{ data: Deployment[] }`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `getAllDeployments(studyId)`                                   | `deployments:get-all`           | studyId                           | `{ data: Deployment[] }`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `getDeploymentSpecies(studyId, deploymentID)`                  | `deployments:get-species`       | studyId, deploymentID             | `{ data: { scientificName, count }[] }`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `getDeploymentDistribution(studyId)`                           | `deployments:get-distribution`  | studyId                           | `{ data: Composition[] }` — per-deployment, **sequence-aware**: `{ deploymentID, locationName, latitude, longitude, count, detectionCount, blankCount, vehicleCount, imageCount, videoCount }`, sorted by `count` desc. Counts are sequence units (matching the Media tab table). The Media tab derives the study-wide Blank/Vehicle quick-view counts by summing `blankCount`/`vehicleCount`. Runs in the sequences worker thread — it dumps all media into JS to group, which would otherwise block the main process for seconds on large studies. |
+| `getDeploymentStats(studyId, deploymentID)`                    | `deployments:get-stats`         | studyId, deploymentID             | `{ data: { mediaCount, observationCount, blankCount, sequenceCount } }` — `blankCount`/`sequenceCount` are **sequence-aware** (a blank sequence = a whole sequence with no detection), via `getDeploymentSequenceStats`; the popover's blank rate is `blankCount / sequenceCount`. `mediaCount` is raw media. Matches the species-filter popover's `BLANK_SENTINEL` pill and the gallery's Blank filter.                                                                                                                                             |
+| `getDeploymentsActivity(studyId, periodCount?)`                | `deployments:get-activity`      | studyId, periodCount (optional)   | `{ data: Activity[] }`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `setDeploymentLatitude(studyId, deploymentID, latitude)`       | `deployments:set-latitude`      | studyId, deploymentID, latitude   | `{ success: boolean }`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `setDeploymentLongitude(studyId, deploymentID, longitude)`     | `deployments:set-longitude`     | studyId, deploymentID, longitude  | `{ success: boolean }`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `setDeploymentLocationName(studyId, locationID, locationName)` | `deployments:set-location-name` | studyId, locationID, locationName | `{ success: boolean }`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
-**Note on `getDeploymentLocations` vs `getAllDeployments`:** `getDeploymentLocations` dedupes by `(latitude, longitude)` and returns one row per physical camera-trap location — intended for read-only overview maps. `getAllDeployments` returns every deployment row (no dedup) — used by the Deployments tab's editable map so `MarkerClusterGroup` can correctly count co-located deployments and dragging doesn't silently split a group. `getDeploymentsActivity` runs in the sequences worker thread to keep the UI responsive on large studies.
+**Note on `getDeploymentLocations` vs `getAllDeployments`:** `getDeploymentLocations` dedupes by `(latitude, longitude)` and returns one row per physical camera-trap location — used by the Explore tab to compute map bounds, where repeats are irrelevant. `getAllDeployments` returns every deployment row (no dedup) — used by both the Overview map (so its cluster count matches the "Deployments" KPI tile and the Deployments tab) and the Deployments tab's editable map (so `MarkerClusterGroup` correctly counts co-located deployments and dragging doesn't silently split a group). `getDeploymentsActivity` runs in the sequences worker thread to keep the UI responsive on large studies.
 
 **Note on `periodCount`:** `getDeploymentsActivity` accepts an optional `periodCount` (number of time-period buckets in the per-deployment timeline). The Deployments tab measures the timeline column width and passes a bucketed value (multiples of 10) so wider screens get more circles per row. Defaults to 20 if null/0/non-numeric, and is clamped to a maximum of 100 backend-side to bound the SUM(CASE)×N SQL aggregation.
 
@@ -114,30 +141,83 @@ Runs in the sequences worker thread (off the main process). Threatened species a
 
 **Note on `setDeploymentLocationName`:** This updates the `locationName` for ALL deployments with the given `locationID`. When deployments share a `locationID` (grouped deployments), renaming any one updates the entire group.
 
+#### Deployments CSV import/export
+
+| Method                                            | Channel                            | Parameters         | Returns                                                                       |
+| ------------------------------------------------- | ---------------------------------- | ------------------ | ----------------------------------------------------------------------------- |
+| `getDeploymentsCsvPreview(studyId)`               | `deployments:get-csv-preview`      | studyId            | `{ data: DeploymentRow[] }` \| `{ error }`                                    |
+| `exportDeploymentsCsv(studyId)`                   | `deployments:export-csv`           | studyId            | `{ success, filePath, rowCount }` \| `{ cancelled: true }` \| `{ error }`     |
+| `pickDeploymentsCsvFile()`                        | `deployments:pick-csv-file`        | —                  | `{ filePath }` \| `{ cancelled: true }`                                       |
+| `parseDeploymentsCsvForImport(studyId, filePath)` | `deployments:parse-csv-for-import` | studyId, filePath  | `{ data: PreviewPayload }` \| `{ error }`                                     |
+| `applyDeploymentsCsvImport(studyId, applyPlan)`   | `deployments:apply-csv-import`     | studyId, applyPlan | `{ success, summary: { deploymentsUpdated, locationsNamed } }` \| `{ error }` |
+
+There is also one preload-only helper (not an IPC channel):
+
+| Method                     | Purpose                                                                                                                                                                                                                                 |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getDroppedFilePath(file)` | Wraps `electron.webUtils.getPathForFile(file)`. Electron 32+ removed `File.path` from the renderer; this preload-exposed helper resolves a dropped `File` to an absolute path. Used by the import-picker modal's drag-and-drop handler. |
+
+**Flow:** For export, the renderer first calls `getDeploymentsCsvPreview` to fetch the rows shown in the export-preview modal (no file dialog, no write). On user confirmation, it calls `exportDeploymentsCsv`, which re-fetches, opens the save dialog, and writes. For import, the renderer either calls `pickDeploymentsCsvFile` (system file picker) or resolves a dropped file via `getDroppedFilePath`, then hands the path to `parseDeploymentsCsvForImport` (validates against the current DB; returns a per-cell preview payload). On user confirmation, the derived `applyPlan` is passed to `applyDeploymentsCsvImport` (single SQLite transaction).
+
+`locationsNamed` in the apply summary counts **distinct** `locationID`s renamed — a CSV that renames 28 deployments sharing one location reports `locationsNamed: 1`, not 28.
+
+**`PreviewPayload` shape:**
+
+```ts
+{
+  filePath: string
+  fileName: string
+  totalRows: number
+  applyCount: number // rows that will actually update:
+  //   normal + ≥1 'change' cell + no 'warning' cells
+  rowsBlockedByWarningCount: number // normal rows with ≥1 'warning' cell (blocked from apply)
+  rowSkipCount: number // total 'skipped' rows (empty/unknown deploymentID)
+  rows: Array<{
+    rowIndex: number // 1-based
+    deploymentID: string
+    rowState: 'normal' | 'skipped'
+    rowWarning: string | null
+    columns: {
+      [column: string]: {
+        state: 'unchanged' | 'change' | 'warning' | 'readonly'
+        csvValue: string
+        dbValue: string | number | null
+        appliedValue?: any // present when state === 'change'
+        warning?: string // present when state === 'warning'
+      }
+    }
+  }>
+}
+```
+
+**`applyPlan` shape:** `Array<{ deploymentID: string, fields: { latitude?, longitude?, locationName? } }>`. The applier re-validates each value defensively (out-of-range coords are silently dropped) and propagates `locationName` to every deployment sharing the resolved `locationID`, matching `setDeploymentLocationName` semantics.
+
+**Sort order on export:** Rows are sorted by `deploymentID` using `Intl.Collator({ numeric: true })` so numeric IDs come out in human order (`1, 2, …, 10, 11`) rather than lexicographic (`1, 10, 11, 2`). Alphanumeric IDs like `CAM_001, CAM_002, CAM_010` are also handled correctly; UUID IDs receive a deterministic but arbitrary ordering (UUIDs have no human-meaningful order).
+
 ### Locations
 
 | Method                          | Channel                  | Parameters | Returns                |
 | ------------------------------- | ------------------------ | ---------- | ---------------------- |
 | `getLocationsActivity(studyId)` | `locations:get-activity` | studyId    | `{ data: Activity[] }` |
 
-### Activity Map Export
+### Explore Map Export
 
-| Method                                                  | Channel                    | Parameters                  | Returns                                                                |
-| ------------------------------------------------------- | -------------------------- | --------------------------- | ---------------------------------------------------------------------- |
-| `exportActivityMapPng({ dataUrl, defaultFilename })`    | `activity:export-map-png`  | base64 PNG data URL, name   | `{ success: true, filePath } \| { cancelled: true } \| { success: false, error }` |
+| Method                                              | Channel                  | Parameters                | Returns                                                                           |
+| --------------------------------------------------- | ------------------------ | ------------------------- | --------------------------------------------------------------------------------- |
+| `exportExploreMapPng({ dataUrl, defaultFilename })` | `explore:export-map-png` | base64 PNG data URL, name | `{ success: true, filePath } \| { cancelled: true } \| { success: false, error }` |
 
-The renderer captures the Leaflet map container with `html-to-image` (`pixelRatio: 2`, `crossOrigin=""` set on the tile layers so the canvas isn't tainted) and passes a `data:image/png;base64,…` URL plus a default filename. Main shows a save dialog (default location: Downloads) and writes the decoded buffer to disk. Triggered from the Activity tab's right-click context menu on the map.
+The renderer captures the Leaflet map container with `html-to-image` (`pixelRatio: 2`, `crossOrigin=""` set on the tile layers so the canvas isn't tainted) and passes a `data:image/png;base64,…` URL plus a default filename. The Density encoding's `leaflet.heat` canvas and the Hex grid SVG overlay are drawn from in-memory data (no external images), so they stay untainted and capture correctly. Main shows a save dialog (default location: Downloads) and writes the decoded buffer to disk. Triggered from the Explore tab's right-click context menu on the map.
 
 ### Sequence-Aware Species Counts
 
 These endpoints perform sequence grouping and counting in the main thread, returning pre-computed results. This avoids transferring raw media-level data to the renderer and keeps computation off the UI thread.
 
-| Method                                                                                                          | Channel                              | Parameters                                    | Returns                               |
-| --------------------------------------------------------------------------------------------------------------- | ------------------------------------ | --------------------------------------------- | ------------------------------------- |
-| `getSequenceAwareSpeciesDistribution(studyId)`                                                                  | `sequences:get-species-distribution` | studyId                                       | `{ data: [{scientificName, count}] }` |
-| `getSequenceAwareTimeseries(studyId, speciesNames)`                                                             | `sequences:get-timeseries`           | studyId, species[]                            | `{ data: {timeseries, allSpecies} }`  |
-| `getSequenceAwareHeatmap(studyId, speciesNames, startDate, endDate, startHour, endHour, includeNullTimestamps)` | `sequences:get-heatmap`              | studyId, species[], dates, hours, includeNull | `{ data: {species -> locations[]} }`  |
-| `getSequenceAwareDailyActivity(studyId, speciesNames, startDate, endDate)`                                      | `sequences:get-daily-activity`       | studyId, species[], dates                     | `{ data: [24 hourly objects] }`       |
+| Method                                                                                                 | Channel                              | Parameters                                        | Returns                               |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------ | ------------------------------------------------- | ------------------------------------- |
+| `getSequenceAwareSpeciesDistribution(studyId)`                                                         | `sequences:get-species-distribution` | studyId                                           | `{ data: [{scientificName, count}] }` |
+| `getSequenceAwareTimeseries(studyId, speciesNames)`                                                    | `sequences:get-timeseries`           | studyId, species[]                                | `{ data: {timeseries, allSpecies} }`  |
+| `getSequenceAwareHeatmap(studyId, speciesNames, startDate, endDate, timeRange, includeNullTimestamps)` | `sequences:get-heatmap`              | studyId, species[], dates, timeRange, includeNull | `{ data: {species -> locations[]} }`  |
+| `getSequenceAwareDailyActivity(studyId, speciesNames, startDate, endDate)`                             | `sequences:get-daily-activity`       | studyId, species[], dates                         | `{ data: [24 hourly objects] }`       |
 
 **Parameters:**
 
@@ -164,14 +244,25 @@ Returns pre-grouped sequences with cursor-based pagination for the media gallery
   gapSeconds: number | null,  // Gap threshold in seconds (null = eventID grouping)
   limit: number,              // Sequences per page (default: 20)
   cursor: string | null,      // Opaque cursor from previous response (null = first page)
+  sort: 'newest' | 'oldest',  // Timestamped-phase order (default: 'newest' = time desc)
   filters: {
     species: string[],        // Species to filter by
     dateRange: { start, end }, // Date range filter
-    timeRange: { start, end }, // Time of day range (hours 0-23)
-    deploymentID?: string     // If set, only media for this deploymentID
+    timeRange: { ranges: [{ start, end }, ...] } | { start, end }, // Time of day filter — multi-range (preferred) or legacy single-range; empty/missing = no filter
+    deploymentID?: string | string[], // one deploymentID or several (IN)
+    source?: string | string[],        // one importFolder or several (IN)
+    mediaTypes?: ('image' | 'video')[], // media-type filter (matches media.fileMediatype prefix); empty = all
+    favorite?: boolean,                // only favorited media
+    onlyNullTimestamps?: boolean       // only media without a timestamp ("No timestamp" quick view)
   }
 }
 ```
+
+`deploymentID` and `source` accept a single value (back-compat) or an array for
+multi-select. `favorite` / `onlyNullTimestamps` back the Media tab quick views.
+
+The `sort` option only affects the timestamped phase; null-timestamp media always
+trails last.
 
 **Response:**
 
@@ -218,14 +309,15 @@ const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
 
 ### Media
 
-| Method                                           | Channel                  | Parameters                  | Returns                                   |
-| ------------------------------------------------ | ------------------------ | --------------------------- | ----------------------------------------- |
-| `getMediaBboxes(studyId, mediaID)`               | `media:get-bboxes`       | studyId, mediaID            | `{ data: Bbox[] }`                        |
-| `getMediaBboxesBatch(studyId, mediaIDs)`         | `media:get-bboxes-batch` | studyId, mediaID[]          | `{ data: Map<mediaID, Bbox[]> }`          |
-| `checkMediaHaveBboxes(studyId, mediaIDs)`        | `media:have-bboxes`      | studyId, mediaID[]          | `{ data: boolean }`                       |
-| `getBestMedia(studyId, options)`                 | `media:get-best`         | studyId, { limit? }         | `{ data: ScoredMedia[] }`                 |
-| `setMediaTimestamp(studyId, mediaID, timestamp)` | `media:set-timestamp`    | studyId, mediaID, timestamp | `{ success: boolean }`                    |
-| `setMediaFavorite(studyId, mediaID, favorite)`   | `media:set-favorite`     | studyId, mediaID, boolean   | `{ success: boolean, mediaID, favorite }` |
+| Method                                           | Channel                      | Parameters                  | Returns                                   |
+| ------------------------------------------------ | ---------------------------- | --------------------------- | ----------------------------------------- |
+| `getMediaBboxes(studyId, mediaID)`               | `media:get-bboxes`           | studyId, mediaID            | `{ data: Bbox[] }`                        |
+| `getMediaBboxesBatch(studyId, mediaIDs)`         | `media:get-bboxes-batch`     | studyId, mediaID[]          | `{ data: Map<mediaID, Bbox[]> }`          |
+| `checkMediaHaveBboxes(studyId, mediaIDs)`        | `media:have-bboxes`          | studyId, mediaID[]          | `{ data: boolean }`                       |
+| `studyHasAnyBboxes(studyId)`                     | `media:study-has-any-bboxes` | studyId                     | `{ data: boolean }`                       |
+| `getBestMedia(studyId, options)`                 | `media:get-best`             | studyId, { limit? }         | `{ data: ScoredMedia[] }`                 |
+| `setMediaTimestamp(studyId, mediaID, timestamp)` | `media:set-timestamp`        | studyId, mediaID, timestamp | `{ success: boolean }`                    |
+| `setMediaFavorite(studyId, mediaID, favorite)`   | `media:set-favorite`         | studyId, mediaID, boolean   | `{ success: boolean, mediaID, favorite }` |
 
 **Best Media (Hybrid Mode with Diversity):**
 The `getBestMedia` endpoint uses a hybrid approach with diversity constraints:
@@ -261,8 +353,8 @@ The `setMediaFavorite` endpoint toggles a media item's favorite status. Favorite
 
 ### Sources
 
-| Method                    | Channel            | Parameters | Returns                  |
-| ------------------------- | ------------------ | ---------- | ------------------------ |
+| Method                    | Channel            | Parameters | Returns                 |
+| ------------------------- | ------------------ | ---------- | ----------------------- |
 | `getSourcesData(studyId)` | `sources:get-data` | studyId    | `{ data: SourceRow[] }` |
 
 `SourceRow` shape:
@@ -298,13 +390,13 @@ A "source" is derived at query time as a distinct value of `media.importFolder`.
 
 ### Observations
 
-| Method                                                             | Channel                              | Parameters                                                      | Returns                          |
-| ------------------------------------------------------------------ | ------------------------------------ | --------------------------------------------------------------- | -------------------------------- |
-| `updateObservationClassification(studyId, observationID, updates)` | `observations:update-classification` | studyId, observationID, { scientificName?, commonName? }        | `{ data: Observation }`          |
-| `updateObservationBbox(studyId, observationID, bboxUpdates)`       | `observations:update-bbox`           | studyId, observationID, { bboxX, bboxY, bboxWidth, bboxHeight } | `{ data: Observation }`          |
-| `deleteObservation(studyId, observationID)`                        | `observations:delete`                | studyId, observationID                                          | `{ data: { deleted: boolean } }` |
+| Method                                                             | Channel                              | Parameters                                                       | Returns                          |
+| ------------------------------------------------------------------ | ------------------------------------ | ---------------------------------------------------------------- | -------------------------------- |
+| `updateObservationClassification(studyId, observationID, updates)` | `observations:update-classification` | studyId, observationID, { scientificName?, commonName? }         | `{ data: Observation }`          |
+| `updateObservationBbox(studyId, observationID, bboxUpdates)`       | `observations:update-bbox`           | studyId, observationID, { bboxX, bboxY, bboxWidth, bboxHeight }  | `{ data: Observation }`          |
+| `deleteObservation(studyId, observationID)`                        | `observations:delete`                | studyId, observationID                                           | `{ data: { deleted: boolean } }` |
 | `createObservation(studyId, observationData)`                      | `observations:create`                | studyId, observation object (optional `observationID`/`eventID`) | `{ data: Observation }`          |
-| `restoreObservation(studyId, observationID, fields)`               | `observations:restore`               | studyId, observationID, fields to overwrite                     | `{ data: Observation }`          |
+| `restoreObservation(studyId, observationID, fields)`               | `observations:restore`               | studyId, observationID, fields to overwrite                      | `{ data: Observation }`          |
 
 `observations:create` accepts optional `observationID` and `eventID` in its
 payload. When supplied (used by undo-of-delete), the row is inserted with those
@@ -349,15 +441,15 @@ and drops it from the stack. Direct user edits go through the `update-bbox` /
 
 ### Image Import with ML
 
-| Method                                                                       | Channel                                       | Parameters                  | Returns                |
-| ---------------------------------------------------------------------------- | --------------------------------------------- | --------------------------- | ---------------------- |
-| `selectImagesDirectoryOnly()`                                                | `importer:select-images-directory-only`       | -                           | `{ path, id }`                                                                |
-| `selectImagesDirectoryWithModel(directoryPath, modelReference, countryCode)` | `importer:select-images-directory-with-model` | path, modelRef, countryCode | `{ path, id }`                                                                |
-| `addFolder(studyId, directoryPath, modelReference, country)`                 | `importer:add-folder`                         | studyId, path, modelRef, countryCode | `{ success: boolean, error?: string }`                                |
-| `getStudyLatestModelOptions(studyId)`                                        | `study:get-latest-model-options`              | studyId                     | `{ modelReference: { id, version } \| null, country: string \| null }`        |
-| `getImportStatus(id)`                                                        | `importer:get-status`                         | study id                    | `ImportStatus`                                                                |
-| `stopImport(id)`                                                             | `importer:stop`                               | study id                    | `{ success: boolean }`                                                        |
-| `resumeImport(id)`                                                           | `importer:resume`                             | study id                    | `{ success: boolean }`                                                        |
+| Method                                                                       | Channel                                       | Parameters                           | Returns                                                                |
+| ---------------------------------------------------------------------------- | --------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------- |
+| `selectImagesDirectoryOnly()`                                                | `importer:select-images-directory-only`       | -                                    | `{ path, id }`                                                         |
+| `selectImagesDirectoryWithModel(directoryPath, modelReference, countryCode)` | `importer:select-images-directory-with-model` | path, modelRef, countryCode          | `{ path, id }`                                                         |
+| `addFolder(studyId, directoryPath, modelReference, country)`                 | `importer:add-folder`                         | studyId, path, modelRef, countryCode | `{ success: boolean, error?: string }`                                 |
+| `getStudyLatestModelOptions(studyId)`                                        | `study:get-latest-model-options`              | studyId                              | `{ modelReference: { id, version } \| null, country: string \| null }` |
+| `getImportStatus(id)`                                                        | `importer:get-status`                         | study id                             | `ImportStatus`                                                         |
+| `stopImport(id)`                                                             | `importer:stop`                               | study id                             | `{ success: boolean }`                                                 |
+| `resumeImport(id)`                                                           | `importer:resume`                             | study id                             | `{ success: boolean }`                                                 |
 
 **Note:** `importer:stop` now pauses instantly (no server kill). `importer:resume` resumes instantly if paused, or cold-starts from `modelRuns` if the app was restarted. These handlers are backed by the persistent job queue (`src/main/ipc/queue.js`) rather than in-memory state.
 
@@ -531,3 +623,32 @@ const data = response.data
 | `src/main/services/ml/download.ts`     | ML model download/installation               |
 | `src/main/services/cache/video.js`     | Video transcoding with FFmpeg                |
 | `src/main/services/cache/image.js`     | Remote image caching for GBIF/Agouti imports |
+| `src/main/services/preferences.js`     | User preferences (theme) JSON store          |
+| `src/main/services/theme.js`           | Theme service wrapping `nativeTheme`         |
+| `src/main/ipc/theme.js`                | Theme IPC handlers                           |
+
+---
+
+### Theme
+
+| Channel         | Direction       | Payload                            | Returns                                                                  |
+| --------------- | --------------- | ---------------------------------- | ------------------------------------------------------------------------ |
+| `theme:get`     | renderer → main | (none)                             | `{ source: 'system' \| 'light' \| 'dark', resolved: 'light' \| 'dark' }` |
+| `theme:set`     | renderer → main | `'system' \| 'light' \| 'dark'`    | `{ source, resolved }`                                                   |
+| `theme:changed` | main → renderer | `{ source, resolved }` (broadcast) | —                                                                        |
+
+**Renderer API:**
+
+```javascript
+window.api.themeInitial // sync, populated from preload args ({ source, resolved })
+await window.api.getTheme() // → { source, resolved }
+await window.api.setThemeSource('dark') // persists, broadcasts, returns new state
+const off = window.api.onThemeChanged((payload) => {
+  /* { source, resolved } */
+})
+// Later: off()
+```
+
+`theme:set` throws if `source` is not one of the three valid values.
+`theme:changed` broadcasts both on user-initiated changes and on OS
+preference changes when `source` is `'system'`.

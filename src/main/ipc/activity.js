@@ -3,7 +3,7 @@
  */
 
 import { app, dialog, ipcMain } from 'electron'
-import log from 'electron-log'
+import log from '../services/logger.js'
 import { existsSync, promises as fsp } from 'fs'
 import path from 'path'
 import { getStudyDatabasePath } from '../services/paths.js'
@@ -29,12 +29,12 @@ export function registerActivityIPCHandlers() {
     }
   })
 
-  ipcMain.handle('activity:export-map-png', async (_, { dataUrl, defaultFilename }) => {
+  ipcMain.handle('explore:export-map-png', async (_, { dataUrl, defaultFilename }) => {
     try {
       const downloadsPath = app.getPath('downloads')
-      const safeName = defaultFilename || `activity-map-${Date.now()}.png`
+      const safeName = defaultFilename || `explore-map-${Date.now()}.png`
       const result = await dialog.showSaveDialog({
-        title: 'Save Activity Map',
+        title: 'Save Map',
         defaultPath: path.join(downloadsPath, safeName),
         filters: [{ name: 'PNG Image', extensions: ['png'] }]
       })
@@ -51,7 +51,7 @@ export function registerActivityIPCHandlers() {
       await fsp.writeFile(result.filePath, Buffer.from(base64, 'base64'))
       return { success: true, filePath: result.filePath }
     } catch (error) {
-      log.error('Error exporting activity map PNG:', error)
+      log.error('Error exporting explore map PNG:', error)
       return { success: false, error: error.message }
     }
   })

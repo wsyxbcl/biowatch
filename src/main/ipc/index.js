@@ -5,10 +5,11 @@
  */
 
 import { ipcMain } from 'electron'
-import log from 'electron-log'
+import log from '../services/logger.js'
 
 import { registerSpeciesIPCHandlers } from './species.js'
 import { registerDeploymentsIPCHandlers } from './deployments.js'
+import { registerDeploymentsCsvIPCHandlers } from './deploymentsCsv.js'
 import { registerMediaIPCHandlers } from './media.js'
 import { registerObservationsIPCHandlers } from './observations.js'
 import { registerActivityIPCHandlers } from './activity.js'
@@ -23,6 +24,7 @@ import { registerDiagnosticsIPCHandlers } from './diagnostics.js'
 import { registerQueueIPCHandlers } from './queue.js'
 import { registerInfoIPCHandlers } from './info.js'
 import { registerOverviewIPCHandlers } from './overview.js'
+import { registerThemeIPCHandlers } from './theme.js'
 
 /**
  * Register all IPC handlers
@@ -34,6 +36,7 @@ export function registerAllIPCHandlers() {
   // Register all domain-specific handlers
   registerSpeciesIPCHandlers()
   registerDeploymentsIPCHandlers()
+  registerDeploymentsCsvIPCHandlers()
   registerMediaIPCHandlers()
   registerObservationsIPCHandlers()
   registerActivityIPCHandlers()
@@ -48,6 +51,7 @@ export function registerAllIPCHandlers() {
   registerQueueIPCHandlers()
   registerInfoIPCHandlers()
   registerOverviewIPCHandlers()
+  registerThemeIPCHandlers()
 
   log.info('All IPC handlers registered')
 }
@@ -56,6 +60,7 @@ export function registerAllIPCHandlers() {
 export {
   registerSpeciesIPCHandlers,
   registerDeploymentsIPCHandlers,
+  registerDeploymentsCsvIPCHandlers,
   registerMediaIPCHandlers,
   registerObservationsIPCHandlers,
   registerActivityIPCHandlers,
@@ -69,5 +74,6 @@ export {
   registerDiagnosticsIPCHandlers,
   registerQueueIPCHandlers,
   registerInfoIPCHandlers,
-  registerOverviewIPCHandlers
+  registerOverviewIPCHandlers,
+  registerThemeIPCHandlers
 }

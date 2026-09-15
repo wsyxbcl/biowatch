@@ -5,6 +5,7 @@ SQLite database schema using Drizzle ORM.
 ## Overview
 
 Each study has its own isolated SQLite database at:
+
 ```
 biowatch-data/studies/{studyId}/study.db
 ```
@@ -46,18 +47,18 @@ biowatch-data/studies/{studyId}/study.db
 
 Camera trap deployment information.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `deploymentID` | TEXT | PRIMARY KEY | Unique deployment identifier |
-| `locationID` | TEXT | | Location grouping identifier |
-| `locationName` | TEXT | | Human-readable location name |
-| `deploymentStart` | TEXT | | ISO 8601 datetime |
-| `deploymentEnd` | TEXT | | ISO 8601 datetime |
-| `latitude` | REAL | | Decimal degrees |
-| `longitude` | REAL | | Decimal degrees |
-| `cameraModel` | TEXT | | Camera make-model from EXIF (CamtrapDP format: "Make-Model") |
-| `cameraID` | TEXT | | Camera serial number from EXIF |
-| `coordinateUncertainty` | INTEGER | | GPS horizontal error in meters from EXIF |
+| Column                  | Type    | Constraints | Description                                                  |
+| ----------------------- | ------- | ----------- | ------------------------------------------------------------ |
+| `deploymentID`          | TEXT    | PRIMARY KEY | Unique deployment identifier                                 |
+| `locationID`            | TEXT    |             | Location grouping identifier                                 |
+| `locationName`          | TEXT    |             | Human-readable location name                                 |
+| `deploymentStart`       | TEXT    |             | ISO 8601 datetime                                            |
+| `deploymentEnd`         | TEXT    |             | ISO 8601 datetime                                            |
+| `latitude`              | REAL    |             | Decimal degrees                                              |
+| `longitude`             | REAL    |             | Decimal degrees                                              |
+| `cameraModel`           | TEXT    |             | Camera make-model from EXIF (CamtrapDP format: "Make-Model") |
+| `cameraID`              | TEXT    |             | Camera serial number from EXIF                               |
+| `coordinateUncertainty` | INTEGER |             | GPS horizontal error in meters from EXIF                     |
 
 The EXIF-derived fields (`cameraModel`, `cameraID`, `coordinateUncertainty`) are automatically populated during import using mode aggregation (most common value) across all media in the deployment. This ensures CamtrapDP compliance.
 
@@ -84,18 +85,18 @@ export const deployments = sqliteTable('deployments', {
 
 Media file metadata.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `mediaID` | TEXT | PRIMARY KEY | Unique media identifier |
-| `deploymentID` | TEXT | FK → deployments | Parent deployment |
-| `timestamp` | TEXT | | Capture timestamp (ISO 8601) |
-| `filePath` | TEXT | | Absolute path or HTTP URL |
-| `fileName` | TEXT | | Original file name |
-| `importFolder` | TEXT | | Source import folder. For local imports: absolute folder path. For LILA: dataset name. For CamtrapDP: package directory. The Sources tab groups by this field. |
-| `folderName` | TEXT | | Subfolder name within import |
-| `fileMediatype` | TEXT | | IANA media type (e.g., `image/jpeg`, `video/mp4`) |
-| `exifData` | TEXT | JSON | EXIF/metadata as JSON (see below) |
-| `favorite` | INTEGER | DEFAULT 0 | User-marked favorite/best capture (CamtrapDP compliant) |
+| Column          | Type    | Constraints      | Description                                                                                                                                                                                                                                                            |
+| --------------- | ------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mediaID`       | TEXT    | PRIMARY KEY      | Unique media identifier                                                                                                                                                                                                                                                |
+| `deploymentID`  | TEXT    | FK → deployments | Parent deployment                                                                                                                                                                                                                                                      |
+| `timestamp`     | TEXT    |                  | Capture timestamp (ISO 8601)                                                                                                                                                                                                                                           |
+| `filePath`      | TEXT    |                  | Absolute path or HTTP URL                                                                                                                                                                                                                                              |
+| `fileName`      | TEXT    |                  | Original file name                                                                                                                                                                                                                                                     |
+| `importFolder`  | TEXT    |                  | Source import folder. For local imports: absolute folder path. For LILA: dataset name. For CamtrapDP: package directory. For merged-from-another-study sources: the synthetic string `merge:<source-study-uuid>` (no real path). The Sources tab groups by this field. |
+| `folderName`    | TEXT    |                  | Subfolder name within import                                                                                                                                                                                                                                           |
+| `fileMediatype` | TEXT    |                  | IANA media type (e.g., `image/jpeg`, `video/mp4`)                                                                                                                                                                                                                      |
+| `exifData`      | TEXT    | JSON             | EXIF/metadata as JSON (see below)                                                                                                                                                                                                                                      |
+| `favorite`      | INTEGER | DEFAULT 0        | User-marked favorite/best capture (CamtrapDP compliant)                                                                                                                                                                                                                |
 
 ```javascript
 export const media = sqliteTable('media', {
@@ -117,6 +118,7 @@ export const media = sqliteTable('media', {
 The `exifData` field stores extracted metadata as JSON. All Date values are serialized as ISO 8601 strings.
 
 **For images** (full EXIF extracted via exifr):
+
 ```json
 {
   "Make": "RECONYX",
@@ -135,6 +137,7 @@ The `exifData` field stores extracted metadata as JSON. All Date values are seri
 ```
 
 **For videos** (extracted from ML model response):
+
 ```json
 {
   "fps": 30,
@@ -149,32 +152,32 @@ The `exifData` field stores extracted metadata as JSON. All Date values are seri
 
 Species observations linked to media.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `observationID` | TEXT | PRIMARY KEY | Unique observation identifier |
-| `mediaID` | TEXT | FK → media | Parent media |
-| `deploymentID` | TEXT | FK → deployments | Parent deployment |
-| `eventID` | TEXT | | Event/sequence grouping |
-| `eventStart` | TEXT | | Event start (ISO 8601) |
-| `eventEnd` | TEXT | | Event end (ISO 8601) |
-| `scientificName` | TEXT | | Latin species name |
-| `observationType` | TEXT | | One of `animal`, `human`, `vehicle`, `blank`, `unknown`, `unclassified` (Camtrap DP enum). See "Pseudo-species and blank media" below. |
-| `commonName` | TEXT | | Common name |
-| `classificationProbability` | REAL | | Classification probability (0-1) |
-| `count` | INTEGER | | Number of individuals |
-| `lifeStage` | TEXT | | `adult`, `juvenile`, etc. |
-| `age` | TEXT | | Age descriptor |
-| `sex` | TEXT | | `male`, `female`, `unknown` |
-| `behavior` | TEXT | | Observed behavior |
-| `bboxX` | REAL | | Bounding box X (normalized 0-1) |
-| `bboxY` | REAL | | Bounding box Y (normalized 0-1) |
-| `bboxWidth` | REAL | | Bounding box width (normalized 0-1) |
-| `bboxHeight` | REAL | | Bounding box height (normalized 0-1) |
-| `detectionConfidence` | REAL | | Detection confidence (bbox) |
-| `modelOutputID` | TEXT | FK → modelOutputs | Link to ML prediction |
-| `classificationMethod` | TEXT | | `machine` or `human` |
-| `classifiedBy` | TEXT | | Model name or person name |
-| `classificationTimestamp` | TEXT | | When classified (ISO 8601) |
+| Column                      | Type    | Constraints       | Description                                                                                                                            |
+| --------------------------- | ------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `observationID`             | TEXT    | PRIMARY KEY       | Unique observation identifier                                                                                                          |
+| `mediaID`                   | TEXT    | FK → media        | Parent media                                                                                                                           |
+| `deploymentID`              | TEXT    | FK → deployments  | Parent deployment                                                                                                                      |
+| `eventID`                   | TEXT    |                   | Event/sequence grouping                                                                                                                |
+| `eventStart`                | TEXT    |                   | Event start (ISO 8601)                                                                                                                 |
+| `eventEnd`                  | TEXT    |                   | Event end (ISO 8601)                                                                                                                   |
+| `scientificName`            | TEXT    |                   | Latin species name                                                                                                                     |
+| `observationType`           | TEXT    |                   | One of `animal`, `human`, `vehicle`, `blank`, `unknown`, `unclassified` (Camtrap DP enum). See "Pseudo-species and blank media" below. |
+| `commonName`                | TEXT    |                   | Common name                                                                                                                            |
+| `classificationProbability` | REAL    |                   | Classification probability (0-1)                                                                                                       |
+| `count`                     | INTEGER |                   | Number of individuals                                                                                                                  |
+| `lifeStage`                 | TEXT    |                   | `adult`, `juvenile`, etc.                                                                                                              |
+| `age`                       | TEXT    |                   | Age descriptor                                                                                                                         |
+| `sex`                       | TEXT    |                   | `male`, `female`, `unknown`                                                                                                            |
+| `behavior`                  | TEXT    |                   | Observed behavior                                                                                                                      |
+| `bboxX`                     | REAL    |                   | Bounding box X (normalized 0-1)                                                                                                        |
+| `bboxY`                     | REAL    |                   | Bounding box Y (normalized 0-1)                                                                                                        |
+| `bboxWidth`                 | REAL    |                   | Bounding box width (normalized 0-1)                                                                                                    |
+| `bboxHeight`                | REAL    |                   | Bounding box height (normalized 0-1)                                                                                                   |
+| `detectionConfidence`       | REAL    |                   | Detection confidence (bbox)                                                                                                            |
+| `modelOutputID`             | TEXT    | FK → modelOutputs | Link to ML prediction                                                                                                                  |
+| `classificationMethod`      | TEXT    |                   | `machine` or `human`                                                                                                                   |
+| `classifiedBy`              | TEXT    |                   | Model name or person name                                                                                                              |
+| `classificationTimestamp`   | TEXT    |                   | When classified (ISO 8601)                                                                                                             |
 
 ```javascript
 export const observations = sqliteTable('observations', {
@@ -205,6 +208,21 @@ export const observations = sqliteTable('observations', {
 })
 ```
 
+#### Partial index: `idx_observations_usable_bbox`
+
+```sql
+CREATE INDEX idx_observations_usable_bbox ON observations (bboxWidth)
+  WHERE bboxWidth > 0 AND bboxHeight > 0;
+```
+
+`getBestMedia` and `getBestImagePerSpecies` gate their bbox-scoring CTE on an
+EXISTS probe (`… WHERE bboxX IS NOT NULL AND bboxWidth IS NOT NULL AND bboxWidth
+> 0 AND bboxHeight > 0 LIMIT 1`). Without this index that probe is a full table
+`SCAN`; on no-bbox studies (CamTrap DP / GBIF imports) it reads every row to
+confirm absence (~5–8s cold on 2.7–4M-row studies). The partial index is empty
+on such studies, so the probe becomes an instant index `SEARCH`. Added in
+migration `0016_add_usable_bbox_partial_index`.
+
 #### Pseudo-species and blank media
 
 The Camtrap DP `observationType` enum carries six values: `animal`, `human`,
@@ -215,15 +233,40 @@ The Camtrap DP `observationType` enum carries six values: `animal`, `human`,
 To present these consistently in the UI we group them into two pseudo-species
 buckets, addressed via sentinel strings defined in `src/shared/constants.js`:
 
-- **`BLANK_SENTINEL`** — represents *blank media*: media that has no
+- **`BLANK_SENTINEL`** — represents _blank media_: media that has no
   observation naming a real species and no vehicle observation. Covers
   media with zero observation rows AND media whose only observations are
-  `blank`/`unclassified`/`unknown`-typed empty-species rows. Computed by
-  `getBlankMediaCount` (`src/main/database/queries/species.js`) via
-  `notExists(realObservations)`.
-- **`VEHICLE_SENTINEL`** — represents *vehicle media*: media with at least
-  one `observationType='vehicle'` observation. Computed by
-  `getVehicleMediaCount`. Vehicle media is **not** counted as blank.
+  `blank`/`unclassified`/`unknown`-typed empty-species rows. Identified by
+  `notExists(realObservations)` — both in the pagination filter
+  (`src/main/database/queries/sequences.js`) and the deployment composition
+  (`getMediaForDeploymentComposition`'s `isDetection` flag).
+- **`VEHICLE_SENTINEL`** — represents _vehicle media_: media with at least
+  one `observationType='vehicle'` observation. Vehicle media is **not**
+  counted as blank (it is a detection).
+
+The Media tab defines "Blank" at the **sequence** level, the same way the
+unfiltered table groups media: a _blank sequence_ is a whole sequence whose
+every frame is non-detection. A mixed burst (animal in some frames, empty in
+others) is therefore ONE detection — its empty frames are **not** a separate
+blank. This keeps every surface consistent (composition total, Blank badge,
+Blank-filter rows, and the unfiltered table all agree):
+
+- `getDeploymentComposition` groups each deployment's media once and
+  classifies each whole sequence → `detectionCount` / `blankCount` /
+  `vehicleCount`. The Blank badge and species-filter Blank row sum the
+  per-deployment `blankCount`.
+- The Blank quick-view filter is sequence-aware: for a pure-Blank request
+  `getMediaForSequencePagination` returns ALL timestamped media tagged with
+  an `isDetection` flag, and the pagination layer
+  (`getPaginatedSequences`) keeps only the no-detection sequences. (Filtering
+  to blank _media_ first would regroup the empty frames out of mixed bursts
+  and over-count blanks.)
+
+The Deployments-tab detail pane is sequence-aware too: its species-popover
+Blank pill, the settings popover's blank rate (blank ÷ total sequences), and
+the gallery's Blank filter all use `getDeploymentSequenceStats` (unified
+per-deployment grouping), so they match the Media tab. (`getBlankMediaCountForDeployment`
+remains a media-level count used only inside `getSpeciesForDeployment`.)
 
 Both sentinels appear in the Library and Deployments species filters and
 flow through `getMediaForSequencePagination` as filterable buckets. The
@@ -231,6 +274,16 @@ flow through `getMediaForSequencePagination` as filterable buckets. The
 older `observationType != 'blank'` proxy when restricting to "real
 species" rows — the proxy lets `unclassified`/`unknown` empty-species rows
 through, which pollutes species distributions.
+
+#### Classification method (`classificationMethod`)
+
+`classificationMethod` records whether an observation is raw AI output (`machine`)
+or has been touched by a person (`human`). Editing a species/bbox
+(`updateObservationClassification` / `updateObservationBbox`) flips it to `human`
+and clears `classificationProbability` per CamTrap DP. This field is written by the
+modal editor; the Media tab no longer exposes a review-status workflow (the
+needs-review/reviewed/low-confidence quick views, the per-sequence reviewed flag,
+and the bulk mark-reviewed action were removed).
 
 #### `observationID` reuse after delete
 
@@ -249,19 +302,19 @@ the only sanctioned way to reuse a freed UUID.
 
 Study-level metadata (one row per database).
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | Study UUID |
-| `name` | TEXT | | Package name/slug |
-| `title` | TEXT | | Human-readable title |
-| `description` | TEXT | | Markdown description |
-| `created` | TEXT | NOT NULL | Creation timestamp (ISO 8601) |
-| `importerName` | TEXT | NOT NULL | Import source identifier |
-| `contributors` | TEXT | JSON | Array of contributor objects |
-| `updatedAt` | TEXT | | Last modification |
-| `startDate` | TEXT | | Temporal coverage start (ISO date). User override for the Overview tab's Span tile — when set, beats `observations.eventStart` / `deployments.deploymentStart` / `media.timestamp` derivation. |
-| `endDate` | TEXT | | Temporal coverage end (ISO date). Same override semantics as `startDate`. |
-| `sequenceGap` | INTEGER | | Media grouping threshold in seconds (null = smart default) |
+| Column         | Type    | Constraints | Description                                                                                                                                                                                    |
+| -------------- | ------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`           | TEXT    | PRIMARY KEY | Study UUID                                                                                                                                                                                     |
+| `name`         | TEXT    |             | Package name/slug                                                                                                                                                                              |
+| `title`        | TEXT    |             | Human-readable title                                                                                                                                                                           |
+| `description`  | TEXT    |             | Markdown description                                                                                                                                                                           |
+| `created`      | TEXT    | NOT NULL    | Creation timestamp (ISO 8601)                                                                                                                                                                  |
+| `importerName` | TEXT    | NOT NULL    | Import source identifier                                                                                                                                                                       |
+| `contributors` | TEXT    | JSON        | Array of contributor objects                                                                                                                                                                   |
+| `updatedAt`    | TEXT    |             | Last modification                                                                                                                                                                              |
+| `startDate`    | TEXT    |             | Temporal coverage start (ISO date). User override for the Overview tab's Span tile — when set, beats `observations.eventStart` / `deployments.deploymentStart` / `media.timestamp` derivation. |
+| `endDate`      | TEXT    |             | Temporal coverage end (ISO date). Same override semantics as `startDate`.                                                                                                                      |
+| `sequenceGap`  | INTEGER |             | Media grouping threshold in seconds (null = smart default)                                                                                                                                     |
 
 ```javascript
 export const metadata = sqliteTable('metadata', {
@@ -280,6 +333,7 @@ export const metadata = sqliteTable('metadata', {
 ```
 
 **importerName values:**
+
 - `camtrap/datapackage` - CamTrap DP import
 - `wildlife/folder` - Wildlife Insights import
 - `local/images` - Image folder import
@@ -292,15 +346,15 @@ export const metadata = sqliteTable('metadata', {
 
 ML model execution sessions.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | UUID |
-| `modelID` | TEXT | NOT NULL | Model identifier (`speciesnet`, `deepfaune`) |
-| `modelVersion` | TEXT | NOT NULL | Model version string |
-| `startedAt` | TEXT | NOT NULL | Run start time (ISO 8601) |
-| `status` | TEXT | DEFAULT 'running' | `running`, `completed`, `failed` |
-| `importPath` | TEXT | | Source directory for this run |
-| `options` | TEXT | JSON | Run configuration options |
+| Column         | Type | Constraints       | Description                                  |
+| -------------- | ---- | ----------------- | -------------------------------------------- |
+| `id`           | TEXT | PRIMARY KEY       | UUID                                         |
+| `modelID`      | TEXT | NOT NULL          | Model identifier (`speciesnet`, `deepfaune`) |
+| `modelVersion` | TEXT | NOT NULL          | Model version string                         |
+| `startedAt`    | TEXT | NOT NULL          | Run start time (ISO 8601)                    |
+| `status`       | TEXT | DEFAULT 'running' | `running`, `completed`, `failed`             |
+| `importPath`   | TEXT |                   | Source directory for this run                |
+| `options`      | TEXT | JSON              | Run configuration options                    |
 
 ```javascript
 export const modelRuns = sqliteTable('model_runs', {
@@ -320,12 +374,12 @@ export const modelRuns = sqliteTable('model_runs', {
 
 Raw ML model predictions linked to media.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | UUID |
-| `mediaID` | TEXT | NOT NULL, FK → media | Parent media (CASCADE delete) |
-| `runID` | TEXT | NOT NULL, FK → modelRuns | Parent run (CASCADE delete) |
-| `rawOutput` | TEXT | JSON | Full model response JSON |
+| Column      | Type | Constraints              | Description                   |
+| ----------- | ---- | ------------------------ | ----------------------------- |
+| `id`        | TEXT | PRIMARY KEY              | UUID                          |
+| `mediaID`   | TEXT | NOT NULL, FK → media     | Parent media (CASCADE delete) |
+| `runID`     | TEXT | NOT NULL, FK → modelRuns | Parent run (CASCADE delete)   |
+| `rawOutput` | TEXT | JSON                     | Full model response JSON      |
 
 ```javascript
 export const modelOutputs = sqliteTable(
@@ -352,19 +406,19 @@ export const modelOutputs = sqliteTable(
 
 Persistent job queue for async work (ML inference, OCR, etc.). Jobs are self-contained — payload carries references (mediaIDs, file paths) as data, no foreign keys to other tables.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | TEXT | PRIMARY KEY | UUID |
-| `kind` | TEXT | NOT NULL | Job category (`ml-inference`, `ocr`, etc.) |
-| `topic` | TEXT | | Sub-grouping (`speciesnet:4.0.1a`, `deepfaune:1.2`, etc.) |
-| `status` | TEXT | NOT NULL, DEFAULT 'pending' | `pending`, `processing`, `completed`, `failed`, `cancelled` |
-| `payload` | TEXT | NOT NULL, JSON | Job-specific data (mediaId, filePath, etc.) |
-| `error` | TEXT | | Error message on failure |
-| `attempts` | INTEGER | NOT NULL, DEFAULT 0 | Number of processing attempts |
-| `maxAttempts` | INTEGER | NOT NULL, DEFAULT 3 | Maximum retry attempts |
-| `createdAt` | TEXT | NOT NULL | Job creation time (ISO 8601) |
-| `startedAt` | TEXT | | Last processing start time (ISO 8601) |
-| `completedAt` | TEXT | | Completion or final failure time (ISO 8601) |
+| Column        | Type    | Constraints                 | Description                                                 |
+| ------------- | ------- | --------------------------- | ----------------------------------------------------------- |
+| `id`          | TEXT    | PRIMARY KEY                 | UUID                                                        |
+| `kind`        | TEXT    | NOT NULL                    | Job category (`ml-inference`, `ocr`, etc.)                  |
+| `topic`       | TEXT    |                             | Sub-grouping (`speciesnet:4.0.2a`, `deepfaune:1.2`, etc.)   |
+| `status`      | TEXT    | NOT NULL, DEFAULT 'pending' | `pending`, `processing`, `completed`, `failed`, `cancelled` |
+| `payload`     | TEXT    | NOT NULL, JSON              | Job-specific data (mediaId, filePath, etc.)                 |
+| `error`       | TEXT    |                             | Error message on failure                                    |
+| `attempts`    | INTEGER | NOT NULL, DEFAULT 0         | Number of processing attempts                               |
+| `maxAttempts` | INTEGER | NOT NULL, DEFAULT 3         | Maximum retry attempts                                      |
+| `createdAt`   | TEXT    | NOT NULL                    | Job creation time (ISO 8601)                                |
+| `startedAt`   | TEXT    |                             | Last processing start time (ISO 8601)                       |
+| `completedAt` | TEXT    |                             | Completion or final failure time (ISO 8601)                 |
 
 ```javascript
 export const jobs = sqliteTable('jobs', {
@@ -391,6 +445,16 @@ export const jobs = sqliteTable('jobs', {
 **Queue service:** `src/main/services/queue.js` — `enqueue`, `enqueueBatch`, `claimBatch`, `complete`, `fail`, `cancel`, `retryFailed`, `recoverStale`, `getStatus`, `getJobs`.
 
 ---
+
+## Merged sources (cross-study)
+
+When study **A** merges study **B** in via the Sources tab, B's rows are copied into A's DB with no filesystem footprint:
+
+- Every merged `media.importFolder` is set to `"merge:<B-uuid>"` — a synthetic value, not a path. The Sources tab special-cases this prefix to render B's icon and title.
+- `deploymentID`, `mediaID`, and `observationID` from B are prefixed with `"study:<B-uuid-short>:"` (first 8 chars of B's UUID) when inserted into A — e.g., `CAM_01` from B becomes `study:b7f2a1c3:CAM_01` in A. Foreign keys (`media.deploymentID`, `observations.{mediaID,deploymentID}`, `model_outputs.mediaID`) are rewritten consistently.
+- `model_runs.importPath` is rewritten to `"merge:<B-uuid>"` so the multi-source spec's in-flight-run join still works.
+- `media.filePath` is **unchanged** from B — A points at the same files B did. If B owned its files (CamtrapDP-downloaded-into-biowatch), deleting B will break A's references; the delete handler warns when that risk applies.
+- No new tables. No filesystem manifest. The `"merge:"` prefix in `importFolder` is the only durable artifact.
 
 ## JSON Field Formats
 
@@ -439,7 +503,7 @@ export const jobs = sqliteTable('jobs', {
           "bbox": [0.1, 0.2, 0.5, 0.6]
         }
       ],
-      "model_version": "4.0.1a"
+      "model_version": "4.0.2a"
     }
   ]
 }
@@ -449,21 +513,21 @@ export const jobs = sqliteTable('jobs', {
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/main/database/models.js` | Table definitions (Drizzle ORM) |
-| `src/main/database/validators.js` | Zod validation schemas |
-| `src/main/database/manager.js` | Connection pooling |
-| `src/main/database/index.js` | Unified database exports |
-| `src/main/database/queries/` | Query functions by domain |
-| `src/main/database/queries/media.js` | Media queries |
-| `src/main/database/queries/species.js` | Species analytics queries |
-| `src/main/database/queries/observations.js` | Observation CRUD |
-| `src/main/database/queries/deployments.js` | Deployment queries |
-| `src/main/database/queries/best-media.js` | Best media selection |
-| `src/main/database/queries/utils.js` | Query utilities |
-| `src/main/database/migrations/` | SQL migration files |
-| `src/main/services/queue.js` | Job queue service (enqueue, claim, complete, fail, etc.) |
+| File                                        | Purpose                                                  |
+| ------------------------------------------- | -------------------------------------------------------- |
+| `src/main/database/models.js`               | Table definitions (Drizzle ORM)                          |
+| `src/main/database/validators.js`           | Zod validation schemas                                   |
+| `src/main/database/manager.js`              | Connection pooling                                       |
+| `src/main/database/index.js`                | Unified database exports                                 |
+| `src/main/database/queries/`                | Query functions by domain                                |
+| `src/main/database/queries/media.js`        | Media queries                                            |
+| `src/main/database/queries/species.js`      | Species analytics queries                                |
+| `src/main/database/queries/observations.js` | Observation CRUD                                         |
+| `src/main/database/queries/deployments.js`  | Deployment queries                                       |
+| `src/main/database/queries/best-media.js`   | Best media selection                                     |
+| `src/main/database/queries/utils.js`        | Query utilities                                          |
+| `src/main/database/migrations/`             | SQL migration files                                      |
+| `src/main/services/queue.js`                | Job queue service (enqueue, claim, complete, fail, etc.) |
 
 ---
 
@@ -472,6 +536,7 @@ export const jobs = sqliteTable('jobs', {
 See [Drizzle ORM Guide](./drizzle.md) for migration workflow.
 
 Key points:
+
 - Migrations are forward-only (no rollbacks)
 - Each study database migrates independently
 - Migrations run automatically on first access after app update

@@ -45,6 +45,12 @@ export function SequenceGapSlider({
   // Convert null to 0 for slider display, and 0 back to null.
   const sliderValue = dragValue ?? 0
 
+  // Force-open the tooltip while the user is actively dragging the thumb so
+  // the value stays readable mid-gesture. Hover/focus continues to drive
+  // open/close through Radix the rest of the time.
+  const [isDragging, setIsDragging] = useState(false)
+  const [hoverOpen, setHoverOpen] = useState(false)
+
   const handleInput = (e) => {
     const n = Number(e.target.value)
     setDragValue(n === 0 ? null : n)
@@ -56,9 +62,14 @@ export function SequenceGapSlider({
 
   if (variant === 'compact') {
     return (
-      <div className="flex items-center gap-2">
-        <Layers size={16} className={dragValue !== null ? 'text-blue-500' : 'text-gray-400'} />
-        <Tooltip.Root>
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <Layers
+          size={16}
+          className={
+            dragValue !== null ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground'
+          }
+        />
+        <Tooltip.Root open={isDragging || hoverOpen} onOpenChange={setHoverOpen}>
           <Tooltip.Trigger asChild>
             <input
               type="range"
@@ -67,41 +78,45 @@ export function SequenceGapSlider({
               step="10"
               value={sliderValue}
               onChange={handleInput}
+              onPointerDown={() => setIsDragging(true)}
+              onPointerUp={() => setIsDragging(false)}
+              onPointerCancel={() => setIsDragging(false)}
               onMouseUp={commit}
               onKeyUp={commit}
               onTouchEnd={commit}
               onBlur={commit}
               disabled={disabled}
-              className="w-24 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`flex-1 min-w-0 h-2 bg-muted rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                dragValue !== null ? 'accent-blue-500' : 'accent-gray-400 dark:accent-gray-500'
+              }`}
               aria-label={`Sequence grouping: ${formatGapValue(dragValue)}`}
             />
           </Tooltip.Trigger>
           <Tooltip.Portal>
             <Tooltip.Content
               side="bottom"
-              sideOffset={8}
+              sideOffset={10}
               align="start"
-              className="z-[10000] max-w-xs px-3 py-2 bg-gray-900 text-white text-xs rounded-md shadow-lg"
+              className="z-[10000] max-w-[16rem] px-3 py-2 bg-popover text-popover-foreground text-xs rounded-md border border-border shadow-md"
             >
-              <p className="font-medium mb-1">Sequence Grouping</p>
-              <p className="text-gray-300 mb-1.5">
-                Groups nearby photos/videos into sequences for easier browsing.
+              <p className="font-medium mb-1">
+                Sequence grouping
+                <span className="ml-1.5 text-blue-600 dark:text-blue-400 font-semibold tabular-nums">
+                  {formatGapValue(dragValue)}
+                </span>
               </p>
-              <ul className="text-gray-300 space-y-0.5">
-                <li>
-                  <span className="text-white font-medium">Off:</span> Preserves original event
-                  groupings from import
-                </li>
-                <li>
-                  <span className="text-white font-medium">On:</span> Groups media taken within the
-                  specified time gap
-                </li>
-              </ul>
-              <Tooltip.Arrow className="fill-gray-900" />
+              <p className="text-muted-foreground leading-snug">
+                {dragValue === null
+                  ? 'Off — keep the original event groupings from import.'
+                  : `Group photos and videos taken within ${formatGapValue(dragValue)} of each other into a single sequence.`}
+              </p>
+              <Tooltip.Arrow className="fill-popover" />
             </Tooltip.Content>
           </Tooltip.Portal>
         </Tooltip.Root>
-        <span className="text-xs text-gray-600 w-12">{formatGapValue(dragValue)}</span>
+        <span className="text-xs text-muted-foreground whitespace-nowrap min-w-[3.5rem] text-right">
+          {formatGapValue(dragValue)}
+        </span>
       </div>
     )
   }
@@ -111,10 +126,17 @@ export function SequenceGapSlider({
     <div>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Layers size={16} className={dragValue !== null ? 'text-blue-500' : 'text-gray-400'} />
-          <span className="text-sm font-medium text-gray-900">Sequence grouping</span>
+          <Layers
+            size={16}
+            className={
+              dragValue !== null ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground'
+            }
+          />
+          <span className="text-sm font-medium text-foreground">Sequence grouping</span>
         </div>
-        <span className="text-sm font-medium text-blue-600">{formatGapValue(dragValue)}</span>
+        <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+          {formatGapValue(dragValue)}
+        </span>
       </div>
       <input
         type="range"
@@ -128,11 +150,13 @@ export function SequenceGapSlider({
         onTouchEnd={commit}
         onBlur={commit}
         disabled={disabled}
-        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        className={`w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+          dragValue !== null ? 'accent-blue-500' : 'accent-gray-400 dark:accent-gray-500'
+        }`}
         aria-label={`Sequence grouping: ${formatGapValue(dragValue)}`}
       />
       {showDescription && (
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-muted-foreground mt-2">
           {dragValue === null
             ? 'Preserves imported event groupings (eventID from original data)'
             : `Groups observations within ${formatGapValue(dragValue)} into sequences (generates new eventIDs)`}

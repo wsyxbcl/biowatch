@@ -9,8 +9,8 @@
  * against the bundled speciesInfo dictionary for the threatened tally).
  */
 
-import { getStudyDatabase } from '../index.js'
-import log from 'electron-log'
+import { getStudyDatabase } from '../manager.js'
+import log from '../../services/logger.js'
 import { getStudyIdFromPath } from './utils.js'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/resolver.js'
 

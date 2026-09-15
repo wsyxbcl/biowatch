@@ -156,13 +156,13 @@ export const modelZoo = [
    * a description of the model, and a link to the model's website.
    */
   {
-    reference: { id: 'speciesnet', version: '4.0.1a' },
+    reference: { id: 'speciesnet', version: '4.0.2a' },
     pythonEnvironment: { id: 'common', version: '0.1.4' },
     name: 'SpeciesNet',
     size_in_MB: 468,
     files: 6,
     downloadURL:
-      'https://huggingface.co/earthtoolsmaker/speciesnet/resolve/main/4.0.1a.tar.gz?download=true',
+      'https://huggingface.co/earthtoolsmaker/speciesnet/resolve/main/4.0.2a.tar.gz?download=true',
     description:
       "Google's SpeciesNet is an open-source AI model launched in 2025, specifically designed for identifying animal species from images captured by camera traps. It boasts the capability to classify images into over 2,000 species labels, greatly enhancing the efficiency of wildlife data analysis for conservation initiatives.",
     website: 'https://github.com/google/cameratrapai',
@@ -171,6 +171,23 @@ export const modelZoo = [
     region: 'worldwide',
     species_count: '2,000+',
     species_data: 'speciesnet'
+  },
+  {
+    reference: { id: 'megadetector', version: '6.0' },
+    pythonEnvironment: { id: 'common', version: '0.1.4' },
+    name: 'MegaDetector',
+    size_in_MB: 118, // tarball ~117.8 MB, weights file ~128 MB — replace with exact size once HF upload lands
+    files: 2,
+    downloadURL:
+      'https://huggingface.co/earthtoolsmaker/megadetector/resolve/main/6.0.tar.gz?download=true',
+    description:
+      "MegaDetector is Microsoft AI for Earth's open-source detector for camera trap images. It locates animals, people, and vehicles in any image worldwide, without identifying species. Useful as a fast blank-filter before manual species annotation.",
+    website: 'https://github.com/microsoft/MegaDetector',
+    logo: 'megadetector',
+    detectionConfidenceThreshold: 0.2,
+    region: 'worldwide',
+    species_count: 3,
+    detectionOnly: true
   },
   {
     reference: { id: 'deepfaune', version: '1.3' },

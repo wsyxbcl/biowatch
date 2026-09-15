@@ -24,17 +24,15 @@ function ExportRow({ icon: Icon, title, description, onClick, isFirst, isLast })
     >
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <Icon size={16} className="text-gray-500 shrink-0" />
-          <span className="text-sm font-medium text-gray-900">{title}</span>
+          <Icon size={16} className="text-muted-foreground shrink-0" />
+          <span className="text-sm font-medium text-foreground">{title}</span>
         </div>
-        <p className="text-sm text-gray-500 mt-1">{description}</p>
+        <p className="text-sm text-muted-foreground mt-1">{description}</p>
       </div>
       <button
         onClick={handleClick}
         disabled={isExporting}
-        className={`cursor-pointer transition-colors flex justify-center items-center gap-2 border border-gray-200 px-4 h-9 text-sm shadow-sm rounded-md hover:bg-gray-50 w-full sm:w-auto ${
-          isExporting ? 'opacity-70' : ''
-        }`}
+        className="flex items-center justify-center gap-2 h-9 px-4 text-sm font-medium text-foreground bg-card border border-border rounded-md hover:bg-gray-50 dark:hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
       >
         {isExporting ? <span className="animate-pulse">Exporting...</span> : 'Export'}
       </button>
@@ -166,8 +164,8 @@ export default function Export({ studyId }) {
         <div
           className={`mb-4 p-3 rounded-md text-sm ${
             exportStatus.type === 'success'
-              ? 'bg-green-50 text-green-800 border border-green-200'
-              : 'bg-red-50 text-red-800 border border-red-200'
+              ? 'bg-green-50 text-green-800 border border-green-200 dark:bg-green-500/15 dark:text-green-300'
+              : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-500/15 dark:text-red-300'
           }`}
         >
           <div className="flex items-center justify-between gap-3">
@@ -175,7 +173,7 @@ export default function Export({ studyId }) {
             {exportStatus.type === 'success' && exportStatus.exportPath && (
               <button
                 onClick={handleOpenExportFolder}
-                className="cursor-pointer border border-green-400 px-3 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded text-xs font-medium transition-colors whitespace-nowrap"
+                className="cursor-pointer border border-green-400 px-3 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded text-xs font-medium transition-colors whitespace-nowrap dark:bg-green-500/20 dark:text-green-300"
               >
                 Open Folder
               </button>
@@ -184,7 +182,7 @@ export default function Export({ studyId }) {
         </div>
       )}
 
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-border">
         <ExportRow
           icon={FolderTree}
           title="Media Directories"

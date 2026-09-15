@@ -2,9 +2,10 @@
  * Observation-related database queries
  */
 
-import { getDrizzleDb, observations } from '../index.js'
+import { getDrizzleDb } from '../manager.js'
+import { observations } from '../models.js'
 import { eq } from 'drizzle-orm'
-import log from 'electron-log'
+import log from '../../services/logger.js'
 import { getStudyIdFromPath } from './utils.js'
 import { lifeStageSchema, sexSchema, behaviorSchema } from '../validators.js'
 import { normalizeScientificName } from '../../../shared/commonNames/normalize.js'
@@ -464,7 +465,19 @@ export async function insertObservations(manager, observationsData) {
               observation.classificationProbability !== undefined
                 ? observation.classificationProbability
                 : null,
-            count: observation.count !== undefined ? observation.count : null
+            count: observation.count !== undefined ? observation.count : null,
+            // CamTrap DP classification provenance — passed through when present
+            // so callers (and tests) can seed machine-vs-human review status.
+            // Defaults to null, preserving prior behavior for existing callers.
+            classificationMethod:
+              observation.classificationMethod !== undefined
+                ? observation.classificationMethod
+                : null,
+            classifiedBy: observation.classifiedBy !== undefined ? observation.classifiedBy : null,
+            classificationTimestamp:
+              observation.classificationTimestamp !== undefined
+                ? observation.classificationTimestamp
+                : null
           })
           .run()
 

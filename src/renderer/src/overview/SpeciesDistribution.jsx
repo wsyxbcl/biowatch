@@ -22,7 +22,10 @@ function SpeciesRow({
   scrollSignal
 }) {
   const commonName = useCommonName(species.scientificName, { storedCommonName })
-  const displayName = commonName || formatScientificName(species.scientificName)
+  const rawDisplayName = commonName || formatScientificName(species.scientificName)
+  const displayName = rawDisplayName
+    ? rawDisplayName.charAt(0).toUpperCase() + rawDisplayName.slice(1)
+    : rawDisplayName
   const showScientific =
     species.scientificName && commonName && commonName !== species.scientificName
   const info = resolveSpeciesInfo(species.scientificName)
@@ -39,7 +42,7 @@ function SpeciesRow({
   return (
     <button
       type="button"
-      className="cursor-pointer hover:bg-blue-50 transition-colors py-2.5 px-3 rounded flex items-center gap-3 w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+      className="cursor-pointer hover:bg-blue-50 transition-colors py-2.5 px-3 rounded flex items-center gap-3 w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 dark:hover:bg-blue-500/15"
       onClick={() => onRowClick(species)}
       aria-label={`View ${displayName} in media tab`}
     >
@@ -47,19 +50,19 @@ function SpeciesRow({
         key={species.scientificName}
         open={hoverOpen}
         onOpenChange={setHoverOpen}
-        openDelay={200}
+        openDelay={400}
         closeDelay={120}
       >
         <HoverCard.Trigger asChild>
           <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="w-80 flex-shrink-0">
+            <div className="w-80 flex-shrink-0 truncate">
               <span
-                className={`text-sm text-gray-900 font-medium ${showScientific ? 'capitalize' : 'italic'}`}
+                className={`text-sm text-foreground font-medium ${showScientific ? 'capitalize' : ''}`}
               >
                 {displayName}
               </span>
               {showScientific && (
-                <span className="text-gray-400 text-xs italic ml-2">
+                <span className="text-muted-foreground text-xs italic ml-2">
                   {formatScientificName(species.scientificName)}
                 </span>
               )}
@@ -77,20 +80,20 @@ function SpeciesRow({
               align="center"
               avoidCollisions={true}
               collisionPadding={16}
-              className="z-[10000]"
+              className="species-hovercard z-[10000]"
             >
               <SpeciesTooltipContent imageData={tooltipImageData} studyId={studyId} size="lg" />
             </HoverCard.Content>
           </HoverCard.Portal>
         )}
       </HoverCard.Root>
-      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
         <div
-          className="bg-blue-600 h-full rounded-full"
+          className="bg-blue-600 dark:bg-blue-500 h-full rounded-full"
           style={{ width: `${(species.count / totalCount) * 100}%` }}
         />
       </div>
-      <span className="w-14 text-right text-xs text-gray-500 tabular-nums flex-shrink-0">
+      <span className="w-14 text-right text-xs text-muted-foreground tabular-nums flex-shrink-0">
         {species.count.toLocaleString('en-US')}
       </span>
     </button>
@@ -152,21 +155,24 @@ export default function SpeciesDistribution({ studyId, speciesData, taxonomicDat
   )
 
   const handleRowClick = (species) => {
-    navigate(`/study/${studyId}/media?species=${encodeURIComponent(species.scientificName)}`)
+    // Open the Explore tab focused on this species: map + gallery, rail hidden.
+    navigate(
+      `/study/${studyId}/explore?species=${encodeURIComponent(species.scientificName)}&view=both`
+    )
   }
 
   return (
     <section className="flex flex-col h-full min-h-0">
-      <h3 className="text-[0.7rem] uppercase tracking-wider text-gray-500 font-semibold mb-3 flex-shrink-0">
+      <h3 className="text-[0.7rem] uppercase tracking-wider text-muted-foreground font-semibold mb-3 flex-shrink-0">
         Species distribution
       </h3>
 
       {speciesData === undefined ? (
         <SpeciesListSkeleton />
       ) : speciesData.length === 0 ? (
-        <div className="bg-gray-50 border border-dashed border-gray-200 rounded-lg px-4 py-8 text-center">
-          <p className="text-sm font-medium text-gray-600">No species detected yet</p>
-          <p className="text-xs text-gray-500 mt-1">
+        <div className="bg-muted border border-dashed border-border rounded-lg px-4 py-8 text-center">
+          <p className="text-sm font-medium text-muted-foreground">No species detected yet</p>
+          <p className="text-xs text-muted-foreground mt-1">
             Run a classification model to see what&apos;s been captured.
           </p>
         </div>
@@ -202,7 +208,7 @@ export default function SpeciesDistribution({ studyId, speciesData, taxonomicDat
 
 function IucnLegend() {
   return (
-    <div className="mt-2 pt-3 border-t border-gray-100 text-[0.7rem] text-gray-500 flex items-start gap-x-3 flex-shrink-0">
+    <div className="mt-2 pt-3 border-t border-border text-[0.7rem] text-muted-foreground flex items-start gap-x-3 flex-shrink-0">
       <span className="flex-shrink-0 leading-4">IUCN:</span>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 leading-4">
         <LegendItem code="NE" label="Not Evaluated" />
@@ -237,20 +243,20 @@ function SpeciesListSkeleton() {
       {widths.map((w, i) => (
         <div key={i} className="flex items-center gap-3 py-2.5 px-3">
           <div className="w-80 flex-shrink-0 flex items-center gap-3">
-            <div className="h-3 w-32 bg-gray-200 rounded animate-pulse" />
-            <div className="h-3 w-20 bg-gray-100 rounded animate-pulse" />
+            <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+            <div className="h-3 w-20 bg-muted rounded animate-pulse" />
           </div>
           <div className="w-8 flex-shrink-0">
-            <div className="h-4 w-7 bg-gray-100 rounded animate-pulse" />
+            <div className="h-4 w-7 bg-muted rounded animate-pulse" />
           </div>
-          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-gray-200 rounded-full animate-pulse"
+              className="h-full bg-muted rounded-full animate-pulse"
               style={{ width: `${w}%` }}
             />
           </div>
           <div className="w-14 flex-shrink-0 flex justify-end">
-            <div className="h-3 w-10 bg-gray-100 rounded animate-pulse" />
+            <div className="h-3 w-10 bg-muted rounded animate-pulse" />
           </div>
         </div>
       ))}

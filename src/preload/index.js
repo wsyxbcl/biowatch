@@ -1,5 +1,5 @@
 import { electronAPI } from '@electron-toolkit/preload'
-import { contextBridge } from 'electron'
+import { contextBridge, webUtils } from 'electron'
 
 // Custom APIs for renderer
 const api = {
@@ -30,14 +30,11 @@ const api = {
   getSpeciesDistribution: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('species:get-distribution', studyId)
   },
-  getBlankMediaCount: async (studyId) => {
-    return await electronAPI.ipcRenderer.invoke('species:get-blank-count', studyId)
-  },
-  getVehicleMediaCount: async (studyId) => {
-    return await electronAPI.ipcRenderer.invoke('species:get-vehicle-count', studyId)
-  },
   getDeploymentLocations: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('deployments:get-locations', studyId)
+  },
+  getDeploymentDistribution: async (studyId) => {
+    return await electronAPI.ipcRenderer.invoke('deployments:get-distribution', studyId)
   },
   getAllDeployments: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('deployments:get-all', studyId)
@@ -48,8 +45,49 @@ const api = {
   getDeploymentStats: async (studyId, deploymentID) => {
     return await electronAPI.ipcRenderer.invoke('deployments:get-stats', studyId, deploymentID)
   },
-  deleteStudyDatabase: async (studyId) => {
-    return await electronAPI.ipcRenderer.invoke('study:delete-database', studyId)
+  deleteStudyDatabase: async (studyId, options) => {
+    return await electronAPI.ipcRenderer.invoke('study:delete-database', studyId, options)
+  },
+  getStudyMetadata: async (studyId) => {
+    const response = await electronAPI.ipcRenderer.invoke('study:get-metadata', studyId)
+    if (response.error) throw new Error(response.error)
+    return response.data
+  },
+  listMergedSourceIds: async (targetStudyId) => {
+    const response = await electronAPI.ipcRenderer.invoke(
+      'study:list-merged-source-ids',
+      targetStudyId
+    )
+    if (response.error) throw new Error(response.error)
+    return response.data
+  },
+  mergePreflight: async (targetStudyId, sourceStudyId) => {
+    return await electronAPI.ipcRenderer.invoke(
+      'study:merge-preflight',
+      targetStudyId,
+      sourceStudyId
+    )
+  },
+  mergeStudy: async (targetStudyId, sourceStudyId, reviewed) => {
+    return await electronAPI.ipcRenderer.invoke(
+      'study:merge',
+      targetStudyId,
+      sourceStudyId,
+      reviewed
+    )
+  },
+  cancelMerge: async (targetStudyId) => {
+    return await electronAPI.ipcRenderer.invoke('study:merge-cancel', targetStudyId)
+  },
+  onMergeProgress: (callback) => {
+    const handler = (_e, payload) => callback(payload)
+    electronAPI.ipcRenderer.on('merge:progress', handler)
+    return () => electronAPI.ipcRenderer.removeListener('merge:progress', handler)
+  },
+  onMergeComplete: (callback) => {
+    const handler = (_e, payload) => callback(payload)
+    electronAPI.ipcRenderer.on('merge:complete', handler)
+    return () => electronAPI.ipcRenderer.removeListener('merge:complete', handler)
   },
   checkStudyHasEventIDs: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('study:has-event-ids', studyId)
@@ -97,6 +135,9 @@ const api = {
   checkMediaHaveBboxes: async (studyId, mediaIDs) => {
     return await electronAPI.ipcRenderer.invoke('media:have-bboxes', studyId, mediaIDs)
   },
+  studyHasAnyBboxes: async (studyId) => {
+    return await electronAPI.ipcRenderer.invoke('media:study-has-any-bboxes', studyId)
+  },
   getBestMedia: async (studyId, options = {}) => {
     return await electronAPI.ipcRenderer.invoke('media:get-best', studyId, options)
   },
@@ -108,20 +149,34 @@ const api = {
   },
   // Sequence-aware species distribution APIs (pre-computed in main thread)
   // gapSeconds is fetched from study metadata in the backend
-  getSequenceAwareSpeciesDistribution: async (studyId) => {
-    return await electronAPI.ipcRenderer.invoke('sequences:get-species-distribution', studyId)
+  getSequenceAwareSpeciesDistribution: async (studyId, gapSeconds, bbox, countMetric) => {
+    return await electronAPI.ipcRenderer.invoke(
+      'sequences:get-species-distribution',
+      studyId,
+      gapSeconds,
+      bbox,
+      countMetric
+    )
   },
-  getSequenceAwareTimeseries: async (studyId, speciesNames) => {
-    return await electronAPI.ipcRenderer.invoke('sequences:get-timeseries', studyId, speciesNames)
+  getSequenceAwareTimeseries: async (studyId, speciesNames, gapSeconds, bbox, countMetric) => {
+    return await electronAPI.ipcRenderer.invoke(
+      'sequences:get-timeseries',
+      studyId,
+      speciesNames,
+      gapSeconds,
+      bbox,
+      countMetric
+    )
   },
   getSequenceAwareHeatmap: async (
     studyId,
     speciesNames,
     startDate,
     endDate,
-    startHour,
-    endHour,
-    includeNullTimestamps
+    timeRange,
+    includeNullTimestamps,
+    gapSeconds,
+    countMetric
   ) => {
     return await electronAPI.ipcRenderer.invoke(
       'sequences:get-heatmap',
@@ -129,18 +184,30 @@ const api = {
       speciesNames,
       startDate,
       endDate,
-      startHour,
-      endHour,
-      includeNullTimestamps
+      timeRange,
+      includeNullTimestamps,
+      gapSeconds,
+      countMetric
     )
   },
-  getSequenceAwareDailyActivity: async (studyId, speciesNames, startDate, endDate) => {
+  getSequenceAwareDailyActivity: async (
+    studyId,
+    speciesNames,
+    startDate,
+    endDate,
+    gapSeconds,
+    bbox,
+    countMetric
+  ) => {
     return await electronAPI.ipcRenderer.invoke(
       'sequences:get-daily-activity',
       studyId,
       speciesNames,
       startDate,
-      endDate
+      endDate,
+      gapSeconds,
+      bbox,
+      countMetric
     )
   },
   // Paginated sequences API for media gallery
@@ -254,6 +321,29 @@ const api = {
       locationName
     )
   },
+  exportDeploymentsCsv: async (studyId) => {
+    return await electronAPI.ipcRenderer.invoke('deployments:export-csv', studyId)
+  },
+  getDeploymentsCsvPreview: async (studyId) => {
+    return await electronAPI.ipcRenderer.invoke('deployments:get-csv-preview', studyId)
+  },
+  pickDeploymentsCsvFile: async () => {
+    return await electronAPI.ipcRenderer.invoke('deployments:pick-csv-file')
+  },
+  // Electron 32+ removes File.path; webUtils.getPathForFile is the
+  // replacement. Called from the drop handler in the import picker
+  // modal to resolve a dropped File to an absolute path.
+  getDroppedFilePath: (file) => webUtils.getPathForFile(file),
+  parseDeploymentsCsvForImport: async (studyId, filePath) => {
+    return await electronAPI.ipcRenderer.invoke(
+      'deployments:parse-csv-for-import',
+      studyId,
+      filePath
+    )
+  },
+  applyDeploymentsCsvImport: async (studyId, applyPlan) => {
+    return await electronAPI.ipcRenderer.invoke('deployments:apply-csv-import', studyId, applyPlan)
+  },
   setMediaTimestamp: async (studyId, mediaID, timestamp) => {
     return await electronAPI.ipcRenderer.invoke('media:set-timestamp', studyId, mediaID, timestamp)
   },
@@ -262,6 +352,9 @@ const api = {
   },
   countMediaWithNullTimestamps: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('media:count-null-timestamps', studyId)
+  },
+  countFavoriteMedia: async (studyId) => {
+    return await electronAPI.ipcRenderer.invoke('media:count-favorites', studyId)
   },
   getSourcesData: async (studyId) => {
     return await electronAPI.ipcRenderer.invoke('sources:get-data', studyId)
@@ -409,9 +502,9 @@ const api = {
     return await electronAPI.ipcRenderer.invoke('diagnostics:export')
   },
 
-  // Activity tab — export the rendered Leaflet map as a PNG file
-  exportActivityMapPng: async ({ dataUrl, defaultFilename }) => {
-    return await electronAPI.ipcRenderer.invoke('activity:export-map-png', {
+  // Explore tab — export the rendered Leaflet map as a PNG file
+  exportExploreMapPng: async ({ dataUrl, defaultFilename }) => {
+    return await electronAPI.ipcRenderer.invoke('explore:export-map-png', {
       dataUrl,
       defaultFilename
     })
@@ -449,6 +542,59 @@ const api = {
     clearCache: async (studyId) => {
       return await electronAPI.ipcRenderer.invoke('image-cache:clear', studyId)
     }
+  },
+
+  // Theme
+  getTheme: async () => {
+    return await electronAPI.ipcRenderer.invoke('theme:get')
+  },
+  setThemeSource: async (source) => {
+    return await electronAPI.ipcRenderer.invoke('theme:set', source)
+  },
+  onThemeChanged: (handler) => {
+    const listener = (_event, payload) => handler(payload)
+    electronAPI.ipcRenderer.on('theme:changed', listener)
+    return () => {
+      electronAPI.ipcRenderer.removeListener('theme:changed', listener)
+    }
+  }
+}
+
+function parseThemeInitial() {
+  const args = process.argv
+  const find = (prefix) => {
+    const arg = args.find((a) => a.startsWith(prefix))
+    return arg ? arg.slice(prefix.length) : null
+  }
+  const source = find('--theme-initial-source=') || 'system'
+  let resolved = find('--theme-initial-resolved=') === 'dark' ? 'dark' : 'light'
+  // On some platforms (notably Linux/GTK), nativeTheme.shouldUseDarkColors
+  // may lag behind the OS preference at window-creation time. When source
+  // is 'system', cross-check via matchMedia which reads Chromium's CSS
+  // engine directly and is reliable from preload.
+  if (source === 'system' && typeof window !== 'undefined' && window.matchMedia) {
+    try {
+      resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    } catch {
+      // ignore — keep the value parsed from argv
+    }
+  }
+  return { source, resolved }
+}
+api.themeInitial = parseThemeInitial()
+
+// Apply dark class as early as possible to avoid FOUC. The preload runs
+// before the page's HTML body parses, but documentElement already exists.
+// Inline <script> in index.html would be blocked by the CSP script-src 'self'.
+if (api.themeInitial.resolved === 'dark') {
+  if (document.documentElement) {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.addEventListener(
+      'DOMContentLoaded',
+      () => document.documentElement.classList.add('dark'),
+      { once: true }
+    )
   }
 }
 

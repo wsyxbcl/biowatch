@@ -14,6 +14,8 @@ export {
 // Deployments
 export {
   getDeploymentLocations,
+  getMediaForDeploymentComposition,
+  getDeploymentsBasic,
   getAllDeployments,
   getLocationsActivity,
   insertDeployments,
@@ -27,8 +29,6 @@ export {
 // Species
 export {
   getSpeciesDistribution,
-  getBlankMediaCount,
-  getVehicleMediaCount,
   getDistinctSpecies,
   getSpeciesDistributionByMedia,
   getSpeciesTimeseriesByMedia,
@@ -45,11 +45,13 @@ export {
   getMediaBboxes,
   getMediaBboxesBatch,
   checkMediaHaveBboxes,
+  studyHasAnyBboxes,
   getVideoFrameDetections,
   updateMediaTimestamp,
   insertMedia,
   updateMediaFavorite,
-  countMediaWithNullTimestamps
+  countMediaWithNullTimestamps,
+  countFavoriteMedia
 } from './media.js'
 
 // Observations
