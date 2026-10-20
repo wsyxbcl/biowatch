@@ -13,6 +13,8 @@ test('builds exactly the 26 frozen outputs using GBIF identities', async () => {
   assert.equal(result.taxonomy.entries[7].acceptedKey, 6164210)
   assert.equal(result.taxonomy.entries[21].scientificName, 'vulpes')
   assert.equal(result.taxonomy.entries[1].rawLabel, '其他鸟类')
+  assert.equal(result.taxonomy.entries[22].chineseName, '野猪')
+  assert.equal(result.taxonomy.entries[1].chineseName, '其他（非雉科）鸟类')
 })
 
 test('rejects duplicated indices and mismatched frozen labels', async () => {

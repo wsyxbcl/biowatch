@@ -27,6 +27,7 @@ export async function buildJingxiTaxonomy(source = null) {
       index: i,
       rawLabel: r.raw_label,
       displayLabel: r.display,
+      chineseName: r.display.split(' · ')[0].trim(),
       scientificName: normalizeScientificName(r.latin),
       gbifKey: Number(r.gbif_taxon_key),
       sourceRank: r.rank,

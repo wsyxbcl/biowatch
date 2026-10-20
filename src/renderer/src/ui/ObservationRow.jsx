@@ -4,7 +4,7 @@ import SexSelector from './SexSelector'
 import LifeStageSelector from './LifeStageSelector'
 import BehaviorSelector from './BehaviorSelector'
 import SpeciesPicker from './SpeciesPicker'
-import { resolveCommonName } from '../../../shared/commonNames/index.js'
+import { resolveDisplayCommonName } from '../utils/commonNames.js'
 import { formatScientificName } from '../utils/scientificName'
 
 const BBOX_TYPE_ICON = (
@@ -63,7 +63,8 @@ export default function ObservationRow({
   // (blank/unclassified/unknown/null).
   const isPseudoSpecies = !observation.scientificName && !observation.commonName
   const pseudoLabel = observation.observationType === 'vehicle' ? 'Vehicle' : 'Blank'
-  const resolvedCommon = resolveCommonName(observation.scientificName) || observation.commonName
+  const resolvedCommon =
+    resolveDisplayCommonName(observation.scientificName) || observation.commonName
   const showSci = !resolvedCommon && observation.scientificName
   const displayName =
     resolvedCommon || formatScientificName(observation.scientificName) || pseudoLabel

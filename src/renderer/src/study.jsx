@@ -10,6 +10,7 @@ import {
   FolderOpen,
   Settings
 } from 'lucide-react'
+import { useEffect, useMemo } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router'
 import { ErrorBoundary } from 'react-error-boundary'
 import { useQuery } from '@tanstack/react-query'
@@ -21,6 +22,7 @@ import MediaTab from './media/MediaTab.jsx'
 import Sources from './sources'
 import StudySettings from './StudySettings'
 import { useImportStatus } from '@renderer/hooks/import'
+import { buildScientificToCommonMap, setStudyCommonNames } from './utils/commonNames'
 import { Tab } from './ui/Tab'
 
 // Error fallback component
@@ -227,6 +229,15 @@ export default function Study() {
     },
     enabled: !!id
   })
+
+  // Vernacular names supplied by this study (e.g. Heinishi's Chinese names)
+  // take precedence over the shared dictionary. Set before children render.
+  const studyCommonNames = useMemo(
+    () => buildScientificToCommonMap(study?.data?.taxonomic, { languages: ['eng', 'zho'] }),
+    [study?.data?.taxonomic]
+  )
+  setStudyCommonNames(studyCommonNames)
+  useEffect(() => () => setStudyCommonNames(null), [])
 
   const { importStatus } = useImportStatus(id)
   const isImportActive =

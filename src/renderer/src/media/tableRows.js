@@ -1,5 +1,5 @@
 import { getSpeciesCountsFromSequence } from '../utils/speciesFromBboxes.js'
-import { resolveCommonName } from '../../../shared/commonNames/index.js'
+import { resolveDisplayCommonName } from '../utils/commonNames.js'
 import { formatScientificName } from '../utils/scientificName.js'
 import { toTitleCase } from '../utils/textCase.js'
 
@@ -7,7 +7,7 @@ import { toTitleCase } from '../utils/textCase.js'
 // scientific name (left as-is). null (no species) → null.
 export function speciesDisplay(name) {
   if (!name) return null
-  const common = resolveCommonName(name)
+  const common = resolveDisplayCommonName(name)
   if (common) return toTitleCase(common)
   return formatScientificName(name) || name
 }

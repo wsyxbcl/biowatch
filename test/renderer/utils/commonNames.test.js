@@ -4,8 +4,11 @@ import {
   fetchGbifCommonName,
   _clearGbifCache,
   getMapDisplayName,
-  buildScientificToCommonMap
+  buildScientificToCommonMap,
+  resolveDisplayCommonName,
+  setStudyCommonNames
 } from '../../../src/renderer/src/utils/commonNames.js'
+import { resolveCommonName } from '../../../src/shared/commonNames/index.js'
 
 // Mock global fetch on each test.
 let fetchCalls
@@ -145,5 +148,25 @@ describe('buildScientificToCommonMap', () => {
       null // defensive: ignore null entries
     ])
     assert.deepEqual(result, { 'Vulpes vulpes': 'Red Fox' })
+  })
+})
+
+describe('study vernacular names', () => {
+  test('buildScientificToCommonMap can accept extra languages explicitly', () => {
+    const taxa = [{ scientificName: 'sus scrofa', vernacularNames: { zho: '野猪' } }]
+    assert.deepEqual(buildScientificToCommonMap(taxa), {})
+    assert.deepEqual(buildScientificToCommonMap(taxa, { languages: ['eng', 'zho'] }), {
+      'sus scrofa': '野猪'
+    })
+  })
+
+  test('the open study names take precedence over the dictionary, then clear', () => {
+    setStudyCommonNames({ 'sus scrofa': '野猪' })
+    assert.equal(resolveDisplayCommonName('sus scrofa'), '野猪')
+    assert.equal(getMapDisplayName('sus scrofa', {}), '野猪')
+    // Names the study does not supply still come from the shipped dictionary.
+    assert.equal(resolveDisplayCommonName('vulpes vulpes'), resolveCommonName('vulpes vulpes'))
+    setStudyCommonNames(null)
+    assert.equal(resolveDisplayCommonName('sus scrofa'), resolveCommonName('sus scrofa'))
   })
 })

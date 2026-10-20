@@ -4,18 +4,21 @@ import * as HoverCard from '@radix-ui/react-hover-card'
 import { sortSpeciesHumansLast, BLANK_SENTINEL, VEHICLE_SENTINEL } from '../utils/speciesUtils'
 import SpeciesTooltipContent from './SpeciesTooltipContent'
 import PseudoSpeciesTooltipContent from './PseudoSpeciesTooltipContent'
-import { buildScientificToCommonMap, useCommonName } from '../utils/commonNames'
+import {
+  buildScientificToCommonMap,
+  resolveDisplayCommonName,
+  useCommonName
+} from '../utils/commonNames'
 import { formatScientificName } from '../utils/scientificName'
 import { resolveSpeciesInfo } from '../../../shared/speciesInfo/index.js'
 import { getPseudoSpeciesEntry } from '../../../shared/pseudoSpecies.js'
-import { resolveCommonName } from '../../../shared/commonNames/index.js'
 import { COUNT_METRIC_INDIVIDUALS } from '../../../shared/countMetric.js'
 
 // Name a row sorts by alphabetically — the displayed common name, falling back
 // to the formatted scientific name.
 function alphaSortName(scientificName) {
   return (
-    resolveCommonName(scientificName) ||
+    resolveDisplayCommonName(scientificName) ||
     formatScientificName(scientificName) ||
     scientificName ||
     ''

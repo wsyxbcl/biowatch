@@ -12,25 +12,47 @@ import { resolveCommonName, pickEnglishCommonName } from '../../../shared/common
  */
 export function getMapDisplayName(scientificName, scientificToCommon) {
   if (!scientificName) return null
-  return scientificToCommon?.[scientificName] || resolveCommonName(scientificName) || null
+  return scientificToCommon?.[scientificName] || resolveDisplayCommonName(scientificName) || null
+}
+
+// Vernacular names supplied by the open study (its CamtrapDP `taxonomic`
+// block, or names contributed by the models that ran on it). Set by the study
+// page before its children render; empty outside a study.
+let studyCommonNames = {}
+
+/** @param {Record<string, string> | null | undefined} map */
+export function setStudyCommonNames(map) {
+  studyCommonNames = map || {}
 }
 
 /**
- * Build a `scientificName -> English vernacular` map from a CamtrapDP-style
- * taxonomic block. Defensive against null/non-array input and taxa missing
+ * Synchronous display name: the open study's vernacular name, else the shipped
+ * dictionary. Scientific names and the dictionary itself are unchanged.
+ *
+ * @param {string | null | undefined} scientificName
+ * @returns {string | null}
+ */
+export function resolveDisplayCommonName(scientificName) {
+  if (!scientificName) return null
+  return studyCommonNames[scientificName] || resolveCommonName(scientificName)
+}
+
+/**
+ * Build a `scientificName -> vernacular` map from a CamtrapDP-style
+ * taxonomic block, taking the first available of `languages` (ISO 639-3). Defensive against null/non-array input and taxa missing
  * either field. Used by both the Explore map and the species sidebar so the
  * two surfaces stay in sync.
  *
  * @param {Array<{scientificName?: string, vernacularNames?: {eng?: string}}> | null | undefined} taxonomicData
+ * @param {{ languages?: string[] }} [options]
  * @returns {Record<string, string>}
  */
-export function buildScientificToCommonMap(taxonomicData) {
+export function buildScientificToCommonMap(taxonomicData, { languages = ['eng'] } = {}) {
   const map = {}
   if (!Array.isArray(taxonomicData)) return map
   for (const taxon of taxonomicData) {
-    if (taxon?.scientificName && taxon?.vernacularNames?.eng) {
-      map[taxon.scientificName] = taxon.vernacularNames.eng
-    }
+    const name = languages.map((lang) => taxon?.vernacularNames?.[lang]).find(Boolean)
+    if (taxon?.scientificName && name) map[taxon.scientificName] = name
   }
   return map
 }
@@ -84,7 +106,8 @@ export { fetchGbifCommonName }
 export { _clearGbifCache }
 
 /**
- * Resolve a display common name via the four-tier cascade:
+ * Resolve a display common name via the cascade:
+ *   0. The open study's vernacular names (see setStudyCommonNames).
  *   1. storedCommonName (authoritative from DB).
  *   2. Shipped dictionary (synchronous).
  *   3. GBIF fallback via TanStack Query (in-memory cached, scored).
@@ -99,19 +122,23 @@ export { _clearGbifCache }
  * @returns {string | null}
  */
 export function useCommonName(scientificName, { storedCommonName } = {}) {
+  const studyName = (scientificName && studyCommonNames[scientificName]) || null
   const stored =
-    typeof storedCommonName === 'string' && storedCommonName.trim() !== '' ? storedCommonName : null
+    !studyName && typeof storedCommonName === 'string' && storedCommonName.trim() !== ''
+      ? storedCommonName
+      : null
 
-  const dictHit = stored ? null : resolveCommonName(scientificName)
+  const dictHit = studyName || stored ? null : resolveCommonName(scientificName)
 
   const { data: gbifResult } = useQuery({
     queryKey: ['gbifCommonName', scientificName],
     queryFn: () => fetchGbifCommonName(scientificName),
-    enabled: !!scientificName && !stored && !dictHit,
+    enabled: !!scientificName && !studyName && !stored && !dictHit,
     staleTime: Infinity,
     retry: 1
   })
 
+  if (studyName) return studyName
   if (stored) return stored
   if (dictHit) return dictHit
   if (gbifResult) return gbifResult

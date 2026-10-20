@@ -5,7 +5,7 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 import { ArrowDownAZ, ArrowDownWideNarrow, Film, Image as ImageIcon, Search } from 'lucide-react'
 import SpeciesDistribution from '../ui/speciesDistribution.jsx'
 import DeploymentHoverMap from './DeploymentHoverMap.jsx'
-import { resolveCommonName } from '../../../shared/commonNames/index.js'
+import { resolveDisplayCommonName } from '../utils/commonNames.js'
 import { isBlank, isVehicle } from '../utils/speciesUtils'
 
 const MEDIA_TYPE_OPTIONS = [
@@ -22,7 +22,7 @@ const SEARCH_THRESHOLD = 8
 function speciesSearchText(scientificName) {
   if (isBlank(scientificName)) return 'blank'
   if (isVehicle(scientificName)) return 'vehicle'
-  return `${resolveCommonName(scientificName) || ''} ${scientificName}`.toLowerCase()
+  return `${resolveDisplayCommonName(scientificName) || ''} ${scientificName}`.toLowerCase()
 }
 
 // Compact search input revealed under a section header when its toggle is on.

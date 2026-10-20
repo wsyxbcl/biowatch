@@ -16,9 +16,8 @@ import KpiTile from './KpiTile'
 import SpanPicker from './SpanPicker'
 import IucnBadge from '../ui/IucnBadge'
 import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
-import { useCommonName } from '../utils/commonNames'
+import { resolveDisplayCommonName, useCommonName } from '../utils/commonNames'
 import { formatScientificName } from '../utils/scientificName'
-import { resolveCommonName } from '../../../shared/commonNames/index.js'
 import {
   formatStatNumber,
   formatCompactCount,
@@ -325,8 +324,8 @@ function ThreatenedSpeciesPopover({ studyId, species, onClose, ignoreOutsideClic
   // The synchronous dictionary lookup is enough — GBIF-resolved common
   // names are an edge case and would require holding state for async work.
   const sortedSpecies = [...species].sort((a, b) => {
-    const aDisplay = (resolveCommonName(a.scientificName) || a.scientificName).toLowerCase()
-    const bDisplay = (resolveCommonName(b.scientificName) || b.scientificName).toLowerCase()
+    const aDisplay = (resolveDisplayCommonName(a.scientificName) || a.scientificName).toLowerCase()
+    const bDisplay = (resolveDisplayCommonName(b.scientificName) || b.scientificName).toLowerCase()
     return aDisplay.localeCompare(bDisplay)
   })
 

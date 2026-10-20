@@ -19,7 +19,7 @@ import SpeciesTooltipContent from '../ui/SpeciesTooltipContent.jsx'
 import PseudoSpeciesTooltipContent from '../ui/PseudoSpeciesTooltipContent.jsx'
 import DeploymentHoverMap from './DeploymentHoverMap.jsx'
 import { hasActiveFilters } from './mediaFilters.js'
-import { resolveCommonName } from '../../../shared/commonNames/index.js'
+import { resolveDisplayCommonName } from '../utils/commonNames.js'
 import { formatScientificName } from '../utils/scientificName'
 import { toTitleCase } from '../utils/textCase'
 import { BLANK_SENTINEL, VEHICLE_SENTINEL } from '../utils/speciesUtils'
@@ -35,7 +35,7 @@ const HOVER_PERIOD_COUNT = 40
 function speciesChipLabel(name) {
   if (name === BLANK_SENTINEL) return 'Blank'
   if (name === VEHICLE_SENTINEL) return 'Vehicle'
-  const common = resolveCommonName(name)
+  const common = resolveDisplayCommonName(name)
   if (common) return toTitleCase(common)
   return formatScientificName(name) || name
 }

@@ -13,6 +13,9 @@ import {
   getMetadata,
   updateMetadata
 } from '../database/index.js'
+import { jobs, modelRuns } from '../database/models.js'
+import { JINGXI_ID } from '../../shared/jingxiModel.js'
+import { jingxiTaxonomic } from './jingxiPrediction.js'
 
 /**
  * Get the studies directory path
@@ -40,6 +43,31 @@ export async function getStudyFromDb(studyId) {
     return metadata
   } catch (error) {
     log.error(`Error reading metadata for study ${studyId}:`, error)
+    return null
+  }
+}
+
+/**
+ * Study-level vernacular names (CamtrapDP `taxonomic` shape) contributed by the
+ * models used in a study. Queued jobs count too, so a new import shows its
+ * names before the first model run is recorded.
+ * @param {string} studyId - Study ID
+ * @returns {Promise<Array|null>} Taxa with vernacular names, or null
+ */
+export async function getStudyTaxonomic(studyId) {
+  try {
+    const dbPath = path.join(getStudiesPath(), studyId, 'study.db')
+    const db = await getReadonlyDrizzleDb(studyId, dbPath)
+    const runs = await db.selectDistinct({ modelID: modelRuns.modelID }).from(modelRuns)
+    const topics = await db.selectDistinct({ topic: jobs.topic }).from(jobs)
+    const modelIDs = new Set([
+      ...runs.map((r) => r.modelID),
+      ...topics.map((t) => t.topic?.split(':')[0])
+    ])
+    return modelIDs.has(JINGXI_ID) ? jingxiTaxonomic() : null
+  } catch (error) {
+    // Names are cosmetic: never fail study listing over them.
+    log.warn(`Could not read model names for study ${studyId}:`, error.message)
     return null
   }
 }
@@ -87,7 +115,8 @@ export async function listStudies() {
             temporal:
               study.startDate || study.endDate
                 ? { start: study.startDate || null, end: study.endDate || null }
-                : null
+                : null,
+            taxonomic: await getStudyTaxonomic(studyId)
           }
         }
       } catch (error) {

@@ -111,6 +111,23 @@ async function main() {
         (o) => o.scientificName === 'animal' && o.classificationProbability === null
       )
     )
+    // Heinishi stores Chinese names and supplies them as study vernacular names.
+    assert.ok(
+      result.observations.some(
+        (o) => o.scientificName === 'naemorhedus griseus' && o.commonName === '中华斑羚'
+      )
+    )
+    const study = await page.evaluate(
+      (id) => window.api.getStudies().then((studies) => studies.find((s) => s.id === id)),
+      result.id
+    )
+    const taxon = study.data.taxonomic?.find((t) => t.scientificName === 'sus scrofa')
+    assert.equal(taxon?.vernacularNames.zho, '野猪')
+    await page.evaluate((id) => {
+      window.location.hash = `#/study/${id}/media`
+    }, result.id)
+    await page.getByText('中华斑羚').first().waitFor({ timeout: 15000 })
+    await page.screenshot({ path: path.join(root, 'media.png'), fullPage: true })
     assert.equal(errors.length, 0, errors.join('\n'))
     console.log(
       JSON.stringify(

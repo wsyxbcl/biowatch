@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Search, Plus } from 'lucide-react'
 import { searchSpecies } from '../utils/dictionarySearch'
 import { formatScientificName } from '../utils/scientificName'
-import { resolveCommonName } from '../../../shared/commonNames/index.js'
+import { resolveDisplayCommonName } from '../utils/commonNames.js'
 
 /**
  * Species picker for one observation.
@@ -187,7 +187,7 @@ export default function SpeciesPicker({
                 // (LILA stores the snake_case category there, e.g.
                 // "yellow_baboon"). Falls through to the DB value, then to
                 // the scientific name.
-                const dictCommon = resolveCommonName(species.scientificName)
+                const dictCommon = resolveDisplayCommonName(species.scientificName)
                 const resolvedCommon = dictCommon || species.commonName
                 const showSci = resolvedCommon && resolvedCommon !== species.scientificName
                 const display = resolvedCommon || formatScientificName(species.scientificName)

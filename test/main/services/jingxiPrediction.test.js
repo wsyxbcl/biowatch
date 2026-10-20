@@ -64,3 +64,24 @@ test('no detections are unlabeled, not blank; errors and invalid classifications
   assert.equal(rows[0].scientificName, 'unlabeled')
   assert.equal(rows[0].classificationProbability, null)
 })
+
+test('stores Chinese names and exposes them as study vernacular names', async () => {
+  const { buildJingxiObservations, jingxiTaxonomic } =
+    await import('../../../src/main/services/jingxiPrediction.js')
+  const rows = buildJingxiObservations(rawPrediction())
+  assert.deepEqual(
+    rows.map((r) => [r.scientificName, r.commonName]),
+    [
+      ['homo sapiens', '人'],
+      ['sus scrofa domesticus', '猪'],
+      ['animal', '动物']
+    ]
+  )
+  const names = Object.fromEntries(
+    jingxiTaxonomic().map((t) => [t.scientificName, t.vernacularNames.zho])
+  )
+  assert.equal(names['sus scrofa'], '野猪')
+  assert.equal(names['sus scrofa domesticus'], '猪')
+  assert.equal(names.unlabeled, '未分类')
+  assert.equal(Object.keys(names).length, 29)
+})

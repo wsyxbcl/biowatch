@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 import { computeBboxLabelPosition } from '../utils/positioning'
-import { resolveCommonName } from '../../../shared/commonNames/index.js'
+import { resolveDisplayCommonName } from '../utils/commonNames.js'
 import { formatScientificName } from '../utils/scientificName'
 
 /**
@@ -22,7 +22,7 @@ const BboxLabelMinimal = forwardRef(function BboxLabelMinimal(
   // then fall back to the DB value, then to the scientific name. "Blank" only
   // for confirmed-blank observationType; bbox without classification reads as
   // "—".
-  const dictCommon = resolveCommonName(bbox.scientificName)
+  const dictCommon = resolveDisplayCommonName(bbox.scientificName)
   const resolvedCommon = dictCommon || bbox.commonName
   const showSci = !resolvedCommon && bbox.scientificName
   const displayName =

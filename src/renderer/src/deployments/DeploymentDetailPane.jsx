@@ -8,7 +8,7 @@ import EditableLocationName from './EditableLocationName'
 import LocationPopover from './LocationPopover'
 import DeploymentSettingsPopover from './DeploymentSettingsPopover'
 import SpeciesTooltipContent from '../ui/SpeciesTooltipContent'
-import { resolveCommonName } from '../../../shared/commonNames/index.js'
+import { resolveDisplayCommonName } from '../utils/commonNames.js'
 import { formatScientificName } from '../utils/scientificName'
 import { isBlank, isVehicle } from '../utils/speciesUtils'
 
@@ -208,7 +208,7 @@ function SpeciesFilterRow({ studyId, scientificName, count, isSelected, onToggle
   const isVehicleEntry = isVehicle(scientificName)
   const isPseudo = isBlankEntry || isVehicleEntry
 
-  const commonName = isPseudo ? null : resolveCommonName(scientificName)
+  const commonName = isPseudo ? null : resolveDisplayCommonName(scientificName)
   const pseudoLabel = isBlankEntry ? 'Blank' : isVehicleEntry ? 'Vehicle' : null
 
   const [hoverOpen, setHoverOpen] = useState(false)

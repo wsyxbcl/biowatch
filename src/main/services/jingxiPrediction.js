@@ -1,6 +1,21 @@
 import taxonomy from '../../shared/species/jingxi-taxonomy.json' with { type: 'json' }
 import { JINGXI_ID, JINGXI_DELIVERY_VERSION } from '../../shared/jingxiModel.js'
 
+// Chinese names for labels the classifier did not assign. Vehicle keeps the
+// app's fixed pseudo-species label.
+export const JINGXI_GENERIC_NAMES = { animal: '动物', 'homo sapiens': '人', unlabeled: '未分类' }
+
+/**
+ * Study-level vernacular names (CamtrapDP `taxonomic` shape) for Heinishi output.
+ * Display layers prefer these over the shared English dictionary.
+ */
+export function jingxiTaxonomic() {
+  return [
+    ...taxonomy.entries.map((e) => [e.scientificName, e.chineseName]),
+    ...Object.entries(JINGXI_GENERIC_NAMES)
+  ].map(([scientificName, zho]) => ({ scientificName, vernacularNames: { zho } }))
+}
+
 const validProbability = (value) => Number.isFinite(value) && value >= 0 && value <= 1
 
 export function buildJingxiObservations(raw) {
@@ -67,12 +82,12 @@ export function buildJingxiObservations(raw) {
             ? 'vehicle'
             : 'animal',
       commonName: classified
-        ? taxon.displayLabel
+        ? taxon.chineseName
         : d.category === '2'
-          ? 'Human'
+          ? JINGXI_GENERIC_NAMES['homo sapiens']
           : d.category === '3'
             ? 'Vehicle'
-            : 'Animal',
+            : JINGXI_GENERIC_NAMES.animal,
       observationType: d.category === '2' ? 'human' : d.category === '3' ? 'vehicle' : 'animal',
       classificationProbability: classified ? raw.classification.raw_score : null,
       detectionConfidence: d.conf,
@@ -88,7 +103,7 @@ export function buildJingxiObservations(raw) {
     : [
         {
           scientificName: 'unlabeled',
-          commonName: 'Unlabeled',
+          commonName: JINGXI_GENERIC_NAMES.unlabeled,
           classificationProbability: null,
           detectionConfidence: null,
           count: 1,
