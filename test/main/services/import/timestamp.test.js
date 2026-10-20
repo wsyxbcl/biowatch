@@ -62,12 +62,20 @@ Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'video.mp4':
 `
     const date = parseFFmpegCreationTime(stderr)
     assert.ok(date)
-    assert.equal(date.getUTCFullYear(), 2024)
-    assert.equal(date.getUTCMonth(), 2) // March = 2
-    assert.equal(date.getUTCDate(), 15)
-    assert.equal(date.getUTCHours(), 14)
-    assert.equal(date.getUTCMinutes(), 30)
-    assert.equal(date.getUTCSeconds(), 22)
+    // maze: camera-local wall-clock time, the trailing Z is ignored
+    assert.equal(date.getFullYear(), 2024)
+    assert.equal(date.getMonth(), 2) // March = 2
+    assert.equal(date.getDate(), 15)
+    assert.equal(date.getHours(), 14)
+    assert.equal(date.getMinutes(), 30)
+    assert.equal(date.getSeconds(), 22)
+  })
+
+  test('agrees with photo EXIF from the same trigger (camera writes local time as Z)', () => {
+    // Ambarella camera trap: video creation_time 00:27:51Z, trigger photo EXIF 00:27:48 local
+    const date = parseFFmpegCreationTime('    creation_time   : 2026-06-28T00:27:51.000000Z\n')
+    const photo = new Date('2026-06-28T00:27:48')
+    assert.equal((date - photo) / 1000, 3)
   })
 
   test('parses creation_time without fractional seconds', () => {
@@ -77,13 +85,13 @@ Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'video.mp4':
     assert.equal(date.getUTCFullYear(), 2023)
   })
 
-  test('parses creation_time without trailing Z as UTC', () => {
+  test('parses creation_time without trailing Z as local time', () => {
     const stderr = '    creation_time   : 2024-01-01T00:30:00\n'
     const date = parseFFmpegCreationTime(stderr)
     assert.ok(date)
-    assert.equal(date.getUTCFullYear(), 2024)
-    assert.equal(date.getUTCHours(), 0)
-    assert.equal(date.getUTCMinutes(), 30)
+    assert.equal(date.getFullYear(), 2024)
+    assert.equal(date.getHours(), 0)
+    assert.equal(date.getMinutes(), 30)
   })
 
   test('returns null when no creation_time present', () => {

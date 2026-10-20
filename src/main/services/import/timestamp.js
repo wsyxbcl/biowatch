@@ -45,19 +45,22 @@ export function isValidTimestamp(date) {
  * Parse ffmpeg stderr output to extract creation_time metadata.
  * FFmpeg prints lines like:
  *   creation_time   : 2024-03-15T14:30:22.000000Z
+ *
+ * maze: read as camera-local wall-clock time, ignoring the trailing Z.
+ * Camera traps (e.g. Ambarella-based) write local time but tag it UTC, which
+ * shifted videos by the UTC offset relative to their trigger photos. Photo
+ * EXIF and filename timestamps are already read as local time, so videos now
+ * agree with them. Devices that store true UTC will be off by the offset.
+ *
  * @param {string} stderr - FFmpeg stderr output
  * @returns {Date|null}
  */
 export function parseFFmpegCreationTime(stderr) {
-  // Match creation_time in ffmpeg banner output, preserving any trailing Z
-  const match = stderr.match(/creation_time\s*:\s*(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})\S*/)
+  const match = stderr.match(/creation_time\s*:\s*(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})/)
   if (!match) return null
 
-  // Ensure the timestamp is parsed as UTC — FFmpeg creation_time is always UTC
-  let isoString = match[1]
-  if (!isoString.endsWith('Z')) isoString += 'Z'
-
-  const date = new Date(isoString)
+  // No zone designator: the Date is constructed in the machine's local time.
+  const date = new Date(`${match[1]}T${match[2]}`)
   return isNaN(date.getTime()) ? null : date
 }
 
