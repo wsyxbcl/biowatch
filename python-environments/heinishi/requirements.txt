@@ -1,0 +1,24 @@
+# Heinishi (maze-speciesnet-jingxi) runtime environment.
+# Mirrors the delivery's requirements-tested.txt plus the Biowatch serving stack.
+# CI installs requirements-windows.lock.txt, compiled from this file against the
+# CUDA 12.8 PyTorch index (RTX 30 to 50 series). Recompile after any change.
+# megadetector and ultralytics-yolov5 must match exactly: the delivery verifies
+# their installed source hashes at load time.
+torch==2.11.0
+torchvision==0.26.0
+timm==1.0.27
+megadetector==10.0.20
+ultralytics-yolov5==0.1.1
+Pillow==12.2.0
+numpy==2.4.4
+opencv-python==4.13.0.92
+pandas==3.0.2
+scipy==1.17.1
+PyYAML==6.0.3
+tqdm==4.67.1
+matplotlib==3.10.8
+requests==2.32.3
+seaborn==0.13.2
+litserve==0.2.16
+fastapi==0.143.2
+uvicorn==0.54.0

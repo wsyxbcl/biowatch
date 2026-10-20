@@ -1,0 +1,63 @@
+name: Build Python Environment (Heinishi, Windows)
+
+# Builds the offline-only `heinishi` conda environment used by the Heinishi model.
+# The archive (~3 GB) exceeds the 2 GiB GitHub release asset limit, so it is
+# uploaded as a workflow artifact. Put the .tar.gz in `offline-assets/` next to
+# Biowatch.exe; the app installs it from there.
+
+on:
+  workflow_dispatch:
+
+env:
+  # Keep in sync with jingxiPythonEnvironment in src/shared/jingxiModel.js
+  ENVIRONMENT_VERSION: '0.1.0'
+
+jobs:
+  build_heinishi_python_environment_windows:
+    runs-on: windows-latest
+    steps:
+      - name: Install Miniforge
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: heinishi
+          python-version: '3.12'
+          auto-update-conda: true
+
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Install Heinishi dependencies
+        shell: bash -l {0}
+        run: |
+          # Fully pinned Windows lock; torch/torchvision +cu128 come from the PyTorch index.
+          conda run -n heinishi pip install --no-cache-dir --no-deps \
+            -r python-environments/heinishi/requirements-windows.lock.txt \
+            --extra-index-url https://download.pytorch.org/whl/cu128
+          conda run -n heinishi pip check
+          conda run -n heinishi pip freeze
+
+      - name: Check environment
+        shell: bash -l {0}
+        run: |
+          conda run -n heinishi python python-environments/heinishi/check_env.py
+
+      - name: Compress conda environment
+        shell: bash -l {0}
+        run: |
+          conda clean --all --yes
+          mkdir -p dist
+          CONDA_BASE=$(conda info --base)
+          ARCHIVE=dist/heinishi-"${ENVIRONMENT_VERSION}"-Windows.tar.gz
+          tar -czf "$ARCHIVE" -C "${CONDA_BASE}"/envs heinishi
+          echo "Archive size (MB): $(( $(stat -c %s "$ARCHIVE") / 1048576 ))"
+          echo "Installed size (MB): $(du -sm "${CONDA_BASE}"/envs/heinishi | cut -f1)"
+          echo "Archive entries: $(tar -tzf "$ARCHIVE" | wc -l)"
+          sha256sum "$ARCHIVE" | tee dist/SHA256SUMS
+
+      - name: Upload environment archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: heinishi-${{ env.ENVIRONMENT_VERSION }}-Windows
+          path: dist/*
+          compression-level: 0
+          retention-days: 30

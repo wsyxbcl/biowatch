@@ -1,0 +1,39 @@
+name: Build Heinishi Portable (Windows)
+
+# Unpacked Windows build (no installer) for copy-and-run distribution.
+# Model and environment archives are private/large and are NOT part of this
+# artifact: place them in `offline-assets/` next to Biowatch.exe after download.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_heinishi_windows:
+    runs-on: windows-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+
+      - name: Install Node.js dependencies
+        run: npm install
+
+      - name: Build unpacked app
+        run: |
+          npm run build
+          npx electron-builder --win --dir --publish never
+          New-Item -ItemType Directory -Force dist/win-unpacked/offline-assets
+          Set-Content dist/win-unpacked/offline-assets/README.txt "Put heinishi-0.1.0-Windows.tar.gz and maze-speciesnet-jingxi-0.0.1.tar.gz here."
+
+      - name: Upload unpacked app
+        uses: actions/upload-artifact@v4
+        with:
+          name: Biowatch-Heinishi-windows-unpacked
+          path: dist/win-unpacked
+          retention-days: 30

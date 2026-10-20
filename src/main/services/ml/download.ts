@@ -387,6 +387,17 @@ function findLocalArchive(downloadURL: string): string | null {
 }
 
 /**
+ * Archives whose `downloadURL` is a bare filename are offline-only: they must be
+ * placed in `offline-assets/` next to the executable.
+ */
+function requireRemoteURL(downloadURL: string): void {
+  if (!/^https?:\/\//.test(downloadURL)) {
+    const folder = join(dirname(process.execPath), 'offline-assets')
+    throw new Error(`Offline archive ${getArchiveFilename(downloadURL)} not found in ${folder}`)
+  }
+}
+
+/**
  * Clears all locally stored machine learning models and their associated Python environments.
  *
  * @returns {Promise<OperationResult>} The result of the operation.
@@ -609,6 +620,7 @@ export async function downloadPythonEnvironment({
       if (localArchivePath) {
         log.info(`[DOWNLOAD] Using local Python environment archive ${localArchivePath}`)
       } else {
+        requireRemoteURL(downloadURL)
         log.info(`[DOWNLOAD] Starting Python environment download from ${downloadURL}`)
         log.info(`[DOWNLOAD] Download will use retry logic with up to ${5} attempts`)
 
@@ -691,6 +703,8 @@ export async function downloadMLModel({
   const localInstallPath = getMLModelLocalInstallPath({ id, version })
   const extractPath = dirname(localInstallPath)
   const localTarPath = getMLModelLocalTarPath({ id, version })
+  const localArchivePath = findLocalArchive(downloadURL)
+  const archivePath = localArchivePath ?? localTarPath
   const manifestFilepath = getMLModelLocalDownloadManifest()
 
   const installationStateProgress = {
@@ -701,7 +715,7 @@ export async function downloadMLModel({
     [InstallationState.Success]: 100
   }
 
-  const manifestOpts = { archivePath: localTarPath, installPath: localInstallPath }
+  const manifestOpts = { archivePath, installPath: localInstallPath }
 
   let previousProgress = 0
   const flushProgressIncrementThreshold = 1
@@ -761,8 +775,13 @@ export async function downloadMLModel({
         state: InstallationState.Download,
         opts: manifestOpts
       })
-      log.info('Downloading the model from', downloadURL)
-      await downloadFile(downloadURL, localTarPath, onProgressDownload)
+      if (localArchivePath) {
+        log.info(`[DOWNLOAD] Using local model archive ${localArchivePath}`)
+      } else {
+        requireRemoteURL(downloadURL)
+        log.info('Downloading the model from', downloadURL)
+        await downloadFile(downloadURL, localTarPath, onProgressDownload)
+      }
       writeToManifest({
         manifestFilepath,
         id,
@@ -771,8 +790,8 @@ export async function downloadMLModel({
         progress: installationStateProgress[InstallationState.Download],
         opts: manifestOpts
       })
-      log.info(`Extracting the archive ${localTarPath} to ${extractPath}`)
-      await extractTarGz(localTarPath, extractPath, onProgressExtract)
+      log.info(`Extracting the archive ${archivePath} to ${extractPath}`)
+      await extractTarGz(archivePath, extractPath, onProgressExtract)
 
       writeToManifest({
         manifestFilepath,
@@ -782,8 +801,10 @@ export async function downloadMLModel({
         progress: installationStateProgress[InstallationState.Extract],
         opts: manifestOpts
       })
-      log.info('Cleaning the local archive: ', localTarPath)
-      await fsPromises.unlink(localTarPath)
+      if (!localArchivePath) {
+        log.info('Cleaning the local archive: ', localTarPath)
+        await fsPromises.unlink(localTarPath)
+      }
       writeToManifest({
         manifestFilepath,
         id,
