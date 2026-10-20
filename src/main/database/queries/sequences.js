@@ -27,6 +27,7 @@ import { union } from 'drizzle-orm/sqlite-core'
 import log from '../../services/logger.js'
 import { isAreaBboxApplicable } from './bbox.js'
 import { getStudyIdFromPath } from './utils.js'
+import { localHour } from './localTime.js'
 import { BLANK_SENTINEL, VEHICLE_SENTINEL } from '../../../shared/constants.js'
 
 /**
@@ -59,13 +60,13 @@ export function buildHourRangeCondition(range) {
   if (start === end) return null
   if (start < end) {
     return and(
-      sql`CAST(strftime('%H', ${media.timestamp}) AS INTEGER) >= ${start}`,
-      sql`CAST(strftime('%H', ${media.timestamp}) AS INTEGER) < ${end}`
+      sql`${localHour(media.timestamp)} >= ${start}`,
+      sql`${localHour(media.timestamp)} < ${end}`
     )
   }
   return or(
-    sql`CAST(strftime('%H', ${media.timestamp}) AS INTEGER) >= ${start}`,
-    sql`CAST(strftime('%H', ${media.timestamp}) AS INTEGER) < ${end}`
+    sql`${localHour(media.timestamp)} >= ${start}`,
+    sql`${localHour(media.timestamp)} < ${end}`
   )
 }
 

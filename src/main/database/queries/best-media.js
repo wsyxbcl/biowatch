@@ -6,6 +6,7 @@
 import { executeRawQuery } from '../manager.js'
 import log from '../../services/logger.js'
 import { getStudyIdFromPath } from './utils.js'
+import { localHourSql } from './localTime.js'
 
 /**
  * Assigns sequence IDs to media candidates based on timestamp proximity within the same deployment.
@@ -444,8 +445,8 @@ export async function getBestMedia(dbPath, options = {}) {
           -- Extract hour from timestamp and score based on typical daylight
           CASE
             WHEN m.timestamp IS NULL THEN 0.5
-            WHEN CAST(strftime('%H', m.timestamp) AS INTEGER) BETWEEN 8 AND 16 THEN 1.0  -- Peak daylight (8am-4pm)
-            WHEN CAST(strftime('%H', m.timestamp) AS INTEGER) BETWEEN 6 AND 18 THEN 0.7  -- Extended daylight (6am-6pm)
+            WHEN ${localHourSql('m.timestamp')} BETWEEN 8 AND 16 THEN 1.0  -- Peak daylight (8am-4pm)
+            WHEN ${localHourSql('m.timestamp')} BETWEEN 6 AND 18 THEN 0.7  -- Extended daylight (6am-6pm)
             ELSE 0.2  -- Night time
           END as daytimeScore
         FROM observations o
@@ -734,8 +735,8 @@ export async function getBestImagePerSpecies(dbPath) {
           -- Daytime score
           CASE
             WHEN m.timestamp IS NULL THEN 0.5
-            WHEN CAST(strftime('%H', m.timestamp) AS INTEGER) BETWEEN 8 AND 16 THEN 1.0
-            WHEN CAST(strftime('%H', m.timestamp) AS INTEGER) BETWEEN 6 AND 18 THEN 0.7
+            WHEN ${localHourSql('m.timestamp')} BETWEEN 8 AND 16 THEN 1.0
+            WHEN ${localHourSql('m.timestamp')} BETWEEN 6 AND 18 THEN 0.7
             ELSE 0.2
           END as daytimeScore,
           o.detectionConfidence,

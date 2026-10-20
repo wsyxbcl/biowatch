@@ -22,6 +22,7 @@ import {
 } from 'drizzle-orm'
 import log from '../../services/logger.js'
 import { getStudyIdFromPath } from './utils.js'
+import { localHour, localHourSql, localWeekStart, localWeekStartSql } from './localTime.js'
 import { buildBboxClause } from './bbox.js'
 import { BLANK_SENTINEL } from '../../../shared/constants.js'
 import { normalizeTimeRange } from './sequences.js'
@@ -459,7 +460,7 @@ export async function getSequenceAwareTimeseriesSQL(
           `
           WITH media_species AS (
             SELECT o.scientificName, m.mediaID, m.deploymentID, m.timestamp AS ts,
-                   date(substr(m.timestamp, 1, 10), 'weekday 0', '-7 days') AS weekStart,
+                   ${localWeekStartSql('m.timestamp')} AS weekStart,
                    CASE WHEN m.fileMediatype LIKE 'video/%' THEN 1 ELSE 0 END AS is_video
               FROM observations o
               INNER JOIN media m ON o.mediaID = m.mediaID
@@ -508,7 +509,7 @@ export async function getSequenceAwareTimeseriesSQL(
           `
           WITH species_events AS (
             SELECT o.scientificName AS scientificName,
-                   date(substr(m.timestamp, 1, 10), 'weekday 0', '-7 days') AS weekStart,
+                   ${localWeekStartSql('m.timestamp')} AS weekStart,
                    COALESCE(NULLIF(o.eventID, ''), 'solo:' || o.mediaID) AS event_key
               FROM observations o
               INNER JOIN media m ON o.mediaID = m.mediaID
@@ -531,7 +532,7 @@ export async function getSequenceAwareTimeseriesSQL(
           WITH media_counts AS (
             SELECT o.scientificName AS scientificName,
                    COALESCE(NULLIF(o.eventID, ''), 'solo:' || o.mediaID) AS event_key,
-                   date(substr(m.timestamp, 1, 10), 'weekday 0', '-7 days') AS weekStart,
+                   ${localWeekStartSql('m.timestamp')} AS weekStart,
                    COUNT(*) AS media_count
               FROM observations o
               INNER JOIN media m ON o.mediaID = m.mediaID
@@ -561,7 +562,7 @@ export async function getSequenceAwareTimeseriesSQL(
             ? `
               WITH species_media AS (
                 SELECT o.scientificName AS scientificName,
-                       date(substr(m.timestamp, 1, 10), 'weekday 0', '-7 days') AS weekStart,
+                       ${localWeekStartSql('m.timestamp')} AS weekStart,
                        m.mediaID
                   FROM observations o
                   INNER JOIN media m ON o.mediaID = m.mediaID
@@ -577,7 +578,7 @@ export async function getSequenceAwareTimeseriesSQL(
             `
             : `
               SELECT o.scientificName AS scientificName,
-                     date(substr(m.timestamp, 1, 10), 'weekday 0', '-7 days') AS weekStart,
+                     ${localWeekStartSql('m.timestamp')} AS weekStart,
                      COUNT(o.observationID) AS count
                 FROM observations o
                 INNER JOIN media m ON o.mediaID = m.mediaID
@@ -639,8 +640,7 @@ export async function getSpeciesTimeseriesByMedia(dbPath, speciesNames = [], bbo
           : isNotNull(observations.scientificName)
 
       // Week start calculation using SQLite date functions
-      const weekStartColumn =
-        sql`date(substr(${media.timestamp}, 1, 10), 'weekday 0', '-7 days')`.as('weekStart')
+      const weekStartColumn = localWeekStart(media.timestamp).as('weekStart')
 
       let query = db
         .select({
@@ -675,8 +675,7 @@ export async function getSpeciesTimeseriesByMedia(dbPath, speciesNames = [], bbo
 
     // Handle blanks if requested
     if (requestingBlanks) {
-      const weekStartColumn =
-        sql`date(substr(${media.timestamp}, 1, 10), 'weekday 0', '-7 days')`.as('weekStart')
+      const weekStartColumn = localWeekStart(media.timestamp).as('weekStart')
 
       // Correlated subquery for blank detection
       const matchingObservations = db
@@ -765,7 +764,7 @@ export async function getSpeciesHeatmapDataByMedia(
     // Add time-of-day condition using sql template for SQLite strftime.
     // When includeNullTimestamps=true, allow null timestamps through.
     // Empty ranges array means no time filter.
-    const hourColumn = sql`CAST(strftime('%H', ${media.timestamp}) AS INTEGER)`
+    const hourColumn = localHour(media.timestamp)
     const ranges = normalizeTimeRange(timeRange)
     const rangeConditions = ranges
       .map((r) => {
@@ -910,7 +909,7 @@ export async function getSequenceAwareHeatmapSQL(
         params.push(startDate, endDate)
       }
     }
-    const hourExpr = `CAST(strftime('%H', ${tsCol}) AS INTEGER)`
+    const hourExpr = localHourSql(tsCol)
     const hourClauses = hourRanges
       .map(({ start, end }) => {
         if (start === end) return null
@@ -1172,7 +1171,7 @@ export async function getSequenceAwareDailyActivitySQL(
           `
           WITH media_species AS (
             SELECT o.scientificName, m.mediaID, m.deploymentID, m.timestamp AS ts,
-                   CAST(strftime('%H', m.timestamp) AS INTEGER) AS hour,
+                   ${localHourSql('m.timestamp')} AS hour,
                    CASE WHEN m.fileMediatype LIKE 'video/%' THEN 1 ELSE 0 END AS is_video
               FROM observations o
               INNER JOIN media m ON o.mediaID = m.mediaID
@@ -1224,7 +1223,7 @@ export async function getSequenceAwareDailyActivitySQL(
                    m.mediaID AS mediaID,
                    m.deploymentID AS deploymentID,
                    m.timestamp AS ts,
-                   CAST(strftime('%H', m.timestamp) AS INTEGER) AS hour,
+                   ${localHourSql('m.timestamp')} AS hour,
                    CASE WHEN m.fileMediatype LIKE 'video/%' THEN 1 ELSE 0 END AS is_video,
                    COUNT(*) AS media_count
               FROM observations o
@@ -1276,7 +1275,7 @@ export async function getSequenceAwareDailyActivitySQL(
           WITH media_counts AS (
             SELECT o.scientificName AS scientificName,
                    COALESCE(NULLIF(o.eventID, ''), 'solo:' || o.mediaID) AS event_key,
-                   CAST(strftime('%H', m.timestamp) AS INTEGER) AS hour,
+                   ${localHourSql('m.timestamp')} AS hour,
                    COUNT(*) AS media_count
               FROM observations o
               INNER JOIN media m ON o.mediaID = m.mediaID
@@ -1305,7 +1304,7 @@ export async function getSequenceAwareDailyActivitySQL(
         .prepare(
           `
           SELECT o.scientificName AS scientificName,
-                 CAST(strftime('%H', m.timestamp) AS INTEGER) AS hour,
+                 ${localHourSql('m.timestamp')} AS hour,
                  ${isObservations ? 'COUNT(DISTINCT o.mediaID)' : 'COUNT(o.observationID)'} AS count
             FROM observations o
             INNER JOIN media m ON o.mediaID = m.mediaID
