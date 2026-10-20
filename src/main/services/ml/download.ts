@@ -38,6 +38,7 @@ import {
   getMLModelEnvironmentLocalTarPath,
   parseReferenceFromPath
 } from './paths.js'
+import { localArchiveCandidates } from './localArchive.js'
 
 // ============================================================================
 // Model & Environment Listing
@@ -362,15 +363,9 @@ function getArchiveFilename(downloadURL: string): string {
 }
 
 function findLocalArchive(downloadURL: string): string | null {
-  const platformArchiveAliases =
-    process.platform === 'win32'
-      ? ['common-Windows.tar.gz']
-      : process.platform === 'darwin' && process.arch === 'arm64'
-        ? ['common-macOS-arm64.tar.gz']
-        : []
   const filename = getArchiveFilename(downloadURL)
   const executableDir = dirname(process.execPath)
-  const candidateFilenames = [...platformArchiveAliases, filename]
+  const candidateFilenames = localArchiveCandidates(filename, process)
   const candidatePaths = candidateFilenames.flatMap((candidateFilename) => [
     join(executableDir, 'offline-assets', candidateFilename),
     join(executableDir, candidateFilename)

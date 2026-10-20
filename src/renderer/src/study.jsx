@@ -236,8 +236,14 @@ export default function Study() {
     () => buildScientificToCommonMap(study?.data?.taxonomic, { languages: ['eng', 'zho'] }),
     [study?.data?.taxonomic]
   )
+  // Set during render so children resolve names on their first render, and
+  // again in the effect so a StrictMode/cached remount (which runs the
+  // cleanup) does not leave the map empty.
   setStudyCommonNames(studyCommonNames)
-  useEffect(() => () => setStudyCommonNames(null), [])
+  useEffect(() => {
+    setStudyCommonNames(studyCommonNames)
+    return () => setStudyCommonNames(null)
+  }, [studyCommonNames])
 
   const { importStatus } = useImportStatus(id)
   const isImportActive =

@@ -54,6 +54,19 @@ jobs:
           echo "Archive entries: $(tar -tzf "$ARCHIVE" | wc -l)"
           sha256sum "$ARCHIVE" | tee dist/SHA256SUMS
 
+      - name: Check relocated environment
+        shell: pwsh
+        run: |
+          # Extract into a fresh folder and run python.exe directly with a minimal
+          # PATH (no conda), the way Biowatch launches it on a user's machine.
+          $relocated = Join-Path $env:RUNNER_TEMP 'relocated test'
+          New-Item -ItemType Directory -Force $relocated | Out-Null
+          tar -xzf "dist/heinishi-$env:ENVIRONMENT_VERSION-Windows.tar.gz" -C $relocated
+          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
+          Remove-Item Env:CONDA_PREFIX, Env:CONDA_DEFAULT_ENV, Env:CONDA_EXE -ErrorAction SilentlyContinue
+          & (Join-Path $relocated 'heinishi\python.exe') python-environments/heinishi/check_env.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Upload environment archive
         uses: actions/upload-artifact@v4
         with:
