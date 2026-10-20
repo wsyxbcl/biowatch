@@ -4,7 +4,7 @@ import { ErrorBoundary } from 'react-error-boundary'
 import { useQuery } from '@tanstack/react-query'
 import { BrainCircuit, Info, Loader2, Settings, Settings2 } from 'lucide-react'
 import MlZoo from './models'
-import { modelZoo } from '../../shared/mlmodels'
+import { useAvailableModels } from './models/useAvailableModels.js'
 import { Tab } from './ui/Tab'
 import Diagnostics from './Diagnostics'
 import SettingsInfo from './SettingsInfo'
@@ -88,6 +88,7 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 }
 
 export default function SettingsPage() {
+  const modelZoo = useAvailableModels()
   const navigate = useNavigate()
   const version = import.meta.env.VITE_APP_VERSION
   const platform = window.electron.process.platform

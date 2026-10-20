@@ -234,6 +234,7 @@ const api = {
   listInstalledMLModels: async () => {
     return await electronAPI.ipcRenderer.invoke('model:list-installed')
   },
+  listAvailableModels: () => electronAPI.ipcRenderer.invoke('model:list-available'),
   listInstalledMLModelEnvironments: async () => {
     return await electronAPI.ipcRenderer.invoke('model:list-installed-environments')
   },

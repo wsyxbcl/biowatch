@@ -5,7 +5,7 @@ import { Lock, FolderOpen, X } from 'lucide-react'
 import { useImportStatus } from '../hooks/import'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Button } from '../ui/button.jsx'
-import { modelZoo } from '../../../shared/mlmodels.js'
+import { useAvailableModels } from '../models/useAvailableModels.js'
 import { countries } from '../../../shared/countries.js'
 import StartingImportModal from '../StartingImportModal.jsx'
 import ModelSelect from '../models/ModelSelect.jsx'
@@ -23,6 +23,7 @@ import { getModelInstallStatus } from '../models/installStatus.js'
  * Imports run via `window.api.addFolder(studyId, dir, modelRef, country)`.
  */
 export default function FolderStep({ isOpen, studyId, onBack, onClose, onImported }) {
+  const modelZoo = useAvailableModels()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { importStatus } = useImportStatus(studyId)
@@ -139,10 +140,10 @@ export default function FolderStep({ isOpen, studyId, onBack, onClose, onImporte
   const modelLocked = !!latestModel
   const pickedModel = useMemo(() => {
     if (!pickedModelKey) return null
-    const [id, ...rest] = pickedModelKey.split('-')
-    const version = rest.join('-')
-    return modelZoo.find((m) => m.reference.id === id && m.reference.version === version) || null
-  }, [pickedModelKey])
+    return (
+      modelZoo.find((m) => `${m.reference.id}-${m.reference.version}` === pickedModelKey) || null
+    )
+  }, [pickedModelKey, modelZoo])
 
   const needsCountry = pickedModel?.reference?.id === 'speciesnet'
   const canImport =
@@ -245,14 +246,7 @@ export default function FolderStep({ isOpen, studyId, onBack, onClose, onImporte
               </div>
             ) : (
               <ModelSelect
-                value={
-                  pickedModelKey
-                    ? (() => {
-                        const [id, ...rest] = pickedModelKey.split('-')
-                        return { id, version: rest.join('-') }
-                      })()
-                    : null
-                }
+                value={pickedModel?.reference ?? null}
                 onChange={(ref) => setPickedModelKey(`${ref.id}-${ref.version}`)}
                 installedModels={installedModels}
                 installedEnvironments={installedEnvironments}

@@ -4,6 +4,7 @@
 
 import { ipcMain } from 'electron'
 import log from '../services/logger.js'
+import { listAvailableModels } from '../services/ml/catalog.js'
 
 import {
   isMLModelDownloaded,
@@ -23,6 +24,7 @@ import { startMLModelHTTPServer, stopMLModelHTTPServer } from '../services/ml/se
  * Register all ML model management IPC handlers
  */
 export function registerMLIPCHandlers() {
+  ipcMain.handle('model:list-available', () => listAvailableModels())
   // IPC handler to check whether the ML model is properly installed locally
   ipcMain.handle('model:is-downloaded', (_, id, version) => isMLModelDownloaded({ id, version }))
 

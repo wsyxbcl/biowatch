@@ -6,6 +6,8 @@
  * metadata such as size, version, and download URLs.
  */
 
+import { jingxiModel, jingxiPythonEnvironment } from './jingxiModel.js'
+
 export const pythonEnvironments = [
   /**
    * An array of Python environment configurations.
@@ -145,7 +147,8 @@ export const pythonEnvironments = [
         files: 53286
       }
     }
-  }
+  },
+  jingxiPythonEnvironment
 ]
 
 export const modelZoo = [
@@ -222,7 +225,8 @@ export const modelZoo = [
     region: 'himalayas',
     species_count: 11,
     species_data: 'manas'
-  }
+  },
+  jingxiModel
 ]
 
 /**
@@ -267,6 +271,18 @@ export function findModel({ id, version }) {
  * @param {string} platform - The platform string (e.g., 'win32', 'linux', 'darwin').
  * @returns {string} The corresponding key for the platform ('windows', 'linux', or 'mac').
  */
+/**
+ * Whether a model's Python environment has a package for the given platform.
+ * Models without one (e.g. Windows-only builds) are hidden on other platforms.
+ *
+ * @param {Object} model - A modelZoo entry.
+ * @param {string} platform - A Node.js platform string (process.platform).
+ * @returns {boolean}
+ */
+export function isModelSupportedOnPlatform(model, platform) {
+  return !!findPythonEnvironment(model.pythonEnvironment)?.platform[platformToKey(platform)]
+}
+
 export function platformToKey(platform) {
   return platform === 'win32' ? 'windows' : platform === 'linux' ? 'linux' : 'mac'
 }
@@ -276,5 +292,6 @@ export default {
   modelZoo,
   findPythonEnvironment,
   findModel,
+  isModelSupportedOnPlatform,
   platformToKey
 }

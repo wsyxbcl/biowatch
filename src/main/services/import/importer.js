@@ -14,6 +14,8 @@ import {
 import { eq } from 'drizzle-orm'
 import { DEFAULT_SEQUENCE_GAP } from '../../../shared/constants.js'
 import { enqueueBatch } from '../queue.js'
+import { isJingxi } from '../../../shared/jingxiModel.js'
+import { getLocalJingxi } from '../ml/catalog.js'
 import { queueScheduler } from '../queue-scheduler.js'
 
 // Map file extensions to IANA media types (Camtrap DP compliant)
@@ -191,6 +193,8 @@ export class Importer {
 
   async start(addingMore = false) {
     try {
+      const local = isJingxi(this.modelReference) && getLocalJingxi()
+      if (local && !local.model.ready) throw new Error(local.model.configurationError)
       this.dbPath = path.join(
         app.getPath('userData'),
         'biowatch-data',

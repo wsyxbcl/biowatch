@@ -15,6 +15,8 @@ import os from 'node:os'
 
 import { getMLModelLocalInstallPath, getMLModelEnvironmentLocalInstallPath } from './paths.js'
 import { findModel } from '../../../shared/mlmodels.js'
+import { isJingxi, JINGXI_ID } from '../../../shared/jingxiModel.js'
+import { getLocalJingxi } from './catalog.js'
 
 // ============================================================================
 // Active Server Registry
@@ -706,6 +708,47 @@ export async function startMLModelHTTPServer({
   log.info('Starting ML Model HTTP Server')
   log.info('Finding free port for Python server...')
   log.info('Model Reference:', modelReference, pythonEnvironment)
+
+  if (isJingxi(modelReference)) {
+    // Development may point at an unpacked delivery and interpreter; otherwise use
+    // the installed model and environment like every other model.
+    const local = getLocalJingxi()
+    if (local && !local.model.ready) throw new Error(local.model.configurationError)
+    let pythonInterpreter = local?.pythonPath
+    if (!pythonInterpreter) {
+      const envRoot = join(
+        getMLModelEnvironmentLocalInstallPath({ ...pythonEnvironment.reference }),
+        pythonEnvironment.reference.id
+      )
+      pythonInterpreter =
+        os.platform() === 'win32' ? join(envRoot, 'python.exe') : join(envRoot, 'bin', 'python')
+    }
+    const bundlePath = local?.bundlePath ?? getMLModelLocalInstallPath({ ...modelReference })
+    const scriptPath = is.dev
+      ? join(__dirname, '../../python-environments/common/run_jingxi_server.py')
+      : join(process.resourcesPath, 'python-environments', 'common', 'run_jingxi_server.py')
+    const port = await resolveServerPort(null)
+    const shutdownApiKey = crypto.randomUUID()
+    const pythonProcess = await startAndWaitTillServerHealty({
+      pythonInterpreter,
+      scriptPath,
+      scriptArgs: ['--bundle', bundlePath, '--port', String(port), '--threads', '4'],
+      healthEndpoint: `http://localhost:${port}/health`,
+      maxRestarts: 0,
+      env: {
+        LIT_SHUTDOWN_API_KEY: shutdownApiKey,
+        PYTHONDONTWRITEBYTECODE: '1',
+        MPLCONFIGDIR: join(os.tmpdir(), 'heinishi-matplotlib')
+      }
+    })
+    registerActiveServer({
+      pid: pythonProcess.pid as number,
+      port,
+      shutdownApiKey,
+      modelId: JINGXI_ID
+    })
+    return { port, process: pythonProcess, shutdownApiKey }
+  }
 
   switch (modelReference.id) {
     case 'speciesnet': {

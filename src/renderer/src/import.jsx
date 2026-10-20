@@ -1,7 +1,7 @@
 import 'leaflet/dist/leaflet.css'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router'
-import { modelZoo } from '../../shared/mlmodels.js'
+import { useAvailableModels } from './models/useAvailableModels.js'
 import { getGbifTitle, isGbifAvailable } from '../../shared/gbifTitles.js'
 import { useQueryClient } from '@tanstack/react-query'
 import CountryPickerModal from './CountryPickerModal.jsx'
@@ -50,6 +50,7 @@ function SourceRow({ icon: Icon, title, description, children, className = '' })
 }
 
 export default function Import({ studiesCount = 0 }) {
+  const modelZoo = useAvailableModels()
   const navigate = useNavigate()
   const isFirstTimeUser = studiesCount === 0
   const [selectedModel, setSelectedModel] = useState(null)
@@ -237,7 +238,7 @@ export default function Import({ studiesCount = 0 }) {
       if (!model) return false
       return getModelInstallStatus(model, installedModels, installedEnvironments) === 'installed'
     },
-    [installedModels, installedEnvironments]
+    [installedModels, installedEnvironments, modelZoo]
   )
 
   useEffect(() => {
@@ -278,7 +279,7 @@ export default function Import({ studiesCount = 0 }) {
       }
     }
     fetchInstalledData()
-  }, []) // Run only on mount - callbacks close over current state
+  }, [modelZoo])
 
   const handleCamTrapDP = async () => {
     try {

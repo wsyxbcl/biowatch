@@ -10,6 +10,8 @@ import {
 } from '../../../shared/downloadState'
 import { getRegion } from './regions'
 
+const LOCAL_ENVIRONMENT = { reference: {} }
+
 function formatSize(mb) {
   const rounded = Math.round(mb / 50) * 50
   return rounded > 1000 ? `${(rounded / 1000).toFixed(2)} GB` : `${rounded} MB`
@@ -26,7 +28,9 @@ export default function ModelCard({
   onDownloadStatusChange
 }) {
   const region = getRegion(model.region)
-  const pythonEnvironment = findPythonEnvironment(model.pythonEnvironment)
+  const pythonEnvironment = model.local
+    ? LOCAL_ENVIRONMENT
+    : findPythonEnvironment(model.pythonEnvironment)
 
   const [status, setStatus] = useState({ model: {}, pythonEnvironment: {} })
   const [isDownloaded, setIsDownloaded] = useState(false)
@@ -34,6 +38,7 @@ export default function ModelCard({
 
   // Initial fetch + react to refreshKey (clear-all)
   useEffect(() => {
+    if (model.local) return
     let cancelled = false
     ;(async () => {
       const s = await window.api.getMLModelDownloadStatus({
@@ -53,7 +58,7 @@ export default function ModelCard({
     return () => {
       cancelled = true
     }
-  }, [model.reference, pythonEnvironment.reference, refreshKey])
+  }, [model.local, model.reference, pythonEnvironment.reference, refreshKey])
 
   // Polling while downloading
   useEffect(() => {
@@ -88,11 +93,16 @@ export default function ModelCard({
   const handleDownload = useCallback(async () => {
     setIsDownloading(true)
     try {
-      await window.api.downloadMLModel(model.reference)
-      await window.api.downloadPythonEnvironment({
-        ...pythonEnvironment.reference,
-        requestingModelId: model.reference.id
-      })
+      const check = (result) => {
+        if (!result?.success) throw new Error(result?.message || 'Installation failed')
+      }
+      check(await window.api.downloadMLModel(model.reference))
+      check(
+        await window.api.downloadPythonEnvironment({
+          ...pythonEnvironment.reference,
+          requestingModelId: model.reference.id
+        })
+      )
       const s = await window.api.getMLModelDownloadStatus({
         modelReference: model.reference,
         pythonEnvironmentReference: pythonEnvironment.reference
@@ -106,6 +116,7 @@ export default function ModelCard({
       })
     } catch (err) {
       console.error('Download failed', err)
+      toast.error(`${model.name} installation failed`, { description: err.message })
       setIsDownloading(false)
     }
   }, [model.reference, model.name, pythonEnvironment.reference])
@@ -149,7 +160,11 @@ export default function ModelCard({
           )}
         </div>
         <div className="flex-shrink-0">
-          {isDownloading ? (
+          {model.local ? (
+            <span className="text-xs text-muted-foreground" title={model.configurationError}>
+              {model.ready ? 'Local · Experimental' : 'Configuration required'}
+            </span>
+          ) : isDownloading ? (
             <StatusPill state="downloading" />
           ) : isDownloaded ? (
             <button
@@ -182,12 +197,15 @@ export default function ModelCard({
         <span className="text-foreground font-medium">
           {model.detectionOnly
             ? `Detection only · ${model.species_count} categories`
-            : `${model.species_count} species`}
+            : `${model.species_count} ${model.categoryLabel || 'species'}`}
         </span>
       </div>
 
       {!isDownloading && (
         <div className="text-xs text-muted-foreground leading-snug">{model.description}</div>
+      )}
+      {model.configurationError && (
+        <p className="text-xs text-red-600 mt-2">{model.configurationError}</p>
       )}
 
       {isDownloading && (
@@ -213,7 +231,9 @@ export default function ModelCard({
               onToggleSpecies?.(model.reference.id)
             }}
           >
-            {speciesOpen ? '▾ Hide species' : `▸ View ${model.species_count} species`}
+            {speciesOpen
+              ? '▾ Hide species'
+              : `▸ View ${model.species_count} ${model.categoryLabel || 'species'}`}
           </div>
 
           {speciesOpen && speciesPanel}

@@ -19,6 +19,8 @@ import { resolveVideoTimestamp } from './import/timestamp.js'
 import { resolveCommonName } from '../../shared/commonNames/index.js'
 import { normalizeScientificName } from '../../shared/commonNames/normalize.js'
 import log from './logger.js'
+import { isJingxi } from '../../shared/jingxiModel.js'
+import { buildJingxiObservations } from './jingxiPrediction.js'
 
 /**
  * Check whether a MIME type represents a video format
@@ -281,6 +283,28 @@ export async function insertPrediction(db, prediction, modelInfo = {}) {
   }
 
   // Parse scientific name based on model type. Normalize to canonical
+  if (isJingxi({ id: modelInfo.modelID, version: modelInfo.modelVersion })) {
+    const rows = buildJingxiObservations(prediction.jingxi)
+    const eventID = crypto.randomUUID()
+    for (const row of rows) {
+      await db.insert(observations).values({
+        ...row,
+        observationID: crypto.randomUUID(),
+        mediaID: mediaRecord.mediaID,
+        deploymentID: mediaRecord.deploymentID,
+        eventID,
+        eventStart: mediaRecord.timestamp,
+        eventEnd: mediaRecord.timestamp,
+        modelOutputID: modelInfo.modelOutputID || null,
+        classificationMethod: 'machine',
+        classifiedBy: `${modelInfo.modelID} ${modelInfo.modelVersion}`,
+        classificationTimestamp: new Date().toISOString()
+      })
+    }
+    return
+  }
+
+  // Parse scientific name based on model type. Normalize to canonical
   // (lowercase, trimmed) form so observations stay deduplicated regardless of
   // what casing the model emits.
   const modelType = modelInfo.modelID || 'speciesnet'
@@ -393,6 +417,25 @@ export async function insertVideoPredictions(db, predictions, mediaRecord, model
     return
   }
 
+  const heinishi = isJingxi({ id: modelInfo.modelID, version: modelInfo.modelVersion })
+  const heinishiFrames = heinishi
+    ? predictions.map((pred) => {
+        if (!Number.isInteger(pred.frame_number) || pred.frame_number < 0)
+          throw new Error('Invalid Heinishi video frame number')
+        const rows = buildJingxiObservations(pred.jingxi)
+        return pred.jingxi.status === 'classified'
+          ? rows[pred.jingxi.selected_detection_index]
+          : rows.reduce((best, row) =>
+              (row.detectionConfidence ?? 0) > (best.detectionConfidence ?? 0) ? row : best
+            )
+      })
+    : null
+  // Vote only among the most informative frames: classified > generic detection > no box.
+  // Otherwise many empty frames outvote an animal seen briefly.
+  const heinishiTier = (frame) =>
+    frame.classificationProbability != null ? 2 : frame.detectionConfidence != null ? 1 : 0
+  const heinishiTopTier = heinishiFrames ? Math.max(...heinishiFrames.map(heinishiTier)) : null
+
   // If media hasn't been processed yet, extract metadata and associate with deployment
   if (!mediaRecord.timestamp || !mediaRecord.deploymentID) {
     const result = await processMediaDeployment(db, mediaRecord)
@@ -440,21 +483,30 @@ export async function insertVideoPredictions(db, predictions, mediaRecord, model
   const modelType = modelInfo.modelID || 'speciesnet'
   const speciesMap = new Map() // scientificName -> { frames, scores, firstFrame, lastFrame }
 
-  for (const pred of predictions) {
-    const species = parseScientificName(pred, modelType)
+  for (const [index, pred] of predictions.entries()) {
+    const frame = heinishiFrames?.[index]
+    if (frame && heinishiTier(frame) < heinishiTopTier) continue
+    const species = frame ? frame.scientificName : parseScientificName(pred, modelType)
     if (!species) continue // Skip blank/empty predictions
 
     if (!speciesMap.has(species)) {
       speciesMap.set(species, {
         frames: [],
         scores: [], // Track all scores for averaging
+        ...(frame
+          ? { commonName: frame.commonName, classified: frame.classificationProbability != null }
+          : {}),
         firstFrame: pred.frame_number,
         lastFrame: pred.frame_number
       })
     }
     const entry = speciesMap.get(species)
     entry.frames.push(pred.frame_number)
-    entry.scores.push(pred.prediction_score || 0) // Collect scores for averaging
+    entry.scores.push(
+      frame
+        ? (frame.classificationProbability ?? frame.detectionConfidence ?? 0)
+        : pred.prediction_score || 0
+    )
     entry.firstFrame = Math.min(entry.firstFrame, pred.frame_number)
     entry.lastFrame = Math.max(entry.lastFrame, pred.frame_number)
   }
@@ -494,7 +546,10 @@ export async function insertVideoPredictions(db, predictions, mediaRecord, model
       eventStart: eventStart,
       eventEnd: eventEnd,
       scientificName: normalizedWinner,
-      commonName: resolveCommonName(normalizedWinner),
+      commonName: heinishi ? winnerData.commonName : resolveCommonName(normalizedWinner),
+      ...(heinishi
+        ? { classificationProbability: winnerData.classified ? winnerData.avgConfidence : null }
+        : {}),
       confidence: winnerData.avgConfidence, // Use average confidence
       count: 1,
       // No bbox for video (movement can't be represented by single bbox)

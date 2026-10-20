@@ -20,6 +20,8 @@ import {
 import { insertModelOutput, updateMetadata, getMetadata } from '../database/index.js'
 import { modelRuns, media, deployments } from '../database/models.js'
 import log from './logger.js'
+import { isJingxi } from '../../shared/jingxiModel.js'
+import { buildJingxiObservations, jingxiTaxonomyProvenance } from './jingxiPrediction.js'
 
 export class InferenceConsumer extends QueueConsumer {
   /**
@@ -88,6 +90,21 @@ export class InferenceConsumer extends QueueConsumer {
       const videoPredictionsMap = new Map() // filepath -> predictions[]
 
       for await (const prediction of getPredictions(filePaths, this.port, batchAbort.signal)) {
+        if (isJingxi({ id: modelId, version: modelVersion })) {
+          if (completedPaths.has(prediction.filepath)) continue
+          try {
+            buildJingxiObservations(prediction.jingxi)
+            prediction.jingxiTaxonomy = jingxiTaxonomyProvenance(prediction.jingxi)
+          } catch (error) {
+            const job = jobByPath.get(prediction.filepath)
+            if (job) {
+              fail(this.manager, job.id, error.message)
+              completedPaths.add(prediction.filepath)
+            }
+            videoPredictionsMap.delete(prediction.filepath)
+            continue
+          }
+        }
         // Skip failed predictions (corrupt images, model-side load errors).
         // The media row stays without an observation, so it surfaces in the
         // blank section of the media tab via notExists(realObservations).
@@ -164,6 +181,8 @@ export class InferenceConsumer extends QueueConsumer {
 
       // Process collected video predictions
       for (const [filepath, predictions] of videoPredictionsMap) {
+        if (isJingxi({ id: modelId, version: modelVersion }) && completedPaths.has(filepath))
+          continue
         const mediaRecord = await getMedia(db, filepath)
         if (!mediaRecord) {
           log.warn(`[InferenceConsumer] No media found for video: ${filepath}`)

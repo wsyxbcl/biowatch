@@ -1,0 +1,38 @@
+﻿model_index,raw_label,latin,display,rank,gbif_taxon_key,gbif_url,source
+0,中华斑羚,Naemorhedus griseus,中华斑羚 · Chinese Goral,species,7261419,https://www.gbif.org/species/7261419,model output
+1,其他鸟类,Aves,"其他（非雉科）鸟类 · Birds (other, non-pheasant)",class,212,https://www.gbif.org/species/212,model output
+2,勺鸡,Pucrasia macrolopha,勺鸡 · Koklass Pheasant,species,2473562,https://www.gbif.org/species/2473562,model output
+3,北松鼠,Sciurus vulgaris,北松鼠 · Eurasian Red Squirrel,species,8211070,https://www.gbif.org/species/8211070,model output
+4,家猫,Felis catus,家猫 · Domestic Cat,species,2435035,https://www.gbif.org/species/2435035,model output
+5,岩松鼠,Sciurotamias davidianus,岩松鼠 · Père David's Rock Squirrel,species,2437229,https://www.gbif.org/species/2437229,model output
+6,狍,Capreolus pygargus,狍 · Siberian Roe Deer,species,5220127,https://www.gbif.org/species/5220127,model output
+7,狗,Canis familiaris,狗 · Domestic Dog,species,5219200,https://www.gbif.org/species/5219200,model output
+8,狗獾,Meles leucurus,亚洲狗獾 · Asian Badger,species,2433868,https://www.gbif.org/species/2433868,model output
+9,猕猴,Macaca mulatta,猕猴 · Rhesus Macaque,species,2436604,https://www.gbif.org/species/2436604,model output
+10,猪,Sus scrofa domesticus,猪 · Domestic Pig,species,11374585,https://www.gbif.org/species/11374585,model output
+11,猪獾,Arctonyx collaris,猪獾 · Greater Hog Badger,species,2433743,https://www.gbif.org/species/2433743,model output
+12,环颈雉,Phasianus colchicus,环颈雉 · Common Pheasant,species,9752149,https://www.gbif.org/species/9752149,model output
+13,石鸡,Alectoris chukar,石鸡 · Chukar,species,2474029,https://www.gbif.org/species/2474029,model output
+14,羊,Capra hircus,山羊 · Domestic Goat,species,2441056,https://www.gbif.org/species/2441056,model output
+15,花面狸,Paguma larvata,花面狸 · Masked Palm Civet,species,2434654,https://www.gbif.org/species/2434654,model output
+16,花鼠,Eutamias sibiricus,花鼠 · Siberian Chipmunk,species,10602587,https://www.gbif.org/species/10602587,model output
+17,蒙古兔,Lepus tolai,蒙古兔 · Tolai Hare,species,2436778,https://www.gbif.org/species/2436778,model output
+18,褐马鸡,Crossoptilon mantchuricum,褐马鸡 · Brown Eared Pheasant,species,2474098,https://www.gbif.org/species/2474098,model output
+19,豹猫,Prionailurus bengalensis,豹猫 · Leopard Cat,species,2434903,https://www.gbif.org/species/2434903,model output
+20,貉,Nyctereutes procyonoides,貉 · Raccoon Dog,species,2434552,https://www.gbif.org/species/2434552,model output
+21,赤狐,Vulpes,狐属 · Foxes (Vulpes),genus,5219234,https://www.gbif.org/species/5219234,model output
+22,野猪,Sus scrofa,野猪 · Wild Boar,species,7705930,https://www.gbif.org/species/7705930,model output
+23,隐纹花松鼠,Tamiops swinhoei,隐纹花松鼠 · Swinhoe's Striped Squirrel,species,2437262,https://www.gbif.org/species/2437262,model output
+24,马／驴,Equus,马属 · Horse / Donkey (Equus),genus,8652950,https://www.gbif.org/species/8652950,model output
+25,黄鼬,Mustela sibirica,黄鼬 · Siberian Weasel,species,5218972,https://www.gbif.org/species/5218972,model output
+,,Rodentia,鼠类 · Rodents (squirrels listed separately),order,1459,https://www.gbif.org/species/1459,expert-only
+,,Erinaceus amurensis,东北刺猬 · Amur Hedgehog,species,5219617,https://www.gbif.org/species/5219617,expert-only
+,,Melinae,獾亚科 · Badgers (Melinae),subfamily,,,expert-only
+,,Sciuridae,松鼠科 · Squirrels (Sciuridae),family,9456,https://www.gbif.org/species/9456,expert-only
+,,Phasianidae,雉科 · Pheasants (Phasianidae),family,9331,https://www.gbif.org/species/9331,expert-only
+,,Canidae,犬科 · Canids (Canidae),family,9701,https://www.gbif.org/species/9701,expert-only
+,,Felidae,猫科 · Cats (Felidae),family,9703,https://www.gbif.org/species/9703,expert-only
+,,Bovidae,牛科 · Bovids (Bovidae),family,9614,https://www.gbif.org/species/9614,expert-only
+,,Mustelidae,鼬科 · Mustelids (Mustelidae),family,5307,https://www.gbif.org/species/5307,expert-only
+,,Mammalia,哺乳纲 · Mammals (Mammalia),class,359,https://www.gbif.org/species/359,expert-only
+,,Animalia,动物界 · Animals (Animalia),kingdom,1,https://www.gbif.org/species/1,expert-only

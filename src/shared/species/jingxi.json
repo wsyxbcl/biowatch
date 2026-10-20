@@ -1,0 +1,108 @@
+{
+  "species": [
+    {
+      "common": "中华斑羚 · Chinese Goral",
+      "scientific": "Naemorhedus griseus"
+    },
+    {
+      "common": "其他（非雉科）鸟类 · Birds (other, non-pheasant)",
+      "scientific": "Aves"
+    },
+    {
+      "common": "勺鸡 · Koklass Pheasant",
+      "scientific": "Pucrasia macrolopha"
+    },
+    {
+      "common": "北松鼠 · Eurasian Red Squirrel",
+      "scientific": "Sciurus vulgaris"
+    },
+    {
+      "common": "家猫 · Domestic Cat",
+      "scientific": "Felis catus"
+    },
+    {
+      "common": "岩松鼠 · Père David's Rock Squirrel",
+      "scientific": "Sciurotamias davidianus"
+    },
+    {
+      "common": "狍 · Siberian Roe Deer",
+      "scientific": "Capreolus pygargus"
+    },
+    {
+      "common": "狗 · Domestic Dog",
+      "scientific": "Canis familiaris"
+    },
+    {
+      "common": "亚洲狗獾 · Asian Badger",
+      "scientific": "Meles leucurus"
+    },
+    {
+      "common": "猕猴 · Rhesus Macaque",
+      "scientific": "Macaca mulatta"
+    },
+    {
+      "common": "猪 · Domestic Pig",
+      "scientific": "Sus scrofa domesticus"
+    },
+    {
+      "common": "猪獾 · Greater Hog Badger",
+      "scientific": "Arctonyx collaris"
+    },
+    {
+      "common": "环颈雉 · Common Pheasant",
+      "scientific": "Phasianus colchicus"
+    },
+    {
+      "common": "石鸡 · Chukar",
+      "scientific": "Alectoris chukar"
+    },
+    {
+      "common": "山羊 · Domestic Goat",
+      "scientific": "Capra hircus"
+    },
+    {
+      "common": "花面狸 · Masked Palm Civet",
+      "scientific": "Paguma larvata"
+    },
+    {
+      "common": "花鼠 · Siberian Chipmunk",
+      "scientific": "Eutamias sibiricus"
+    },
+    {
+      "common": "蒙古兔 · Tolai Hare",
+      "scientific": "Lepus tolai"
+    },
+    {
+      "common": "褐马鸡 · Brown Eared Pheasant",
+      "scientific": "Crossoptilon mantchuricum"
+    },
+    {
+      "common": "豹猫 · Leopard Cat",
+      "scientific": "Prionailurus bengalensis"
+    },
+    {
+      "common": "貉 · Raccoon Dog",
+      "scientific": "Nyctereutes procyonoides"
+    },
+    {
+      "common": "狐属 · Foxes (Vulpes)",
+      "scientific": "Vulpes"
+    },
+    {
+      "common": "野猪 · Wild Boar",
+      "scientific": "Sus scrofa"
+    },
+    {
+      "common": "隐纹花松鼠 · Swinhoe's Striped Squirrel",
+      "scientific": "Tamiops swinhoei"
+    },
+    {
+      "common": "马属 · Horse / Donkey (Equus)",
+      "scientific": "Equus"
+    },
+    {
+      "common": "黄鼬 · Siberian Weasel",
+      "scientific": "Mustela sibirica"
+    }
+  ]
+}

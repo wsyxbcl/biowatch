@@ -1,7 +1,7 @@
 import * as SelectPrimitive from '@radix-ui/react-select'
 import { useNavigate } from 'react-router'
 import { CheckCircle2, AlertTriangle, Settings, ArrowRight } from 'lucide-react'
-import { modelZoo } from '../../../shared/mlmodels.js'
+import { useAvailableModels } from './useAvailableModels.js'
 import { getRegion } from './regions.js'
 import { getModelInstallStatus } from './installStatus.js'
 import {
@@ -64,7 +64,7 @@ function ModelRow({ model, status }) {
         <span>
           {model.detectionOnly
             ? `Detection only · ${model.species_count} categories`
-            : `${model.species_count} species`}
+            : `${model.species_count} ${model.categoryLabel || 'species'}`}
         </span>
       </div>
       <p className="text-xs text-muted-foreground leading-snug line-clamp-2">{model.description}</p>
@@ -103,6 +103,7 @@ export default function ModelSelect({
   placeholder = 'Select a model'
 }) {
   const navigate = useNavigate()
+  const modelZoo = useAvailableModels()
 
   const valueKey = value ? `${value.id}-${value.version}` : ''
 
@@ -113,9 +114,7 @@ export default function ModelSelect({
       return
     }
 
-    const [id, ...rest] = key.split('-')
-    const version = rest.join('-')
-    const model = modelZoo.find((m) => m.reference.id === id && m.reference.version === version)
+    const model = modelZoo.find((m) => `${m.reference.id}-${m.reference.version}` === key)
     if (!model) return
 
     const status = getModelInstallStatus(model, installedModels, installedEnvironments)

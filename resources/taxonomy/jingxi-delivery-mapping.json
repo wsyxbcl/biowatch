@@ -1,0 +1,247 @@
+{
+  "mapping_id": "jingxi-v4-maze-mapping-20261014",
+  "entries": [
+    {
+      "index": 0,
+      "raw_label": "中华斑羚",
+      "display_label": "中华斑羚",
+      "taxon_rank": "species",
+      "scientific_name": "Naemorhedus griseus",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 1,
+      "raw_label": "其他鸟类",
+      "display_label": "其他（非雉科）鸟类",
+      "taxon_rank": null,
+      "scientific_name": null,
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 2,
+      "raw_label": "勺鸡",
+      "display_label": "勺鸡",
+      "taxon_rank": "species",
+      "scientific_name": "Pucrasia macrolopha",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 3,
+      "raw_label": "北松鼠",
+      "display_label": "北松鼠",
+      "taxon_rank": "species",
+      "scientific_name": "Sciurus vulgaris",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 4,
+      "raw_label": "家猫",
+      "display_label": "家猫",
+      "taxon_rank": "species",
+      "scientific_name": "Felis catus",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 5,
+      "raw_label": "岩松鼠",
+      "display_label": "岩松鼠",
+      "taxon_rank": "species",
+      "scientific_name": "Sciurotamias davidianus",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 6,
+      "raw_label": "狍",
+      "display_label": "狍",
+      "taxon_rank": "species",
+      "scientific_name": "Capreolus pygargus",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 7,
+      "raw_label": "狗",
+      "display_label": "狗",
+      "taxon_rank": null,
+      "scientific_name": null,
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 8,
+      "raw_label": "狗獾",
+      "display_label": "狗獾",
+      "taxon_rank": "species",
+      "scientific_name": "Meles leucurus",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 9,
+      "raw_label": "猕猴",
+      "display_label": "猕猴",
+      "taxon_rank": "species",
+      "scientific_name": "Macaca mulatta",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 10,
+      "raw_label": "猪",
+      "display_label": "猪",
+      "taxon_rank": null,
+      "scientific_name": null,
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 11,
+      "raw_label": "猪獾",
+      "display_label": "猪獾",
+      "taxon_rank": null,
+      "scientific_name": null,
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 12,
+      "raw_label": "环颈雉",
+      "display_label": "环颈雉",
+      "taxon_rank": "species",
+      "scientific_name": "Phasianus colchicus",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 13,
+      "raw_label": "石鸡",
+      "display_label": "石鸡",
+      "taxon_rank": "species",
+      "scientific_name": "Alectoris chukar",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 14,
+      "raw_label": "羊",
+      "display_label": "羊",
+      "taxon_rank": null,
+      "scientific_name": null,
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 15,
+      "raw_label": "花面狸",
+      "display_label": "花面狸",
+      "taxon_rank": "species",
+      "scientific_name": "Paguma larvata",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 16,
+      "raw_label": "花鼠",
+      "display_label": "花鼠",
+      "taxon_rank": "species",
+      "scientific_name": "Eutamias sibiricus",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 17,
+      "raw_label": "蒙古兔",
+      "display_label": "蒙古兔",
+      "taxon_rank": "species",
+      "scientific_name": "Lepus tolai",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 18,
+      "raw_label": "褐马鸡",
+      "display_label": "褐马鸡",
+      "taxon_rank": "species",
+      "scientific_name": "Crossoptilon mantchuricum",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 19,
+      "raw_label": "豹猫",
+      "display_label": "豹猫",
+      "taxon_rank": "species",
+      "scientific_name": "Prionailurus bengalensis",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 20,
+      "raw_label": "貉",
+      "display_label": "貉",
+      "taxon_rank": "species",
+      "scientific_name": "Nyctereutes procyonoides",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 21,
+      "raw_label": "赤狐",
+      "display_label": "狐属 Vulpes",
+      "taxon_rank": "genus",
+      "scientific_name": "Vulpes",
+      "speciesnet_taxon_id": "78761f5e-64a3-46eb-b4f1-c966cc1ce630",
+      "requires_expert_confirmation": true
+    },
+    {
+      "index": 22,
+      "raw_label": "野猪",
+      "display_label": "野猪",
+      "taxon_rank": "species",
+      "scientific_name": "Sus scrofa",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 23,
+      "raw_label": "隐纹花松鼠",
+      "display_label": "隐纹花松鼠",
+      "taxon_rank": "species",
+      "scientific_name": "Tamiops swinhoei",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 24,
+      "raw_label": "马／驴",
+      "display_label": "马／驴",
+      "taxon_rank": "genus",
+      "scientific_name": "Equus",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    },
+    {
+      "index": 25,
+      "raw_label": "黄鼬",
+      "display_label": "黄鼬",
+      "taxon_rank": "species",
+      "scientific_name": "Mustela sibirica",
+      "speciesnet_taxon_id": null,
+      "requires_expert_confirmation": false
+    }
+  ],
+  "semantics": "Display mapping only. Preserve raw index, label and probability; not calibrated genus probability; no Arctic fox identification claim.",
+  "mapping_notes": {
+    "taxonomy_source": "Existing project mapping; uncertain domestic/pig-badger labels retained without invented scientific names. UUIDs remain null unless already frozen.",
+    "residual_birds": "Non-Phasianidae training residual, not a calibrated Aves prediction.",
+    "fox": "Red-fox output channel displayed as Vulpes; not Arctic-fox validation or calibrated genus probability.",
+    "equus": "Horse/donkey training group, not validated coverage of all Equus species.",
+    "domestic_and_hog_badger": "Dog, sheep, domestic pig, hog badger taxonomy left null pending unambiguous label reconciliation."
+  }
+}

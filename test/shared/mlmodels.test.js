@@ -369,9 +369,11 @@ describe('ML Model Management Tests', () => {
     })
 
     test('should have consistent download URLs', () => {
+      // HTTPS, or a bare archive filename for offline-only packages (offline-assets/)
+      const isValidURL = (url) => url.startsWith('https://') || /^[\w.-]+\.tar\.gz$/.test(url)
       modelZoo.forEach((model) => {
         assert(
-          model.downloadURL.startsWith('https://'),
+          isValidURL(model.downloadURL),
           `Model ${model.reference.id} should have HTTPS download URL`
         )
         assert(
@@ -384,7 +386,7 @@ describe('ML Model Management Tests', () => {
         Object.keys(env.platform).forEach((platform) => {
           const platformConfig = env.platform[platform]
           assert(
-            platformConfig.downloadURL.startsWith('https://'),
+            isValidURL(platformConfig.downloadURL),
             `Environment ${env.reference.id} ${platform} should have HTTPS download URL`
           )
           assert(

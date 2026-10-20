@@ -10,6 +10,7 @@
  *   - 'not-installed'  model missing (env may or may not be present)
  */
 export function getModelInstallStatus(model, installedModels, installedEnvironments) {
+  if (model.local) return model.ready ? 'installed' : 'not-installed'
   const modelOk = installedModels.some(
     (m) => m.id === model.reference.id && m.version === model.reference.version
   )

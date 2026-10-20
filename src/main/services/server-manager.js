@@ -8,6 +8,7 @@
 import { startMLModelHTTPServer, stopMLModelHTTPServer } from './ml/server.js'
 import mlmodels from '../../shared/mlmodels.js'
 import log from './logger.js'
+import { findAvailableModel } from './ml/catalog.js'
 
 class ServerManager {
   constructor() {
@@ -32,12 +33,15 @@ class ServerManager {
 
     const [modelId, modelVersion] = topic.split(':')
     const modelReference = { id: modelId, version: modelVersion }
-    const model = mlmodels.findModel(modelReference)
+    const model = findAvailableModel(modelReference)
     if (!model) {
       throw new Error(`Model not found: ${topic}`)
     }
-    const pythonEnvironment = mlmodels.findPythonEnvironment(model.pythonEnvironment)
-    if (!pythonEnvironment) {
+    if (model.local && !model.ready) throw new Error(model.configurationError)
+    const pythonEnvironment = model.local
+      ? null
+      : mlmodels.findPythonEnvironment(model.pythonEnvironment)
+    if (!model.local && !pythonEnvironment) {
       throw new Error(`Python environment not found for: ${topic}`)
     }
 
