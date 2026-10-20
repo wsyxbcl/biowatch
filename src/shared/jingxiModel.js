@@ -32,7 +32,7 @@ export const jingxiModel = {
   size_in_MB: 457,
   region: 'jingxi',
   description:
-    '平西丸 Test type 001. Experimental Jingxi classifier. CPU or CUDA, images and videos. Expert review required.'
+    '平西丸 Test type 001, 山水自然保护中心京西物种模型(内测版)，暂未包含鼠类和刺猬. CPU or CUDA, images and videos. Expert review required.'
 }
 
 export function isJingxi(reference) {

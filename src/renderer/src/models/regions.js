@@ -23,6 +23,14 @@ export const REGIONS = {
     badgeText: '#be185d',
     geojson: 'himalayas'
   },
+  jingxi: {
+    id: 'jingxi',
+    label: '京西·Beijing',
+    color: '#b45309',
+    badgeBg: '#fef3c7',
+    badgeText: '#b45309',
+    geojson: 'jingxi'
+  },
   custom: {
     id: 'custom',
     label: 'Custom',

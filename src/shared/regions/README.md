@@ -19,6 +19,10 @@ mapshaper at ~5% retention) to keep bundle size small.
 - `himalayas.geojson` — Kyrgyzstan boundary. Replace with a broader
   high-altitude Central Asian polygon if the model authors prefer.
 
+- `jingxi.json` — Beijing municipality (CN-BJ) from Natural Earth 10m Admin-1
+  states/provinces (CC0), simplified with Douglas-Peucker (0.01°). Coverage
+  zone for the Heinishi model (western Beijing mountains).
+
 ## Updating
 
 1. Download `ne_110m_admin_0_countries.geojson` from Natural Earth.
