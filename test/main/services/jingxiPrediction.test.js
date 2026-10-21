@@ -86,30 +86,48 @@ test('stores Chinese names and exposes them as study vernacular names', async ()
   assert.equal(Object.keys(names).length, 29)
 })
 
-test('classifies unreadable files apart from contract violations', async () => {
+test('only read/decode errors count as unreadable; inference errors still fail', async () => {
   const { heinishiPredictionProblem } =
     await import('../../../src/main/services/jingxiPrediction.js')
+  const runnerError = (type, message) => ({
+    prediction: 'error',
+    jingxi: { ...rawPrediction(), status: 'error', error: { type, message } }
+  })
+  const kind = (prediction) => heinishiPredictionProblem(prediction)?.kind
+
   // Shared video path: OpenCV could not open the file, no Heinishi payload.
   assert.deepEqual(
     heinishiPredictionProblem({ prediction: 'error', error: 'Cannot open video: a.mp4' }),
     { kind: 'unreadable', message: 'Cannot open video: a.mp4' }
   )
-  // Runner reported a per-image error (e.g. truncated JPEG).
-  const broken = {
-    ...rawPrediction(),
-    status: 'error',
-    error: { message: 'image file is truncated' }
-  }
-  assert.deepEqual(heinishiPredictionProblem({ prediction: 'error', jingxi: broken }), {
-    kind: 'unreadable',
-    message: 'image file is truncated'
-  })
   assert.equal(
-    heinishiPredictionProblem({
-      prediction: 'x',
-      jingxi: { ...rawPrediction(), model_id: 'other' }
-    }).kind,
-    'invalid'
+    kind({ prediction: 'error', error: 'Invalid video metadata (fps=0): a.mp4' }),
+    'unreadable'
+  )
+  assert.equal(
+    kind(runnerError('UnidentifiedImageError', "cannot identify image file 'a.jpg'")),
+    'unreadable'
+  )
+  assert.equal(
+    kind(runnerError('OSError', 'image file is truncated (8 bytes not processed)')),
+    'unreadable'
+  )
+
+  // Inference failures must stay retriable.
+  assert.deepEqual(
+    heinishiPredictionProblem(runnerError('OutOfMemoryError', 'CUDA out of memory')),
+    {
+      kind: 'failed',
+      message: 'OutOfMemoryError: CUDA out of memory'
+    }
+  )
+  assert.equal(kind(runnerError('RuntimeError', 'cuDNN error')), 'failed')
+  assert.equal(kind(runnerError('OSError', 'No space left on device')), 'failed')
+  assert.equal(kind({ prediction: 'error', error: 'something unexpected' }), 'failed')
+
+  assert.equal(
+    kind({ prediction: 'x', jingxi: { ...rawPrediction(), model_id: 'other' } }),
+    'failed'
   )
   assert.equal(heinishiPredictionProblem({ prediction: '猪', jingxi: rawPrediction() }), null)
 })

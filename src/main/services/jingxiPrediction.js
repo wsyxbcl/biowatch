@@ -115,22 +115,44 @@ export function buildJingxiObservations(raw) {
       ]
 }
 
+// File-level read/decode failures. Retrying can't fix these, so the job
+// completes and the media stays without observations, as upstream does.
+// Shared video path (utils.py) reports only a message.
+const UNREADABLE_VIDEO =
+  /^(Cannot open video|Invalid video metadata|Invalid FPS for video|Cannot decode image)\b/
+// Runner reports {type, message}; it wraps decoding and inference in one try,
+// so only these types (and PIL's plain OSError for damaged data) mean the
+// file itself is bad. Anything else, e.g. CUDA out of memory, is retried.
+const UNREADABLE_IMAGE_TYPES = new Set([
+  'UnidentifiedImageError',
+  'DecompressionBombError',
+  'FileNotFoundError'
+])
+const UNREADABLE_OSERROR = /image file is truncated|broken data stream|cannot identify image/i
+
 /**
  * Why a streamed Heinishi result can't be stored, or null when it can.
- * 'unreadable': the file itself failed (corrupt, empty, undecodable). Not
- * retriable; the media stays without observations, as upstream does.
- * 'invalid': the result breaks the delivery contract; fail the job.
+ * 'unreadable': the file can't be read or decoded; complete without retry.
+ * 'failed': inference or contract error; fail the job so it is retried.
  */
 export function heinishiPredictionProblem(prediction) {
-  if (prediction?.prediction === 'error' || prediction?.jingxi?.status === 'error') {
-    const error = prediction.jingxi?.error?.message ?? prediction.jingxi?.error ?? prediction.error
-    return { kind: 'unreadable', message: String(error ?? 'unknown error') }
+  const runnerError = prediction?.jingxi?.status === 'error' ? prediction.jingxi.error : null
+  if (runnerError || prediction?.prediction === 'error') {
+    const type = runnerError?.type
+    const message = String(runnerError?.message ?? prediction.error ?? 'unknown error')
+    const unreadable = runnerError
+      ? UNREADABLE_IMAGE_TYPES.has(type) || (type === 'OSError' && UNREADABLE_OSERROR.test(message))
+      : !prediction.jingxi && UNREADABLE_VIDEO.test(message)
+    return {
+      kind: unreadable ? 'unreadable' : 'failed',
+      message: type ? `${type}: ${message}` : message
+    }
   }
   try {
     buildJingxiObservations(prediction?.jingxi)
     return null
   } catch (error) {
-    return { kind: 'invalid', message: error.message }
+    return { kind: 'failed', message: error.message }
   }
 }
 

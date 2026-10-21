@@ -96,8 +96,8 @@ export class InferenceConsumer extends QueueConsumer {
           if (problem) {
             const job = jobByPath.get(prediction.filepath)
             if (problem.kind === 'unreadable') {
-              // Same as the generic path below: retrying an unreadable file
-              // can't help, and a failed job keeps the import bar stuck.
+              // Retrying a file that can't be decoded can't help, and a
+              // failed job keeps the import bar stuck on Resume.
               log.warn(
                 `[InferenceConsumer] Unreadable file ${prediction.filepath}: ${problem.message}`
               )
