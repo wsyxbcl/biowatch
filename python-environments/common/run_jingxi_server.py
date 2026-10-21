@@ -74,7 +74,7 @@ def load_runner(bundle, device='cpu'):
         raise ValueError('Unexpected Heinishi delivery manifest')
     # Verify code bytes BEFORE importing executable code from the local bundle.
     import json
-    manifest = json.loads((bundle / 'manifest.json').read_text())
+    manifest = json.loads((bundle / 'manifest.json').read_text(encoding='utf-8'))
     for filename, asset in manifest['files'].items():
         path = (bundle / filename).resolve()
         if not path.is_relative_to(bundle):

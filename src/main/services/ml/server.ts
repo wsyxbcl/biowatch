@@ -738,6 +738,10 @@ export async function startMLModelHTTPServer({
       env: {
         LIT_SHUTDOWN_API_KEY: shutdownApiKey,
         PYTHONDONTWRITEBYTECODE: '1',
+        // The delivery reads its Chinese-labelled JSON with the locale default
+        // encoding, which is GBK on Chinese Windows. UTF-8 mode fixes that
+        // without touching the hash-locked bundle.
+        PYTHONUTF8: '1',
         MPLCONFIGDIR: join(os.tmpdir(), 'heinishi-matplotlib')
       }
     })
