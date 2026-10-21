@@ -101,6 +101,8 @@ class HeinishiAPI(ls.LitAPI, _video_utils.VideoCapableLitAPI):
         torch.set_num_threads(self.threads)
         self.runtime_device = resolve_device(self.requested_device)
         self.runner = load_runner(self.bundle, self.runtime_device)
+        name = torch.cuda.get_device_name(0) if self.runtime_device.startswith('cuda') else 'CPU'
+        print(f'[Heinishi] Model loaded on {self.runtime_device} ({name})', file=sys.stderr, flush=True)
 
     def decode_request(self, request):
         return request

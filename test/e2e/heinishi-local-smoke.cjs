@@ -17,6 +17,11 @@ async function main() {
   const video = process.env.HEINISHI_VIDEO_PATH
   if (video) fs.copyFileSync(video, path.join(input, `video${path.extname(video)}`))
   const expectedCount = video ? 4 : 3
+  // Zero-filled files, as left by an interrupted copy: they must complete
+  // without output instead of failing and retrying.
+  for (const name of ['broken.jpg', 'broken.mp4'])
+    fs.writeFileSync(path.join(input, name), Buffer.alloc(64 * 1024))
+  const expectedJobs = expectedCount + 2
   const errors = []
   const app = await electron.launch({
     args: [
@@ -83,13 +88,13 @@ async function main() {
       )
       if (
         result?.outputs.length === expectedCount &&
-        result.jobs.some((j) => j.status === 'completed' && j.n === expectedCount)
+        result.jobs.some((j) => j.status === 'completed' && j.n === expectedJobs)
       )
         break
       await new Promise((resolve) => setTimeout(resolve, 2000))
     }
     assert.equal(result?.outputs.length, expectedCount, JSON.stringify(result))
-    assert.deepEqual(result.jobs, [{ status: 'completed', n: expectedCount }])
+    assert.deepEqual(result.jobs, [{ status: 'completed', n: expectedJobs }])
     for (const output of result.outputs) {
       const raw = JSON.parse(output.rawOutput)
       for (const prediction of raw.frames ?? [raw]) {

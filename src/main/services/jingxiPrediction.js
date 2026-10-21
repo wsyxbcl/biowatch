@@ -115,6 +115,25 @@ export function buildJingxiObservations(raw) {
       ]
 }
 
+/**
+ * Why a streamed Heinishi result can't be stored, or null when it can.
+ * 'unreadable': the file itself failed (corrupt, empty, undecodable). Not
+ * retriable; the media stays without observations, as upstream does.
+ * 'invalid': the result breaks the delivery contract; fail the job.
+ */
+export function heinishiPredictionProblem(prediction) {
+  if (prediction?.prediction === 'error' || prediction?.jingxi?.status === 'error') {
+    const error = prediction.jingxi?.error?.message ?? prediction.jingxi?.error ?? prediction.error
+    return { kind: 'unreadable', message: String(error ?? 'unknown error') }
+  }
+  try {
+    buildJingxiObservations(prediction?.jingxi)
+    return null
+  } catch (error) {
+    return { kind: 'invalid', message: error.message }
+  }
+}
+
 export function jingxiTaxonomyProvenance(raw) {
   const entry = raw.classification ? taxonomy.entries[raw.classification.raw_index] : null
   return { mappingId: taxonomy.id, sourceSha256: taxonomy.sourceSha256, entry }

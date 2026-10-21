@@ -85,3 +85,31 @@ test('stores Chinese names and exposes them as study vernacular names', async ()
   assert.equal(names.unlabeled, '未分类')
   assert.equal(Object.keys(names).length, 29)
 })
+
+test('classifies unreadable files apart from contract violations', async () => {
+  const { heinishiPredictionProblem } =
+    await import('../../../src/main/services/jingxiPrediction.js')
+  // Shared video path: OpenCV could not open the file, no Heinishi payload.
+  assert.deepEqual(
+    heinishiPredictionProblem({ prediction: 'error', error: 'Cannot open video: a.mp4' }),
+    { kind: 'unreadable', message: 'Cannot open video: a.mp4' }
+  )
+  // Runner reported a per-image error (e.g. truncated JPEG).
+  const broken = {
+    ...rawPrediction(),
+    status: 'error',
+    error: { message: 'image file is truncated' }
+  }
+  assert.deepEqual(heinishiPredictionProblem({ prediction: 'error', jingxi: broken }), {
+    kind: 'unreadable',
+    message: 'image file is truncated'
+  })
+  assert.equal(
+    heinishiPredictionProblem({
+      prediction: 'x',
+      jingxi: { ...rawPrediction(), model_id: 'other' }
+    }).kind,
+    'invalid'
+  )
+  assert.equal(heinishiPredictionProblem({ prediction: '猪', jingxi: rawPrediction() }), null)
+})

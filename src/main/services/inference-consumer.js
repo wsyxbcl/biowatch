@@ -21,7 +21,7 @@ import { insertModelOutput, updateMetadata, getMetadata } from '../database/inde
 import { modelRuns, media, deployments } from '../database/models.js'
 import log from './logger.js'
 import { isJingxi } from '../../shared/jingxiModel.js'
-import { buildJingxiObservations, jingxiTaxonomyProvenance } from './jingxiPrediction.js'
+import { heinishiPredictionProblem, jingxiTaxonomyProvenance } from './jingxiPrediction.js'
 
 export class InferenceConsumer extends QueueConsumer {
   /**
@@ -92,18 +92,24 @@ export class InferenceConsumer extends QueueConsumer {
       for await (const prediction of getPredictions(filePaths, this.port, batchAbort.signal)) {
         if (isJingxi({ id: modelId, version: modelVersion })) {
           if (completedPaths.has(prediction.filepath)) continue
-          try {
-            buildJingxiObservations(prediction.jingxi)
-            prediction.jingxiTaxonomy = jingxiTaxonomyProvenance(prediction.jingxi)
-          } catch (error) {
+          const problem = heinishiPredictionProblem(prediction)
+          if (problem) {
             const job = jobByPath.get(prediction.filepath)
-            if (job) {
-              fail(this.manager, job.id, error.message)
-              completedPaths.add(prediction.filepath)
+            if (problem.kind === 'unreadable') {
+              // Same as the generic path below: retrying an unreadable file
+              // can't help, and a failed job keeps the import bar stuck.
+              log.warn(
+                `[InferenceConsumer] Unreadable file ${prediction.filepath}: ${problem.message}`
+              )
+              if (job) complete(this.manager, job.id)
+            } else if (job) {
+              fail(this.manager, job.id, problem.message)
             }
+            if (job) completedPaths.add(prediction.filepath)
             videoPredictionsMap.delete(prediction.filepath)
             continue
           }
+          prediction.jingxiTaxonomy = jingxiTaxonomyProvenance(prediction.jingxi)
         }
         // Skip failed predictions (corrupt images, model-side load errors).
         // The media row stays without an observation, so it surfaces in the
